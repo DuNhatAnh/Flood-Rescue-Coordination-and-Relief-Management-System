@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
 
 void main() {
   runApp(const FloodRescueApp());
@@ -114,7 +115,13 @@ class TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const RescueRequestScreen()),
+              );
+            },
             icon: const Icon(Icons.emergency_share, size: 18),
             label: const Text('Báo cần hỗ trợ'),
             style: ElevatedButton.styleFrom(

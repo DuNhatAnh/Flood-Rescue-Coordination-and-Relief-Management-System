@@ -11,4 +11,5 @@ public class RescueRequestDto {
     private String addressText;
     private String description;
     private String urgencyLevel;
+    private Integer numberOfPeople;
 }
