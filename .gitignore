@@ -1,0 +1,46 @@
+# Java / Maven
+**/target/
+**/*.class
+**/*.jar
+**/*.war
+**/*.ear
+**/*.log
+.mvn/
+mvnw
+mvnw.cmd
+
+# Flutter / Dart
+**/build/
+**/.dart_tool/
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/pubspec.lock
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/App.framework
+**/ios/Flutter/App.podspec
+**/ios/Flutter/App.framework.zip
+**/ios/ServiceDefinitions.json
+**/android/app/src/main/res/values/strings.xml
+**/*.jks
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.nb-gradle/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.env
