@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
+import 'package:flood_rescue_app/screens/coordinator/coordinator_dashboard.dart';
+import 'package:flood_rescue_app/screens/rescue_team/team_tasks_screen.dart';
 
 void main() {
   runApp(const FloodRescueApp());
@@ -141,6 +143,38 @@ class TopBar extends StatelessWidget {
             label: const Text('Đăng nhập'),
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF546E7A),
+              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 12),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const CoordinatorDashboard()),
+              );
+            },
+            icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
+            label: const Text('Điều phối'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue[800],
+              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 12),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const TeamTasksScreen()),
+              );
+            },
+            icon: const Icon(Icons.engineering_outlined, size: 20),
+            label: const Text('Đội cứu hộ'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green[800],
               textStyle: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
