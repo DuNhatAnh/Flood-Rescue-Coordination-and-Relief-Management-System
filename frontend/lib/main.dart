@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
 import 'package:flood_rescue_app/screens/coordinator/coordinator_dashboard.dart';
 import 'package:flood_rescue_app/screens/rescue_team/team_tasks_screen.dart';
+import 'package:flood_rescue_app/screens/login_screen.dart';
 
 void main() {
   runApp(const FloodRescueApp());
@@ -138,7 +139,12 @@ class TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           TextButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
             icon: const Icon(Icons.account_circle_outlined, size: 20),
             label: const Text('Đăng nhập'),
             style: TextButton.styleFrom(
