@@ -16,7 +16,13 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import vn.rescue.core.domain.repositories.UserRepository;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -40,22 +46,37 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Vô hiệu hóa CSRF để cho phép các yêu cầu POST từ Postman
+                // 1. Vô hiệu hóa CSRF và cấu hình CORS
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // 2. Thêm "/api/vehicles/**" vào danh sách permitAll để không bị chặn 403
+                        // 2. Cho phép truy cập công khai vào các endpoint cần thiết
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/v1/rescue-requests/**",
+                                "/api/v1/attachments/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/api/vehicles/**"
-                        ).permitAll()
+                                "/api/vehicles/**")
+                        .permitAll()
                         .anyRequest().authenticated())
-                // 3. Sử dụng cơ chế Stateless (không lưu session trên server)
+                // 3. Sử dụng cơ chế Stateless
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider());
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:8081"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
+        configuration.setExposedHeaders(List.of("x-auth-token"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean

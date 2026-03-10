@@ -7,6 +7,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 class RescueRequestScreen extends StatefulWidget {
   const RescueRequestScreen({super.key});
@@ -22,9 +23,12 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _peopleController =
       TextEditingController(text: '1');
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _coordinatesController = TextEditingController();
 
   LatLng? _currentLocation;
-  String _addressText = "Đang lấy vị trí...";
+  List<dynamic> _suggestions = [];
+  Timer? _debounce;
   String _urgencyLevel = "MEDIUM";
   final List<XFile> _images = [];
   bool _isLoading = false;
@@ -36,13 +40,21 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
     _getCurrentLocation();
   }
 
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _coordinatesController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      setState(() => _addressText = "Dịch vụ định vị bị tắt");
+      setState(() => _addressController.text = "Dịch vụ định vị bị tắt");
       return;
     }
 
@@ -50,7 +62,8 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        setState(() => _addressText = "Quyền truy cập vị trí bị từ chối");
+        setState(
+            () => _addressController.text = "Quyền truy cập vị trí bị từ chối");
         return;
       }
     }
@@ -66,7 +79,9 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
   Future<void> _updateAddress(LatLng position) async {
     setState(() {
       _currentLocation = position;
-      _addressText = "Đang xác định địa chỉ...";
+      _addressController.text = "Đang xác định địa chỉ...";
+      _coordinatesController.text =
+          "${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
     });
 
     String address =
@@ -86,8 +101,55 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
     }
 
     setState(() {
-      _addressText = address;
+      _addressController.text = address;
     });
+  }
+
+  Future<void> _onAddressChanged(String query) async {
+    // Khi người dùng gõ mới, ta xóa tọa độ cũ để đảm bảo tính đồng bộ
+    setState(() {
+      _currentLocation = null;
+      _coordinatesController.text = "";
+    });
+
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (query.isEmpty) {
+        setState(() => _suggestions = []);
+        return;
+      }
+
+      try {
+        final url =
+            'https://nominatim.openstreetmap.org/search?format=json&q=$query&limit=5&addressdetails=1&countrycodes=vn';
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          setState(() {
+            _suggestions = jsonDecode(response.body);
+          });
+        }
+      } catch (e) {
+        // Lỗi autocomplete
+      }
+    });
+  }
+
+  void _selectAddress(dynamic suggestion) {
+    final lat = double.tryParse(suggestion['lat']);
+    final lon = double.tryParse(suggestion['lon']);
+    final address = suggestion['display_name'];
+
+    if (lat != null && lon != null) {
+      final position = LatLng(lat, lon);
+      setState(() {
+        _currentLocation = position;
+        _addressController.text = address;
+        _coordinatesController.text =
+            "${lat.toStringAsFixed(6)}, ${lon.toStringAsFixed(6)}";
+        _suggestions = [];
+      });
+      _mapController.move(position, 15);
+    }
   }
 
   Future<void> _pickImages() async {
@@ -120,7 +182,7 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
           'citizenPhone': _phoneController.text,
           'locationLat': _currentLocation!.latitude,
           'locationLng': _currentLocation!.longitude,
-          'addressText': _addressText,
+          'addressText': _addressController.text,
           'description': _descriptionController.text,
           'urgencyLevel': _urgencyLevel,
           'numberOfPeople': int.tryParse(_peopleController.text) ?? 1,
@@ -258,10 +320,59 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text("Địa chỉ chi tiết (nhấn vào bản đồ để chọn):",
+              const Text("Địa chỉ chi tiết (nhập hoặc nhấn vào bản đồ):",
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              _buildInfoContainer(_addressText),
+              Stack(
+                children: [
+                  _buildTextField(
+                    _addressController,
+                    null,
+                    "Nhập địa chỉ hoặc chọn trên bản đồ",
+                    onChanged: _onAddressChanged,
+                  ),
+                  if (_suggestions.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 50),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(25),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _suggestions.length,
+                          itemBuilder: (context, index) {
+                            final suggestion = _suggestions[index];
+                            return ListTile(
+                              title: Text(suggestion['display_name'],
+                                  style: const TextStyle(fontSize: 13)),
+                              onTap: () => _selectAddress(suggestion),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text("Tọa độ (Latitude, Longitude):",
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              _buildTextField(
+                _coordinatesController,
+                null,
+                "Chưa có tọa độ",
+                readOnly: true,
+              ),
               const SizedBox(height: 24),
               _buildSectionTitle(Icons.description, "Mô tả tình trạng"),
               const SizedBox(height: 10),
@@ -393,7 +504,10 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
 
   Widget _buildTextField(
       TextEditingController controller, String? label, String placeholder,
-      {TextInputType? keyboardType, int maxLines = 1}) {
+      {TextInputType? keyboardType,
+      int maxLines = 1,
+      Function(String)? onChanged,
+      bool readOnly = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -405,10 +519,12 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          onChanged: onChanged,
+          readOnly: readOnly,
           decoration: InputDecoration(
             hintText: placeholder,
             filled: true,
-            fillColor: Colors.grey[50],
+            fillColor: readOnly ? Colors.grey[200] : Colors.grey[50],
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.grey[300]!)),
@@ -426,18 +542,7 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
     );
   }
 
-  Widget _buildInfoContainer(String text) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.red[50]?.withAlpha(76), // 0.3 * 255 approx 76
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red[100]!),
-      ),
-      child: Text(text, style: const TextStyle(fontSize: 13)),
-    );
-  }
+  // Loại bỏ _buildInfoContainer vì không còn dùng
 
   Widget _buildUrgencyOptions() {
     return Column(
