@@ -1,19 +1,6 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:15
-    container_name: rescue_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: flood_rescue_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: always
-
   backend:
     build:
       context: ./backend
@@ -22,11 +9,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/flood_rescue_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=rootpassword
-    depends_on:
-      - db
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://nhatanhdu_db_user:BFkndzP3xqW3x9Wu@cluster0.jmi5ufx.mongodb.net/flood_rescue_db?retryWrites=true&w=majority
     restart: always
 
   frontend:
@@ -37,6 +20,3 @@ services:
     ports:
       - "8081:80"
     restart: always
-
-volumes:
-  postgres_data:

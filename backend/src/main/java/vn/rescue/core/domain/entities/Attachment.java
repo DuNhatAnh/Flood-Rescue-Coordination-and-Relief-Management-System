@@ -1,26 +1,24 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "attachments")
+@Document(collection = "attachments")
 public class Attachment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "attachment_id")
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id", nullable = false)
-    private RescueRequest rescueRequest;
+    @Field("request_id")
+    private String requestId;
 
-    @Column(name = "file_url", nullable = false)
+    @Field("file_url")
     private String fileUrl;
 
-    @Column(name = "uploaded_at", insertable = false, updatable = false)
+    @Field("uploaded_at")
     private LocalDateTime uploadedAt;
 }

@@ -16,7 +16,7 @@ public class RescueCoordinationController {
     }
 
     @PutMapping("/{id}/urgency")
-    public void updateUrgency(@PathVariable Long id, @RequestBody String urgencyLevel) {
+    public void updateUrgency(@PathVariable String id, @RequestBody String urgencyLevel) {
         // Skeleton: Logic to update urgency
     }
 }

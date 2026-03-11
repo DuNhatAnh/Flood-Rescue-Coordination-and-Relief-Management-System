@@ -1,27 +1,26 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "distributions")
+@Document(collection = "distributions")
 public class Distribution {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "distribution_id")
-    private Long distributionId;
+    private String id;
 
-    @Column(name = "warehouse_id", nullable = false)
-    private Integer warehouseId;
+    @Field("warehouse_id")
+    private String warehouseId;
 
-    @Column(name = "request_id")
-    private Long requestId;
+    @Field("request_id")
+    private String requestId;
 
-    @Column(name = "distributed_by", nullable = false)
-    private Integer distributedBy;
+    @Field("distributed_by")
+    private String distributedBy;
 
-    @Column(name = "distributed_at", insertable = false, updatable = false)
+    @Field("distributed_at")
     private LocalDateTime distributedAt;
 }

@@ -1,24 +1,22 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 
 @Data
-@Entity
-@Table(name = "rescue_teams")
+@Document(collection = "rescue_teams")
 public class RescueTeam {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "team_id")
-    private Integer id;
+    private String id;
 
-    @Column(name = "team_name", nullable = false)
+    @Field("team_name")
     private String teamName;
 
-    @Column(name = "status")
     private String status = "AVAILABLE"; // AVAILABLE / BUSY
 
-    @Column(name = "leader_id", nullable = false)
-    private Integer leaderId;
+    @Field("leader_id")
+    private String leaderId;
 }

@@ -14,20 +14,19 @@ public class VehiclesService {
 
     public VehicleResponse createVehicle(VehicleRequest request) {
         // 1. Chuyển DTO sang Entity
-        Vehicles vehicle = Vehicles.builder()
-                .vehicleType(request.getVehicleType())
-                .licensePlate(request.getLicensePlate())
-                .currentLocation(request.getCurrentLocation())
-                .teamId(request.getTeamId())
-                .status("AVAILABLE") // Gán mặc định theo DB
-                .build();
+        Vehicles vehicle = new Vehicles();
+        vehicle.setVehicleType(request.getVehicleType());
+        vehicle.setLicensePlate(request.getLicensePlate());
+        vehicle.setCurrentLocation(request.getCurrentLocation());
+        vehicle.setTeamId(request.getTeamId());
+        vehicle.setStatus("AVAILABLE"); // Gán mặc định theo DB
 
         // 2. Lưu vào Database
         Vehicles saved = vehiclesRepository.save(vehicle);
 
         // 3. Chuyển Entity đã lưu sang Response DTO
         return VehicleResponse.builder()
-                .vehicleId(saved.getVehicleId())
+                .id(saved.getId())
                 .vehicleType(saved.getVehicleType())
                 .licensePlate(saved.getLicensePlate())
                 .status(saved.getStatus())

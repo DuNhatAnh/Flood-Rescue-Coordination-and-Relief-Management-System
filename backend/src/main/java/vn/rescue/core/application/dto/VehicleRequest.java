@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor // Tạo constructor đầy đủ tham số (bắt buộc cho @Builder)
 public class VehicleRequest {
 
-    private String vehicleType;     // Khớp với varchar(50)
-    private String licensePlate;    // Khớp với varchar(20)
+    private String vehicleType; // Khớp với varchar(50)
+    private String licensePlate; // Khớp với varchar(20)
     private String currentLocation; // Khớp với text
-    private Integer teamId;         // Khớp với integer
+    private String teamId; // Khớp với string (MongoDB ID)
 }

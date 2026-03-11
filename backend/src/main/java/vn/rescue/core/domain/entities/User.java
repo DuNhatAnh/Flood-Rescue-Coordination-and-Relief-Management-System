@@ -1,37 +1,33 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "users")
+@Document(collection = "users")
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Integer id;
+    private String id;
 
-    @Column(name = "full_name", nullable = false)
+    @Field("full_name")
     private String fullName;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Field("email")
     private String email;
 
-    @Column(name = "phone")
     private String phone;
 
-    @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "role_id", nullable = false)
-    private Integer roleId;
+    @Field("role_id")
+    private String roleId;
 
-    @Column(name = "status")
     private String status = "ACTIVE"; // ACTIVE / LOCKED
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Field("created_at")
     private LocalDateTime createdAt;
 }

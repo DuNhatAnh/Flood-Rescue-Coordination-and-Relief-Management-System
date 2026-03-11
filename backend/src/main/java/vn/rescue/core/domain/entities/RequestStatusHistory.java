@@ -1,28 +1,25 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "request_status_history")
+@Document(collection = "request_status_history")
 public class RequestStatusHistory {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id", nullable = false)
-    private RescueRequest rescueRequest;
+    @Field("request_id")
+    private String requestId;
 
-    @Column(name = "status", nullable = false)
     private String status;
 
-    @Column(name = "updated_at", insertable = false, updatable = false)
+    @Field("updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "note")
     private String note;
 }

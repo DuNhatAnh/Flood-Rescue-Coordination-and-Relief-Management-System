@@ -1,23 +1,9 @@
 spring:
   application:
     name: flood-rescue-api
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/flood_rescue_db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:rootpassword}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    out-of-order: true
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb+srv://nhatanhdu_db_user:BFkndzP3xqW3x9Wu@cluster0.jmi5ufx.mongodb.net/flood_rescue_db?retryWrites=true&w=majority}
 
 jwt:
   secret: Y2hhbmdlbWVjaGFuZ2VtZWNoYW5nZW1lY2hhbmdlbWVjaGFuZ2VtZQ==

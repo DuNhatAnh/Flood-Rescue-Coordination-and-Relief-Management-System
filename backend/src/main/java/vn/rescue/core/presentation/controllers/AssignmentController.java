@@ -22,7 +22,7 @@ public class AssignmentController {
     }
 
     @PutMapping("/{id}/status")
-    public void updateStatus(@PathVariable Long id, @RequestBody String status) {
+    public void updateStatus(@PathVariable String id, @RequestBody String status) {
         // Skeleton: Logic to update status
     }
 }

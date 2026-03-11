@@ -23,13 +23,13 @@ public class AttachmentController {
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<String>> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("requestId") Long requestId) {
+            @RequestParam("requestId") String requestId) {
 
         RescueRequest request = rescueRequestService.getById(requestId);
         String fileUrl = fileStorageService.save(file);
 
         Attachment attachment = new Attachment();
-        attachment.setRescueRequest(request);
+        attachment.setRequestId(request.getId());
         attachment.setFileUrl(fileUrl);
         attachmentRepository.save(attachment);
 

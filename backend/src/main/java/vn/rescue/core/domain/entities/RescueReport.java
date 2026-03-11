@@ -1,31 +1,30 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "rescue_reports")
+@Document(collection = "rescue_reports")
 public class RescueReport {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "report_id")
-    private Long id;
+    private String id;
 
-    @Column(name = "assignment_id", nullable = false)
-    private Long assignmentId;
+    @Field("assignment_id")
+    private String assignmentId;
 
-    @Column(name = "rescued_people_count")
+    @Field("rescued_people_count")
     private Integer rescuedPeopleCount = 0;
 
-    @Column(name = "actual_condition")
+    @Field("actual_condition")
     private String actualCondition;
 
-    @Column(name = "image_url")
+    @Field("image_url")
     private String imageUrl;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Field("created_at")
     private LocalDateTime createdAt;
 }

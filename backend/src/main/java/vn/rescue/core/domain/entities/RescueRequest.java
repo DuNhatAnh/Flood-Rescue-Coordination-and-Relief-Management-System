@@ -1,49 +1,46 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "rescue_requests")
+@Document(collection = "rescue_requests")
 public class RescueRequest {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "request_id")
-    private Long id;
+    private String id;
 
-    @Column(name = "citizen_name", nullable = false)
+    @Field("citizen_name")
     private String citizenName;
 
-    @Column(name = "citizen_phone", nullable = false)
+    @Field("citizen_phone")
     private String citizenPhone;
 
-    @Column(name = "location_lat", nullable = false)
+    @Field("location_lat")
     private Double locationLat;
 
-    @Column(name = "location_lng", nullable = false)
+    @Field("location_lng")
     private Double locationLng;
 
-    @Column(name = "address_text", nullable = false)
+    @Field("address_text")
     private String addressText;
 
-    @Column(name = "description")
     private String description;
 
-    @Column(name = "urgency_level")
+    @Field("urgency_level")
     private String urgencyLevel = "MEDIUM"; // HIGH / MEDIUM / LOW
 
-    @Column(name = "status")
     private String status = "PENDING"; // PENDING / ASSIGNED / COMPLETED
 
-    @Column(name = "number_of_people")
+    @Field("number_of_people")
     private Integer numberOfPeople = 1;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Field("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "verified_by")
-    private Integer verifiedBy; // can be mapped to User entity later
+    @Field("verified_by")
+    private String verifiedBy;
 }

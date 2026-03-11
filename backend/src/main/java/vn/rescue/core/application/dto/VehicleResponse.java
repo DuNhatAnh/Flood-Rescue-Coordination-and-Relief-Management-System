@@ -11,11 +11,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor // Bắt buộc phải có khi dùng @Builder
 public class VehicleResponse {
 
-    private Integer vehicleId;      // Khớp với vehicle_id (Integer)
-    private String vehicleType;     // Khớp với vehicle_type
-    private String licensePlate;    // Khớp với license_plate
-    private String status;          // Trạng thái hiện tại (mặc định AVAILABLE)
+    private String id; // Lấy từ @Id trong MongoDB
+    private String vehicleType; // Khớp với vehicle_type
+    private String licensePlate; // Khớp với license_plate
+    private String status; // Trạng thái hiện tại (mặc định AVAILABLE)
     private String currentLocation; // Tọa độ hoặc địa chỉ dạng text
-    private Integer teamId;         // ID đội cứu hộ đang quản lý
-
+    private String teamId; // ID đội cứu hộ dạng String
 }

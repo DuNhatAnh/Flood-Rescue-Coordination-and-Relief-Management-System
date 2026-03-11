@@ -1,34 +1,28 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
-import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+import lombok.Data;
 
-@Entity
-@Table(name = "vehicles")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Data
+@Document(collection = "vehicles")
 public class Vehicles {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Khớp với nextval('vehicles_...') trong DB
-    @Column(name = "vehicle_id")
-    private Integer vehicleId;
+    private String id;
 
-    @Column(name = "vehicle_type", length = 50) // Khớp với varchar(50)
+    @Field("vehicle_type")
     private String vehicleType;
 
-    @Column(name = "license_plate", length = 20) // Khớp với varchar(20)
+    @Field("license_plate")
     private String licensePlate;
 
-    @Column(name = "status", length = 20) // Khớp với varchar(20)
-    private String status; // Mặc định trong DB là 'AVAILABLE'
+    private String status;
 
-    @Column(name = "current_location", columnDefinition = "text") // Khớp với kiểu text
+    @Field("current_location")
     private String currentLocation;
 
-    @Column(name = "team_id") // Khớp với kiểu integer
-    private Integer teamId;
+    @Field("team_id")
+    private String teamId;
 }

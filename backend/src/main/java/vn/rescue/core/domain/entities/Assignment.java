@@ -1,34 +1,32 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "assignments")
+@Document(collection = "assignments")
 public class Assignment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "assignment_id")
-    private Long id;
+    private String id;
 
-    @Column(name = "request_id", nullable = false)
-    private Long requestId;
+    @Field("request_id")
+    private String requestId;
 
-    @Column(name = "team_id", nullable = false)
-    private Integer teamId;
+    @Field("team_id")
+    private String teamId;
 
-    @Column(name = "assigned_by", nullable = false)
-    private Integer assignedBy;
+    @Field("assigned_by")
+    private String assignedBy;
 
-    @Column(name = "assigned_at", insertable = false, updatable = false)
+    @Field("assigned_at")
     private LocalDateTime assignedAt;
 
-    @Column(name = "status")
     private String status = "IN_PROGRESS"; // IN_PROGRESS / COMPLETED / CANCELLED
 
-    @Column(name = "completed_at")
+    @Field("completed_at")
     private LocalDateTime completedAt;
 }

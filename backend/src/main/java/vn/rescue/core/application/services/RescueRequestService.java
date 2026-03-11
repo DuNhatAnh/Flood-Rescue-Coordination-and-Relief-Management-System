@@ -33,7 +33,7 @@ public class RescueRequestService {
 
         // Tự động ghi log trạng thái ban đầu
         RequestStatusHistory history = new RequestStatusHistory();
-        history.setRescueRequest(savedRequest);
+        history.setRequestId(savedRequest.getId());
         history.setStatus("PENDING");
         history.setNote("Yêu cầu mới được tạo từ người dân");
         statusHistoryRepository.save(history);
@@ -41,7 +41,10 @@ public class RescueRequestService {
         return savedRequest;
     }
 
-    public RescueRequest getById(Long id) {
+    public RescueRequest getById(String id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID cannot be null");
+        }
         return rescueRequestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu với ID: " + id));
     }

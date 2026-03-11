@@ -1,23 +1,20 @@
 package vn.rescue.core.domain.entities;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 
 @Data
-@Entity
-@Table(name = "relief_items")
+@Document(collection = "relief_items")
 public class ReliefItem {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "item_id")
-    private Integer itemId;
+    private String id;
 
-    @Column(name = "item_name", nullable = false)
+    @Field("item_name")
     private String itemName;
 
-    @Column(name = "unit", nullable = false)
     private String unit;
 
-    @Column(name = "description")
     private String description;
 }
