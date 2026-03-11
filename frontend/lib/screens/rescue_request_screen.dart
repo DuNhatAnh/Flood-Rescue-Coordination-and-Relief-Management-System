@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+// import 'package:geocoding/geocoding.dart'; // Removed as we use Nominatim
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -84,25 +84,27 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
           "${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
     });
 
-    String address =
-        "Vị trí: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}";
     try {
-      // Lưu ý: Geocoding trên Web có thể cần API Key nếu chạy native.
-      // Nhưng ta vẫn giữ logic để dự phòng hoặc khi chạy trên Mobile/Emulator.
-      List<Placemark> placemarks =
-          await placemarkFromCoordinates(position.latitude, position.longitude);
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        address =
-            "${place.street}, ${place.subAdministrativeArea}, ${place.administrativeArea}";
+      final url =
+          'https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&addressdetails=1';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _addressController.text = data['display_name'] ??
+                "${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
+          });
+        }
       }
     } catch (e) {
-      // Fallback nếu geocoding lỗi
+      if (mounted) {
+        setState(() {
+          _addressController.text =
+              "${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
+        });
+      }
     }
-
-    setState(() {
-      _addressController.text = address;
-    });
   }
 
   Future<void> _onAddressChanged(String query) async {

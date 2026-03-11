@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'rescue_request_screen.dart';
-import 'coordinator/coordinator_dashboard.dart';
-import 'rescue_team/team_tasks_screen.dart';
 import 'auth/login_screen.dart';
-import '../services/auth_service.dart';
-import '../models/user_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -79,7 +75,9 @@ class TopBar extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tính năng Báo an toàn đang được phát triển')),
+                const SnackBar(
+                    content:
+                        Text('Tính năng Báo an toàn đang được phát triển')),
               );
             },
             icon: const Icon(Icons.check_circle_outline, size: 18),
@@ -119,8 +117,7 @@ class TopBar extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const LoginScreen()),
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
             icon: const Icon(Icons.account_circle_outlined, size: 20),
@@ -130,49 +127,9 @@ class TopBar extends StatelessWidget {
               textStyle: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(width: 12),
-          TextButton.icon(
-            onPressed: () => _navigateToModule(context, const CoordinatorDashboard(), UserRole.coordinator),
-            icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
-            label: const Text('Điều phối'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.blue[800],
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: 12),
-          TextButton.icon(
-            onPressed: () => _navigateToModule(context, const TeamTasksScreen(), UserRole.rescueStaff),
-            icon: const Icon(Icons.engineering_outlined, size: 20),
-            label: const Text('Đội cứu hộ'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.green[800],
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  void _navigateToModule(BuildContext context, Widget screen, UserRole requiredRole) {
-    if (AuthService.currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng đăng nhập để truy cập tính năng này!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => screen),
-      );
-    }
   }
 }
 
