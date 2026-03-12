@@ -41,4 +41,9 @@ public class RescueRequestController {
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(rescueRequestService.getStats(), "Statistics retrieved"));
     }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<java.util.List<RescueRequest>>> getAllRequests() {
+        return ResponseEntity.ok(ApiResponse.success(rescueRequestService.getAll(), "All rescue requests retrieved"));
+    }
 }

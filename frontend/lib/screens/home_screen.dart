@@ -4,6 +4,9 @@ import 'dart:convert';
 import 'rescue_request_screen.dart';
 import 'track_rescue_request_screen.dart';
 import 'auth/login_screen.dart';
+import 'dart:ui_web' as ui;
+import 'dart:html' as html;
+import 'dart:js' as js;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -313,55 +316,45 @@ class StatCard extends StatelessWidget {
   }
 }
 
-class MainContent extends StatelessWidget {
+class MainContent extends StatefulWidget {
   const MainContent({Key? key}) : super(key: key);
+
+  @override
+  State<MainContent> createState() => _MainContentState();
+}
+
+class _MainContentState extends State<MainContent> {
+  @override
+  void initState() {
+    super.initState();
+    // Register the div element for Leaflet
+    ui.platformViewRegistry.registerViewFactory(
+      'leaflet-map',
+      (int viewId) => html.DivElement()
+        ..id = 'map'
+        ..style.width = '100%'
+        ..style.height = '100%'
+        ..style.borderRadius = '24px',
+    );
+
+    // Call JS init script after rendering
+    Future.delayed(const Duration(milliseconds: 500), () {
+      js.context.callMethod('initLeafletMap');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 520,
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      height: 650, // Increased from 520
+      margin: const EdgeInsets.symmetric(vertical: 10), // Removed horizontal margin
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.blue.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.02),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F9FF),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.map_rounded, size: 70, color: Colors.blue[200]),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Bản đồ đang được khởi tạo',
-              style: TextStyle(
-                color: Color(0xFF263238),
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Hệ thống đang kết nối với các trạm cứu trợ thực địa...',
-              style: TextStyle(color: Colors.blueGrey[300], fontSize: 14),
-            ),
-          ],
+        border: Border.symmetric(
+          horizontal: BorderSide(color: Colors.blue.withOpacity(0.1)),
         ),
       ),
+      child: const HtmlElementView(viewType: 'leaflet-map'),
     );
   }
 }

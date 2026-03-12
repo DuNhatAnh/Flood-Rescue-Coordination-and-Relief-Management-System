@@ -32,6 +32,147 @@
 
   <title>flood_rescue_app</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    #map { height: 100%; width: 100%; border-radius: 24px; }
+    
+    .info.legend {
+      padding: 10px 14px;
+      font: 13px/18px 'Inter', Arial, sans-serif;
+      background: white;
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      border-radius: 10px;
+      color: #333;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .info.legend h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #000;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 10px;
+      display: inline-block;
+      border: 1px solid white;
+    }
+    .legend-icon {
+      margin-right: 10px;
+      font-size: 14px;
+      width: 12px;
+      text-align: center;
+    }
+
+    /* Custom Icons */
+    .hazard-marker {
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    .text-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+    }
+  </style>
+
+  <script>
+    function initLeafletMap() {
+      console.log("Initializing Multi-layer Rescue Map...");
+      
+      const map = L.map('map', {
+        zoomControl: true,
+        maxBounds: [
+          [8.0, 102.0], // Southwest
+          [24.0, 110.0] // Northeast
+        ]
+      }).setView([16.06, 108.22], 14); // Detailed focus on Da Nang center
+
+      // Layer 1: Base Map (CartoDB Voyager - Vibrant & Colorful)
+      const baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        minZoom: 5
+      }).addTo(map);
+
+      // Layer 2: Hazard Layer (Currently Empty)
+      const hazardLayer = L.layerGroup().addTo(map);
+
+      // Layer 3: Rescue Request Layer (Fetching from API)
+      const rescueRequestLayer = L.layerGroup().addTo(map);
+
+      const sosIcon = L.divIcon({
+        className: 'text-icon',
+        html: '🆘',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      function loadRescueRequests() {
+        fetch('http://localhost:8080/api/v1/rescue-requests')
+          .then(res => res.json())
+          .then(result => {
+            if (result.success && result.data) {
+              result.data.forEach(r => {
+                if (r.locationLat && r.locationLng) {
+                  L.marker([r.locationLat, r.locationLng], { icon: sosIcon })
+                    .bindPopup(`
+                      <strong>Yêu cầu cứu hộ: ${r.customId || 'N/A'}</strong><br>
+                      Người dân: ${r.citizenName}<br>
+                      Số người: ${r.numberOfPeople}<br>
+                      Trạng thái: ${r.status}<br>
+                      Mô tả: ${r.description}
+                    `).addTo(rescueRequestLayer);
+                }
+              });
+            }
+          })
+          .catch(err => console.error("Error loading rescue requests:", err));
+      }
+
+      // Layer 4: Rescue Team Layer (Currently Empty)
+      const rescueTeamLayer = L.layerGroup().addTo(map);
+
+      // Initial Load
+      loadRescueRequests();
+
+      // Legend
+      const legend = L.control({ position: 'bottomright' });
+      legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        div.innerHTML = `
+          <h4>Mức cảnh báo lũ lụt</h4>
+          <div class="legend-item"><span class="legend-dot" style="background: #ff0000"></span> Nguy hiểm cao – Ngập sâu</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #ff9800"></span> Nguy hiểm trung bình – Ngập vừa</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #ffeb3b"></span> Ngập nhẹ – Nguy cơ thấp</div>
+          <div class="legend-item"><span class="legend-icon">🆘</span> Yêu cầu cứu hộ</div>
+          <div class="legend-item"><span class="legend-icon">🚑</span> Đội cứu hộ</div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+
+      // Fix for container size issues in Flutter/Flexbox
+      setTimeout(() => { map.invalidateSize(); }, 500);
+    }
+  </script>
 </head>
 
 <body>

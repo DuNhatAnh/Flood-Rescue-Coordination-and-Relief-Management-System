@@ -70,4 +70,8 @@ public class RescueRequestService {
             "safeReports", 0L      // To be implemented later with SafeReport entity
         );
     }
+
+    public java.util.List<RescueRequest> getAll() {
+        return rescueRequestRepository.findAll();
+    }
 }
