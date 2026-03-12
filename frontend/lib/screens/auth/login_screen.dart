@@ -3,6 +3,7 @@ import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../coordinator/coordinator_dashboard.dart';
 import '../rescue_team/team_tasks_screen.dart';
+import '../rescue_team/staff_main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -71,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
             nextScreen = const CoordinatorDashboard();
             break;
           case UserRole.rescueStaff:
-            nextScreen = const TeamTasksScreen();
+            nextScreen = const StaffMainScreen();
             break;
         }
 

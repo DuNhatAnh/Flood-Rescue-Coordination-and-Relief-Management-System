@@ -59,7 +59,8 @@ public class SecurityConfig {
                                 "/api/v1/attachments/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/api/vehicles/**")
+                                "/api/vehicles/**",
+                                "/api/relief-items/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 // 3. Sử dụng cơ chế Stateless
@@ -72,7 +73,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:8081"));
+        configuration.setAllowedOriginPatterns(List.of("*")); // Cho phép mọi nguồn trong lúc dev
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
         configuration.setExposedHeaders(List.of("x-auth-token"));
