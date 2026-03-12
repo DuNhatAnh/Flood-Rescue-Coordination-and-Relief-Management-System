@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'rescue_request_screen.dart';
+import 'track_rescue_request_screen.dart';
 import 'auth/login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -74,6 +77,26 @@ class TopBar extends StatelessWidget {
           const Spacer(),
           ElevatedButton.icon(
             onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const TrackRescueRequestScreen()),
+              );
+            },
+            icon: const Icon(Icons.track_changes, size: 18),
+            label: const Text('Theo dõi cứu hộ'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE1F5FE),
+              foregroundColor: const Color(0xFF0288D1),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                     content:
@@ -83,8 +106,8 @@ class TopBar extends StatelessWidget {
             icon: const Icon(Icons.check_circle_outline, size: 18),
             label: const Text('Báo an toàn'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE1F5FE),
-              foregroundColor: const Color(0xFF0288D1),
+              backgroundColor: const Color(0xFFE8F5E9),
+              foregroundColor: const Color(0xFF2E7D32),
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -133,8 +156,51 @@ class TopBar extends StatelessWidget {
   }
 }
 
-class StatBoard extends StatelessWidget {
+class StatBoard extends StatefulWidget {
   const StatBoard({Key? key}) : super(key: key);
+
+  @override
+  State<StatBoard> createState() => _StatBoardState();
+}
+
+class _StatBoardState extends State<StatBoard> {
+  int pendingCount = 0;
+  int completedCount = 0;
+  int peopleSupported = 0;
+  int safeReports = 0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  Future<void> _fetchStats() async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:8080/api/v1/rescue-requests/stats'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final stats = data['data'];
+          if (mounted) {
+            setState(() {
+              pendingCount = stats['pending'] ?? 0;
+              completedCount = stats['completed'] ?? 0;
+              peopleSupported = stats['peopleSupported'] ?? 0;
+              safeReports = stats['safeReports'] ?? 0;
+              isLoading = false;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Handle error quietly or show 0
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,33 +208,33 @@ class StatBoard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 30, 24, 20),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
               child: StatCard(
                   title: 'Đang tiếp nhận',
-                  count: 0,
+                  count: pendingCount,
                   icon: Icons.pending_outlined,
-                  color: Color(0xFFFF8A65))),
+                  color: const Color(0xFFFF8A65))),
           const SizedBox(width: 20),
-          const Expanded(
+          Expanded(
               child: StatCard(
                   title: 'Đã hỗ trợ',
-                  count: 0,
+                  count: completedCount,
                   icon: Icons.volunteer_activism_outlined,
-                  color: Color(0xFF66BB6A))),
+                  color: const Color(0xFF66BB6A))),
           const SizedBox(width: 20),
-          const Expanded(
+          Expanded(
               child: StatCard(
                   title: 'Người được hỗ trợ',
-                  count: 0,
+                  count: peopleSupported,
                   icon: Icons.groups_outlined,
-                  color: Color(0xFF42A5F5))),
+                  color: const Color(0xFF42A5F5))),
           const SizedBox(width: 20),
-          const Expanded(
+          Expanded(
               child: StatCard(
                   title: 'Báo an toàn',
-                  count: 0,
+                  count: safeReports,
                   icon: Icons.verified_user_outlined,
-                  color: Color(0xFF26A69A))),
+                  color: const Color(0xFF26A69A))),
         ],
       ),
     );

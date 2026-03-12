@@ -25,9 +25,20 @@ public class RescueRequestController {
         RescueRequest savedRequest = rescueRequestService.createRequest(requestDto);
 
         Map<String, Object> data = Map.of(
-                "requestId", savedRequest.getId(),
+                "requestId", savedRequest.getCustomId(),
                 "status", savedRequest.getStatus());
 
         return ResponseEntity.ok(ApiResponse.success(data, "Rescue request created successfully"));
+    }
+
+    @GetMapping("/track/{id}")
+    public ResponseEntity<ApiResponse<RescueRequest>> trackRequest(@PathVariable String id) {
+        RescueRequest request = rescueRequestService.getById(id);
+        return ResponseEntity.ok(ApiResponse.success(request, "Rescue request found"));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
+        return ResponseEntity.ok(ApiResponse.success(rescueRequestService.getStats(), "Statistics retrieved"));
     }
 }

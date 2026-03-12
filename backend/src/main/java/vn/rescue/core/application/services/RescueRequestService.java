@@ -9,6 +9,9 @@ import vn.rescue.core.domain.entities.RescueRequest;
 import vn.rescue.core.domain.repositories.RequestStatusHistoryRepository;
 import vn.rescue.core.domain.repositories.RescueRequestRepository;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class RescueRequestService {
@@ -19,6 +22,7 @@ public class RescueRequestService {
     @Transactional
     public RescueRequest createRequest(RescueRequestDto dto) {
         RescueRequest request = new RescueRequest();
+        request.setCustomId(generateCustomId());
         request.setCitizenName(dto.getCitizenName());
         request.setCitizenPhone(dto.getCitizenPhone());
         request.setLocationLat(dto.getLocationLat());
@@ -28,6 +32,7 @@ public class RescueRequestService {
         request.setUrgencyLevel(dto.getUrgencyLevel());
         request.setNumberOfPeople(dto.getNumberOfPeople() != null ? dto.getNumberOfPeople() : 1);
         request.setStatus("PENDING");
+        request.setCreatedAt(LocalDateTime.now());
 
         RescueRequest savedRequest = rescueRequestRepository.save(request);
 
@@ -41,11 +46,28 @@ public class RescueRequestService {
         return savedRequest;
     }
 
+    public String generateCustomId() {
+        long count = rescueRequestRepository.countByCustomIdIsNotNull();
+        return String.format("RES-%04d", count + 1);
+    }
+
     public RescueRequest getById(String id) {
         if (id == null) {
             throw new IllegalArgumentException("ID cannot be null");
         }
+        
+        // Try to find by ID first, then by customId
         return rescueRequestRepository.findById(id)
+                .or(() -> rescueRequestRepository.findByCustomId(id))
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu với ID: " + id));
+    }
+
+    public Map<String, Long> getStats() {
+        return Map.of(
+            "pending", rescueRequestRepository.countByStatus("PENDING"),
+            "completed", rescueRequestRepository.countByStatus("COMPLETED"),
+            "peopleSupported", 0L, // To be implemented later with actual people count
+            "safeReports", 0L      // To be implemented later with SafeReport entity
+        );
     }
 }

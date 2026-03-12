@@ -13,6 +13,9 @@ public class RescueRequest {
     @Id
     private String id;
 
+    @Field("custom_id")
+    private String customId;
+
     @Field("citizen_name")
     private String citizenName;
 

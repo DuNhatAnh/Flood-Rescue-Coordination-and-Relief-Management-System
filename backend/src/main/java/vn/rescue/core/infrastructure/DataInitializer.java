@@ -31,11 +31,31 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Bắt đầu kiểm tra và khởi tạo dữ liệu mẫu...");
 
         seedUsers();
-        seedRescueRequests();
-        seedRescueTeamsAndVehicles();
-        seedWarehousesAndItems();
+        // seedRescueRequests();
+        // seedRescueTeamsAndVehicles();
+        // seedWarehousesAndItems();
+        // backfillRescueRequestIds();
 
         log.info("Hoàn tất quá trình khởi tạo dữ liệu mẫu.");
+    }
+
+    private void backfillRescueRequestIds() {
+        log.info("Kiểm tra và cập nhật mã định danh (customId) cho các yêu cầu cũ...");
+        List<RescueRequest> requests = rescueRequestRepository.findAll();
+        long updatedCount = 0;
+
+        for (RescueRequest request : requests) {
+            if (request.getCustomId() == null) {
+                // Generate ID based on existing count or order
+                request.setCustomId(String.format("RES-%04d", updatedCount + 1));
+                rescueRequestRepository.save(request);
+                updatedCount++;
+            }
+        }
+
+        if (updatedCount > 0) {
+            log.info("Đã cập nhật mã định danh cho {} yêu cầu cũ.", updatedCount);
+        }
     }
 
     private void seedUsers() {
