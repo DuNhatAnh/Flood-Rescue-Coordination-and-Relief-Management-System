@@ -43,6 +43,9 @@ public class UserService {
     }
 
     public UserDto createUser(UserDto dto) {
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists: " + dto.getEmail());
+        }
         User user = new User();
         user.setFullName(dto.getFullName());
         user.setEmail(dto.getEmail());

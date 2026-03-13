@@ -7,6 +7,8 @@ import 'auth/login_screen.dart';
 import 'dart:ui_web' as ui;
 import 'dart:html' as html;
 import 'dart:js' as js;
+import '../services/auth_service.dart';
+import '../models/user_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -34,11 +36,20 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class TopBar extends StatelessWidget {
+
+
+class TopBar extends StatefulWidget {
   const TopBar({Key? key}) : super(key: key);
 
   @override
+  State<TopBar> createState() => _TopBarState();
+}
+
+class _TopBarState extends State<TopBar> {
+  @override
   Widget build(BuildContext context) {
+    final user = AuthService.currentUser;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
@@ -100,26 +111,6 @@ class TopBar extends StatelessWidget {
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content:
-                        Text('Tính năng Báo an toàn đang được phát triển')),
-              );
-            },
-            icon: const Icon(Icons.check_circle_outline, size: 18),
-            label: const Text('Báo an toàn'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE8F5E9),
-              foregroundColor: const Color(0xFF2E7D32),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton.icon(
-            onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -139,20 +130,50 @@ class TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-            icon: const Icon(Icons.account_circle_outlined, size: 20),
-            label: const Text('Đăng nhập'),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF546E7A),
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          if (user?.role == UserRole.admin)
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/admin/dashboard');
+              },
+              icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
+              label: const Text('Quản lý hệ thống'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE8F5E9),
+                foregroundColor: const Color(0xFF2E7D32),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
             ),
-          ),
+          const SizedBox(width: 12),
+          user == null
+              ? TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.account_circle_outlined, size: 20),
+                  label: const Text('Đăng nhập'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF546E7A),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                )
+              : TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      AuthService.currentUser = null;
+                    });
+                  },
+                  icon: const Icon(Icons.logout, size: 20),
+                  label: Text(user.fullName.split(' ').first),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF546E7A),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
         ],
       ),
     );
