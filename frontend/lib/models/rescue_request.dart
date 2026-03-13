@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum UrgencyLevel { low, medium, high }
+enum UrgencyLevel { level1, level2, level3, level4, level5 }
 enum RequestStatus { pending, assigned, completed }
 
 class RescueRequest {
@@ -15,6 +15,7 @@ class RescueRequest {
   final RequestStatus status;
   final int numberOfPeople;
   final DateTime createdAt;
+  final bool isVerified;
 
   RescueRequest({
     required this.id,
@@ -24,10 +25,11 @@ class RescueRequest {
     required this.lng,
     required this.address,
     required this.description,
-    this.urgency = UrgencyLevel.medium,
+    this.urgency = UrgencyLevel.level3,
     this.status = RequestStatus.pending,
     required this.numberOfPeople,
     required this.createdAt,
+    this.isVerified = false,
   });
 
   factory RescueRequest.fromJson(Map<String, dynamic> json) {
@@ -45,14 +47,24 @@ class RescueRequest {
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt']) 
           : DateTime.now(),
+      isVerified: json['isVerified'] ?? false,
     );
   }
 
-  static UrgencyLevel _parseUrgency(String? level) {
-    switch (level?.toUpperCase()) {
-      case 'HIGH': return UrgencyLevel.high;
-      case 'LOW': return UrgencyLevel.low;
-      default: return UrgencyLevel.medium;
+  static UrgencyLevel _parseUrgency(dynamic level) {
+    if (level is int) {
+      if (level >= 1 && level <= 5) return UrgencyLevel.values[level - 1];
+    }
+    switch (level?.toString().toUpperCase()) {
+      case 'LEVEL1': return UrgencyLevel.level1;
+      case 'LEVEL2': return UrgencyLevel.level2;
+      case 'LEVEL3': return UrgencyLevel.level3;
+      case 'LEVEL4': return UrgencyLevel.level4;
+      case 'LEVEL5': return UrgencyLevel.level5;
+      case 'HIGH': return UrgencyLevel.level5;
+      case 'MEDIUM': return UrgencyLevel.level3;
+      case 'LOW': return UrgencyLevel.level1;
+      default: return UrgencyLevel.level3;
     }
   }
 
@@ -73,31 +85,24 @@ class RescueRequest {
       'locationLng': lng,
       'addressText': address,
       'description': description,
-      'urgencyLevel': urgency.name.toUpperCase(),
+      'urgencyLevel': urgency.index + 1,
       'status': status.name.toUpperCase(),
       'numberOfPeople': numberOfPeople,
+      'isVerified': isVerified,
     };
   }
 
   Color get urgencyColor {
     switch (urgency) {
-      case UrgencyLevel.high:
-        return Colors.red;
-      case UrgencyLevel.medium:
-        return Colors.orange;
-      case UrgencyLevel.low:
-        return Colors.green;
+      case UrgencyLevel.level1: return Colors.green;
+      case UrgencyLevel.level2: return Colors.lightGreen;
+      case UrgencyLevel.level3: return Colors.orange;
+      case UrgencyLevel.level4: return Colors.deepOrange;
+      case UrgencyLevel.level5: return Colors.red;
     }
   }
 
   String get urgencyLabel {
-    switch (urgency) {
-      case UrgencyLevel.high:
-        return 'KHẨN CẤP';
-      case UrgencyLevel.medium:
-        return 'TRUNG BÌNH';
-      case UrgencyLevel.low:
-        return 'THẤP';
-    }
+    return 'Mức ${urgency.index + 1}';
   }
 }
