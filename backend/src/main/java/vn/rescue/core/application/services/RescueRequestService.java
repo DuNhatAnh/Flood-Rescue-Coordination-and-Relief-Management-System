@@ -18,9 +18,11 @@ public class RescueRequestService {
 
     private final RescueRequestRepository rescueRequestRepository;
     private final RequestStatusHistoryRepository statusHistoryRepository;
+    private final vn.rescue.core.domain.repositories.SafetyReportRepository safetyReportRepository;
 
     @Transactional
     public RescueRequest createRequest(RescueRequestDto dto) {
+        // ... (existing code stays same)
         RescueRequest request = new RescueRequest();
         request.setCustomId(generateCustomId());
         request.setCitizenName(dto.getCitizenName());
@@ -67,7 +69,7 @@ public class RescueRequestService {
             "pending", rescueRequestRepository.countByStatus("PENDING"),
             "completed", rescueRequestRepository.countByStatus("COMPLETED"),
             "peopleSupported", 0L, // To be implemented later with actual people count
-            "safeReports", 0L      // To be implemented later with SafeReport entity
+            "safeReports", safetyReportRepository.count()
         );
     }
 

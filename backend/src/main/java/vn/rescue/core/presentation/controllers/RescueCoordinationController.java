@@ -1,22 +1,35 @@
 package vn.rescue.core.presentation.controllers;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.rescue.core.application.services.RescueCoordinationService;
 import vn.rescue.core.domain.entities.RescueRequest;
+import vn.rescue.core.presentation.common.ApiResponse;
 import java.util.List;
-import java.util.ArrayList;
 
 @RestController
-@RequestMapping("/api/rescue-requests")
+@RequestMapping("/api/v1/rescue-requests")
 public class RescueCoordinationController {
 
+    @Autowired
+    private RescueCoordinationService rescueCoordinationService;
+
     @GetMapping("/pending")
-    public List<RescueRequest> getPendingRequests() {
-        // Skeleton: Return empty list for now
-        return new ArrayList<>();
+    public ResponseEntity<ApiResponse<List<RescueRequest>>> getPendingRequests() {
+        List<RescueRequest> requests = rescueCoordinationService.getPendingRequests();
+        return ResponseEntity.ok(ApiResponse.success(requests, "Pending requests retrieved"));
     }
 
     @PutMapping("/{id}/urgency")
-    public void updateUrgency(@PathVariable String id, @RequestBody String urgencyLevel) {
-        // Skeleton: Logic to update urgency
+    public ResponseEntity<ApiResponse<Void>> updateUrgency(@PathVariable String id, @RequestBody String urgencyLevel) {
+        rescueCoordinationService.updateUrgency(id, urgencyLevel);
+        return ResponseEntity.ok(ApiResponse.success(null, "Urgency updated"));
+    }
+
+    @PutMapping("/{id}/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyRequest(@PathVariable String id, @RequestParam String verifiedBy) {
+        rescueCoordinationService.verifyRequest(id, verifiedBy);
+        return ResponseEntity.ok(ApiResponse.success(null, "Request verified"));
     }
 }

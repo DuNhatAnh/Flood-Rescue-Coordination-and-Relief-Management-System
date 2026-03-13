@@ -28,15 +28,20 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        log.info("Bắt đầu kiểm tra và khởi tạo dữ liệu mẫu...");
+        log.info("Bắt đầu dọn dẹp và khởi tạo dữ liệu...");
 
         seedUsers();
+        
+        // Xóa sạch dữ liệu cũ để loại bỏ mock data theo yêu cầu
+        log.info("Đang dọn dẹp các yêu cầu cứu hộ cũ (mock data)...");
+        rescueRequestRepository.deleteAll();
+        
         // seedRescueRequests();
-        // seedRescueTeamsAndVehicles();
+        seedRescueTeamsAndVehicles();
         // seedWarehousesAndItems();
         // backfillRescueRequestIds();
 
-        log.info("Hoàn tất quá trình khởi tạo dữ liệu mẫu.");
+        log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
     }
 
     private void backfillRescueRequestIds() {
