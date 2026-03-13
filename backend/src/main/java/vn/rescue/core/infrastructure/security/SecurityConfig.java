@@ -60,7 +60,10 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/api/vehicles/**",
-                                "/api/relief-items/**")
+                                "/api/relief-items",
+                                "/api/relief-items/**",
+                                "/api/warehouses",
+                                "/api/warehouses/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 // 3. Sử dụng cơ chế Stateless

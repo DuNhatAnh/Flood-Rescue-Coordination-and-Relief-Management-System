@@ -237,6 +237,22 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Danh mục Hàng cứu trợ', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF0288D1),
+        foregroundColor: Colors.white,
+      ),
+      body: _buildBody(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: showAddDialog,
+        backgroundColor: const Color(0xFF0288D1),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFF0288D1)));
     }
@@ -249,12 +265,12 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
             Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             const Text(
-              'Kho hàng hiện đang trống',
+              'Danh mục hiện đang trống',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey),
             ),
             const SizedBox(height: 8),
             Text(
-              'Hãy nhấn nút "Thêm hàng" để bắt đầu.',
+              'Hãy nhấn nút "+" để thêm loại hàng mới.',
               style: TextStyle(color: Colors.grey.shade400),
             ),
           ],
