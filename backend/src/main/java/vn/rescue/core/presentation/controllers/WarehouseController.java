@@ -1,10 +1,36 @@
 package vn.rescue.core.presentation.controllers;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import vn.rescue.core.application.dto.WarehouseRequest;
+import vn.rescue.core.application.services.WarehouseService;
+import vn.rescue.core.domain.entities.Warehouse;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/warehouse")
+@RequestMapping("/api/warehouses")
+@RequiredArgsConstructor
 public class WarehouseController {
-    // Dev 4: Warehouse Module Logic
+    private final WarehouseService warehouseService;
+
+    @GetMapping
+    public List<Warehouse> getAllWarehouses() {
+        return warehouseService.getAllWarehouses();
+    }
+
+    @PostMapping
+    public Warehouse createWarehouse(@RequestBody WarehouseRequest request) {
+        return warehouseService.createWarehouse(request);
+    }
+
+    @PutMapping("/{id}")
+    public Warehouse updateWarehouse(@PathVariable String id, @RequestBody WarehouseRequest request) {
+        return warehouseService.updateWarehouse(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteWarehouse(@PathVariable String id) {
+        warehouseService.deleteWarehouse(id);
+    }
 }
