@@ -32,11 +32,7 @@ public class DataInitializer implements CommandLineRunner {
 
         seedUsers();
         
-        // Xóa sạch dữ liệu cũ để loại bỏ mock data theo yêu cầu
-        log.info("Đang dọn dẹp các yêu cầu cứu hộ cũ (mock data)...");
-        rescueRequestRepository.deleteAll();
-        
-        // seedRescueRequests();
+        seedRescueRequests();
         seedRescueTeamsAndVehicles();
         // seedWarehousesAndItems();
         // backfillRescueRequestIds();
