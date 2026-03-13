@@ -165,11 +165,14 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
   }
 
   Future<void> _submitRequest() async {
-    if (!_formKey.currentState!.validate() || _currentLocation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Vui lòng điền đủ thông tin và định vị vị trí')),
-      );
+    List<String> missingFields = [];
+    
+    if (_nameController.text.trim().isEmpty) missingFields.add("Họ tên");
+    if (_phoneController.text.trim().isEmpty) missingFields.add("Số điện thoại");
+    if (_currentLocation == null) missingFields.add("Vị trí hiện tại");
+    
+    if (missingFields.isNotEmpty || !_formKey.currentState!.validate()) {
+      _showValidationDialog(missingFields);
       return;
     }
 
@@ -227,6 +230,88 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showValidationDialog(List<String> missingFields) {
+    if (missingFields.isEmpty) {
+        // Fallback for generic form validation error
+        missingFields.add("Một số trường còn trống hoặc chưa hợp lệ");
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFE1F5FE), // Màu xanh biển nhạt
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20), // Bo tròn các góc
+        ),
+        title: const Column(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
+            SizedBox(height: 12),
+            Text(
+              "Thiếu thông tin",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF01579B), // Xanh đậm cho tiêu đề
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Vui lòng cung cấp đầy đủ các thông tin sau để gửi yêu cầu:",
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF0277BD),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...missingFields.map((field) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0, left: 12.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.circle, size: 8, color: Colors.redAccent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          field,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF01579B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center, // Canh giữa nút
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0288D1),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            ),
+            child: const Text(
+              "Tôi đã hiểu",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSuccessDialog(String requestId) {

@@ -1,5 +1,6 @@
 package vn.rescue.core.presentation.controllers;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.rescue.core.presentation.common.ApiResponse;
@@ -20,7 +21,7 @@ public class RescueRequestController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createRequest(@RequestBody RescueRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createRequest(@Valid @RequestBody RescueRequestDto requestDto) {
 
         RescueRequest savedRequest = rescueRequestService.createRequest(requestDto);
 
