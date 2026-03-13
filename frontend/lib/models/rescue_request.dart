@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum UrgencyLevel { level1, level2, level3, level4, level5 }
+enum UrgencyLevel { low, medium, high }
 enum RequestStatus { pending, assigned, completed }
 
 class RescueRequest {
@@ -25,7 +25,7 @@ class RescueRequest {
     required this.lng,
     required this.address,
     required this.description,
-    this.urgency = UrgencyLevel.level3,
+    this.urgency = UrgencyLevel.medium,
     this.status = RequestStatus.pending,
     required this.numberOfPeople,
     required this.createdAt,
@@ -52,19 +52,19 @@ class RescueRequest {
   }
 
   static UrgencyLevel _parseUrgency(dynamic level) {
-    if (level is int) {
-      if (level >= 1 && level <= 5) return UrgencyLevel.values[level - 1];
-    }
     switch (level?.toString().toUpperCase()) {
-      case 'LEVEL1': return UrgencyLevel.level1;
-      case 'LEVEL2': return UrgencyLevel.level2;
-      case 'LEVEL3': return UrgencyLevel.level3;
-      case 'LEVEL4': return UrgencyLevel.level4;
-      case 'LEVEL5': return UrgencyLevel.level5;
-      case 'HIGH': return UrgencyLevel.level5;
-      case 'MEDIUM': return UrgencyLevel.level3;
-      case 'LOW': return UrgencyLevel.level1;
-      default: return UrgencyLevel.level3;
+      case 'HIGH': 
+      case 'LEVEL5':
+      case 'LEVEL4':
+        return UrgencyLevel.high;
+      case 'LOW':
+      case 'LEVEL1':
+      case 'LEVEL2':
+        return UrgencyLevel.low;
+      case 'MEDIUM':
+      case 'LEVEL3':
+      default:
+        return UrgencyLevel.medium;
     }
   }
 
@@ -85,7 +85,7 @@ class RescueRequest {
       'locationLng': lng,
       'addressText': address,
       'description': description,
-      'urgencyLevel': urgency.index + 1,
+      'urgencyLevel': urgency.name.toUpperCase(),
       'status': status.name.toUpperCase(),
       'numberOfPeople': numberOfPeople,
       'isVerified': isVerified,
@@ -94,15 +94,17 @@ class RescueRequest {
 
   Color get urgencyColor {
     switch (urgency) {
-      case UrgencyLevel.level1: return Colors.green;
-      case UrgencyLevel.level2: return Colors.lightGreen;
-      case UrgencyLevel.level3: return Colors.orange;
-      case UrgencyLevel.level4: return Colors.deepOrange;
-      case UrgencyLevel.level5: return Colors.red;
+      case UrgencyLevel.low: return Colors.blue;
+      case UrgencyLevel.medium: return Colors.orange;
+      case UrgencyLevel.high: return Colors.red;
     }
   }
 
   String get urgencyLabel {
-    return 'Mức ${urgency.index + 1}';
+    switch (urgency) {
+      case UrgencyLevel.low: return 'Thấp';
+      case UrgencyLevel.medium: return 'Trung bình';
+      case UrgencyLevel.high: return 'Cao';
+    }
   }
 }

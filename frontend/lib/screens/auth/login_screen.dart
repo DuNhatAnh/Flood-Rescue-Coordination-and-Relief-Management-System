@@ -13,6 +13,64 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  void _checkLoginStatus() {
+    if (AuthService.currentUser != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToDashboard(AuthService.currentUser!);
+      });
+    }
+  }
+
+  void _navigateToDashboard(UserModel user) {
+    Widget nextScreen;
+    switch (user.role) {
+      case UserRole.admin:
+        nextScreen = Scaffold(
+          appBar: AppBar(title: const Text('Admin Panel')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Chào mừng Admin!',
+                    style: TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    await AuthService.logout();
+                    if (mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (c) => const LoginScreen()));
+                    }
+                  },
+                  child: const Text('Đăng xuất'),
+                )
+              ],
+            ),
+          ),
+        );
+        break;
+      case UserRole.coordinator:
+        nextScreen = const CoordinatorDashboard();
+        break;
+      case UserRole.rescueStaff:
+        nextScreen = const StaffMainScreen();
+        break;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => nextScreen),
+    );
+  }
+
   final AuthService _authService = AuthService();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -42,44 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
         AuthService.currentUser = user;
 
         // Logic chuyển hướng quan trọng dựa trên Vai trò (Role)
-        Widget nextScreen;
-        switch (user.role) {
-          case UserRole.admin:
-            // Admin tạm thời vào màn hình thông báo vì Dev 2 chưa làm module Admin
-            nextScreen = Scaffold(
-              appBar: AppBar(title: const Text('Admin Panel')),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Chào mừng Admin!',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (c) => const LoginScreen())),
-                      child: const Text('Đăng xuất'),
-                    )
-                  ],
-                ),
-              ),
-            );
-            break;
-          case UserRole.coordinator:
-            nextScreen = const CoordinatorDashboard();
-            break;
-          case UserRole.rescueStaff:
-            nextScreen = const StaffMainScreen();
-            break;
-        }
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => nextScreen),
-        );
+        _navigateToDashboard(user);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

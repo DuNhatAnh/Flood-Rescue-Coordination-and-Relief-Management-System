@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'rescue_request_screen.dart';
-import 'track_rescue_request_screen.dart';
-import 'auth/login_screen.dart';
 import 'dart:ui_web' as ui;
 import 'dart:html' as html;
 import 'dart:js' as js;
+import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
+import 'package:flood_rescue_app/screens/track_rescue_request_screen.dart';
+import 'package:flood_rescue_app/screens/auth/login_screen.dart';
+import 'package:flood_rescue_app/screens/citizen/safety_report_screen.dart';
+import 'package:flood_rescue_app/services/auth_service.dart';
+import 'package:flood_rescue_app/models/user_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -100,10 +103,10 @@ class TopBar extends StatelessWidget {
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content:
-                        Text('Tính năng Báo an toàn đang được phát triển')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const SafetyReportScreen()),
               );
             },
             icon: const Icon(Icons.check_circle_outline, size: 18),
@@ -139,20 +142,60 @@ class TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-            icon: const Icon(Icons.account_circle_outlined, size: 20),
-            label: const Text('Đăng nhập'),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF546E7A),
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
+          AuthService.currentUser != null
+              ? Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const LoginScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.dashboard_outlined, size: 20),
+                      label: Text(AuthService.currentUser!.role == UserRole.coordinator 
+                          ? 'Trang Điều phối' 
+                          : 'Trang Cứu hộ'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF01579B),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () async {
+                        await AuthService.logout();
+                        // (context as Element).markNeedsBuild(); // Force rebuild to show login button
+                        // Or better, since TopBar is a StatelessWidget, we might need a better way to refresh HomeScreen.
+                        // For simplicity, let's just push Home again or notify user.
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const HomeScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.logout, color: Colors.grey, size: 20),
+                      tooltip: 'Đăng xuất',
+                    ),
+                  ],
+                )
+              : TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.account_circle_outlined, size: 20),
+                  label: const Text('Đăng nhập'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF01579B),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
         ],
       ),
     );

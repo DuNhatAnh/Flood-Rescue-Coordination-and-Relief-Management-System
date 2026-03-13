@@ -1,85 +1,98 @@
 import 'package:dio/dio.dart';
-import '../models/rescue_request.dart';
-import '../models/rescue_team.dart';
-import '../models/vehicle.dart';
-import '../models/assignment.dart';
+import 'package:flood_rescue_app/models/rescue_request.dart';
+import 'package:flood_rescue_app/models/rescue_team.dart';
+import 'package:flood_rescue_app/models/vehicle.dart';
+import 'package:flood_rescue_app/models/assignment.dart';
+import 'package:flood_rescue_app/models/safety_report.dart';
 
 class RescueService {
-  // final Dio _dio = Dio(BaseOptions(baseUrl: 'http://localhost:8080/api'));
+  final Dio _dio = Dio(BaseOptions(
+    baseUrl: 'http://localhost:8080/api/v1',
+    connectTimeout: const Duration(seconds: 5),
+    receiveTimeout: const Duration(seconds: 3),
+  ));
 
   // Lấy danh sách yêu cầu chờ xử lý
   Future<List<RescueRequest>> getPendingRequests() async {
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      return [
-        RescueRequest(
-          id: '1',
-          citizenName: 'Nguyễn Văn A',
-          phone: '0901234567',
-          lat: 16.0471,
-          lng: 108.2062,
-          address: '123 Hùng Vương, Đà Nẵng',
-          description: 'Nước dâng cao đến mái nhà.',
-          urgency: UrgencyLevel.level5,
-          numberOfPeople: 3,
-          createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-          isVerified: true,
-        ),
-        RescueRequest(
-          id: '2',
-          citizenName: 'Trần Thị B',
-          phone: '0912345678',
-          lat: 16.0544,
-          lng: 108.2022,
-          address: '456 Lê Duẩn, Đà Nẵng',
-          description: 'Cần lương thực gấp.',
-          urgency: UrgencyLevel.level3,
-          numberOfPeople: 2,
-          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-          isVerified: false,
-        ),
-        RescueRequest(
-          id: '3',
-          citizenName: 'Lê Văn C',
-          phone: '0988776655',
-          lat: 16.0612,
-          lng: 108.2150,
-          address: '789 Nguyễn Văn Linh, Đà Nẵng',
-          description: 'Cọc tiêu bị đổ, đường ngập sâu.',
-          urgency: UrgencyLevel.level2,
-          numberOfPeople: 1,
-          createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-          isVerified: false,
-        ),
-      ];
-    } catch (e) {
+      final response = await _dio.get('/rescue-requests/pending');
+      if (response.statusCode == 200) {
+        // Handle ApiResponse wrapper
+        final responseData = response.data;
+        if (responseData['success'] == true) {
+          List<dynamic> data = responseData['data'];
+          return data.map((json) => RescueRequest.fromJson(json)).toList();
+        }
+      }
       return [];
+    } catch (e) {
+      print('Error fetching pending requests: $e');
+      return [];
+    }
+  }
+
+  // Cập nhật mức độ khẩn cấp
+  Future<bool> updateUrgency(String id, String level) async {
+    try {
+      final response = await _dio.put('/rescue-requests/$id/urgency', data: level);
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Xác minh yêu cầu
+  Future<bool> verifyRequest(String id, String verifierName) async {
+    try {
+      final response = await _dio.put(
+        '/rescue-requests/$id/verify', 
+        queryParameters: {'verifiedBy': verifierName}
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 
   // Lấy đội rảnh
   Future<List<RescueTeam>> getAvailableTeams() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      RescueTeam(id: 1, teamName: 'Đội Cứu Hộ Hải Châu 1', status: 'AVAILABLE', leaderId: 3),
-      RescueTeam(id: 2, teamName: 'Đội Phản Ứng Nhanh Thanh Khê', status: 'AVAILABLE', leaderId: 4),
-    ];
+    try {
+      final response = await _dio.get('/teams/available');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        List<dynamic> data = (responseData is Map) ? responseData['data'] : responseData;
+        return data.map((json) => RescueTeam.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
   }
 
   // Lấy phương tiện rảnh
   Future<List<Vehicle>> getAvailableVehicles() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      Vehicle(id: 1, vehicleType: 'Xuồng Máy', licensePlate: 'DN-001', status: 'AVAILABLE'),
-      Vehicle(id: 2, vehicleType: 'Xe Lội Nước', licensePlate: 'DN-002', status: 'AVAILABLE'),
-    ];
+    try {
+      final response = await _dio.get('/vehicles/available');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        List<dynamic> data = (responseData is Map) ? responseData['data'] : responseData;
+        return data.map((json) => Vehicle.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
   }
 
-  // TẠO PHÂN CÔNG (Restore)
+  // TẠO PHÂN CÔNG
   Future<bool> createAssignment(String requestId, int teamId, int vehicleId) async {
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
+      final response = await _dio.post('/assignments', queryParameters: {
+        'requestId': requestId,
+        'teamId': teamId.toString(),
+        'assignedBy': 'Coordinator' // Should get from Auth
+      });
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       return false;
     }
@@ -87,18 +100,17 @@ class RescueService {
 
   // Lấy nhiệm vụ của tôi
   Future<List<Assignment>> getMyTasks() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return [
-      Assignment(
-        id: 'A1',
-        requestId: '1',
-        teamId: '1',
-        teamName: 'Đội Cứu Hộ Hải Châu 1',
-        vehicleId: '1',
-        assignedAt: DateTime.now().subtract(const Duration(minutes: 30)),
-        status: 'IN_PROGRESS',
-      ),
-    ];
+    try {
+      final response = await _dio.get('/assignments/my-tasks');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        List<dynamic> data = (responseData is Map) ? responseData['data'] : responseData;
+        return data.map((json) => Assignment.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
   }
 
   // Cập nhật trạng thái (Báo cáo)
@@ -108,10 +120,46 @@ class RescueService {
     required String note,
   }) async {
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
+      final response = await _dio.put('/assignments/$assignmentId/status', data: {
+        'rescuedCount': rescuedCount,
+        'note': note,
+        'status': 'COMPLETED'
+      });
+      return response.statusCode == 200;
     } catch (e) {
       return false;
+    }
+  }
+
+  // Gửi báo cáo an toàn
+  Future<bool> submitSafetyReport(SafetyReport report) async {
+    try {
+      final response = await _dio.post('/safety-reports', data: report.toJson());
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Lấy danh sách báo cáo an toàn
+  Future<List<SafetyReport>> getSafetyReports() async {
+    try {
+      final response = await _dio.get('/safety-reports');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        // SafetyReport currently returns raw list in SafetyReportController
+        // Let's check SafetyReportController to be sure. 
+        // Assuming we'll standardize it to ApiResponse as well.
+        if (responseData is Map && responseData['success'] == true) {
+          List<dynamic> data = responseData['data'];
+          return data.map((json) => SafetyReport.fromJson(json)).toList();
+        } else if (responseData is List) {
+          return responseData.map((json) => SafetyReport.fromJson(json)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      return [];
     }
   }
 }
