@@ -29,12 +29,14 @@ public class UserService {
     }
 
     public UserDto getUserById(String id) {
+        if (id == null) throw new IllegalArgumentException("ID cannot be null");
         return userRepository.findById(id)
                 .map(this::mapToDto)
                 .orElseThrow(() -> new RuntimeException("User not found: " + id));
     }
 
     public UserDto updateUser(String id, UserDto dto) {
+        if (id == null) throw new IllegalArgumentException("ID cannot be null");
         User user = userRepository.findById(id).orElseThrow();
         user.setFullName(dto.getFullName());
         user.setPhone(dto.getPhone());
@@ -55,12 +57,14 @@ public class UserService {
     }
 
     public UserDto updateUserRole(String id, String roleId) {
+        if (id == null) throw new IllegalArgumentException("ID cannot be null");
         User user = userRepository.findById(id).orElseThrow();
         user.setRoleId(roleId);
         return mapToDto(userRepository.save(user));
     }
 
     public UserDto updateUserStatus(String userId, String status) {
+        if (userId == null) throw new IllegalArgumentException("User ID cannot be null");
         User user = userRepository.findById(userId).orElseThrow();
         user.setStatus(status);
         return mapToDto(userRepository.save(user));

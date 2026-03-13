@@ -34,7 +34,7 @@ public class RescueRequest {
     private String description;
 
     @Field("urgency_level")
-    private String urgencyLevel = "MEDIUM"; // HIGH / MEDIUM / LOW
+    private String urgencyLevel = "MEDIUM"; // LOW, MEDIUM, HIGH
 
     private String status = "PENDING"; // PENDING / ASSIGNED / COMPLETED
 
@@ -43,6 +43,9 @@ public class RescueRequest {
 
     @Field("created_at")
     private LocalDateTime createdAt;
+
+    @Field("is_verified")
+    private boolean isVerified = false;
 
     @Field("verified_by")
     private String verifiedBy;

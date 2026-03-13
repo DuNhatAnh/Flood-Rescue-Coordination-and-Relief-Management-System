@@ -11,7 +11,7 @@ import vn.rescue.core.presentation.common.ApiResponse;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
 public class AdminUserController {
     private final UserService userService;
