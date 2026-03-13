@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'package:flood_rescue_app/services/auth_service.dart';
+import 'screens/admin/user_management_screen.dart';
+import 'screens/admin/notification_management_screen.dart';
+import 'screens/admin/system_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +31,12 @@ class FloodRescueApp extends StatelessWidget {
         fontFamily: 'Roboto',
         scaffoldBackgroundColor: const Color(0xFFF0F7FF),
       ),
-      home: const HomeScreen(), // Khởi đầu bằng Trang chủ nguyên bản
+      home: const HomeScreen(),
+      routes: {
+        '/admin/users': (context) => const UserManagementScreen(),
+        '/admin/notifications': (context) => const NotificationManagementScreen(),
+        '/admin/dashboard': (context) => const SystemDashboardScreen(),
+      },
     );
   }
 }

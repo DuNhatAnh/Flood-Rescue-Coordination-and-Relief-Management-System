@@ -6,17 +6,16 @@ import lombok.Data;
 import lombok.Builder;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "roles")
-public class Role {
+@Document(collection = "system_config")
+public class SystemConfig {
     @Id
     private String id;
-    private String name; // ADMIN, RESCUER, USER, etc.
+    private String key;
+    private String value;
     private String description;
-    private List<String> permissions;
 }

@@ -37,11 +37,20 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class TopBar extends StatelessWidget {
+
+
+class TopBar extends StatefulWidget {
   const TopBar({Key? key}) : super(key: key);
 
   @override
+  State<TopBar> createState() => _TopBarState();
+}
+
+class _TopBarState extends State<TopBar> {
+  @override
   Widget build(BuildContext context) {
+    final user = AuthService.currentUser;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
@@ -142,7 +151,23 @@ class TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          AuthService.currentUser != null
+          if (user?.role == UserRole.admin)
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/admin/dashboard');
+              },
+              icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
+              label: const Text('Quản lý hệ thống'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE8F5E9),
+                foregroundColor: const Color(0xFF2E7D32),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          const SizedBox(width: 12),
+          user != null
               ? Row(
                   children: [
                     ElevatedButton.icon(
@@ -154,7 +179,7 @@ class TopBar extends StatelessWidget {
                         );
                       },
                       icon: const Icon(Icons.dashboard_outlined, size: 20),
-                      label: Text(AuthService.currentUser!.role == UserRole.coordinator 
+                      label: Text(user.role == UserRole.coordinator 
                           ? 'Trang Điều phối' 
                           : 'Trang Cứu hộ'),
                       style: ElevatedButton.styleFrom(
@@ -168,9 +193,6 @@ class TopBar extends StatelessWidget {
                     IconButton(
                       onPressed: () async {
                         await AuthService.logout();
-                        // (context as Element).markNeedsBuild(); // Force rebuild to show login button
-                        // Or better, since TopBar is a StatelessWidget, we might need a better way to refresh HomeScreen.
-                        // For simplicity, let's just push Home again or notify user.
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (context) => const HomeScreen()),

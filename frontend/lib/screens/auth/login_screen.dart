@@ -4,6 +4,7 @@ import '../../models/user_model.dart';
 import '../coordinator/coordinator_dashboard.dart';
 import '../rescue_team/team_tasks_screen.dart';
 import '../rescue_team/staff_main_screen.dart';
+import '../admin/system_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -31,31 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     Widget nextScreen;
     switch (user.role) {
       case UserRole.admin:
-        nextScreen = Scaffold(
-          appBar: AppBar(title: const Text('Admin Panel')),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Chào mừng Admin!',
-                    style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () async {
-                    await AuthService.logout();
-                    if (mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (c) => const LoginScreen()));
-                    }
-                  },
-                  child: const Text('Đăng xuất'),
-                )
-              ],
-            ),
-          ),
-        );
+        nextScreen = const SystemDashboardScreen();
         break;
       case UserRole.coordinator:
         nextScreen = const CoordinatorDashboard();
@@ -121,79 +98,188 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const primaryColor = Color(0xFF2555D4); // Màu xanh trong ảnh
+    
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF01579B)),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      backgroundColor: Colors.blue[50],
-      body: Center(
+      backgroundColor: const Color(0xFFF0F2F5), // Nền xám nhạt
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(30),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.flood_outlined, size: 100, color: Color(0xFF0288D1)),
-              const SizedBox(height: 20),
-              const Text(
-                'Flood Rescue System',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF01579B)),
+              // Nút Về trang chủ
+              Padding(
+                padding: const EdgeInsets.only(left: 10, top: 10),
+                child: TextButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back, size: 20, color: Color(0xFF65676B)),
+                  label: const Text(
+                    'Về trang chủ',
+                    style: TextStyle(color: Color(0xFF65676B), fontSize: 16),
+                  ),
+                ),
               ),
-              const Text('Hệ thống Quản lý Cứu hộ Lũ lụt', style: TextStyle(color: Colors.grey)),
+              
               const SizedBox(height: 40),
               
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                child: Padding(
-                  padding: const EdgeInsets.all(25.0),
+              // Container Đăng nhập (Card chính)
+              Center(
+                child: Container(
+                  width: 450, // Cố định chiều rộng như giao diện web/tablet
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextField(
-                        controller: _emailController,
-                        decoration: InputDecoration(
-                          labelText: 'Email người dùng',
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          labelText: 'Mật khẩu',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      SizedBox(
+                      // Header màu xanh
+                      Container(
                         width: double.infinity,
-                        height: 55,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0288D1),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                            elevation: 3,
+                        padding: const EdgeInsets.all(30),
+                        decoration: const BoxDecoration(
+                          color: primaryColor,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            topRight: Radius.circular(12),
                           ),
-                          child: _isLoading 
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('ĐĂNG NHẬP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.shield_outlined, color: Colors.white, size: 30),
+                            ),
+                            const SizedBox(width: 20),
+                            const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Đăng nhập',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Hệ thống quản lý cứu trợ',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Body Form
+                      Padding(
+                        padding: const EdgeInsets.all(35),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Email hoặc Username',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: _emailController,
+                              decoration: InputDecoration(
+                                hintText: 'admin@cuutro.vn hoặc admin',
+                                hintStyle: TextStyle(color: Colors.grey[400]),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 25),
+                            
+                            const Text(
+                              'Mật khẩu',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: _passwordController,
+                              obscureText: true,
+                              decoration: InputDecoration(
+                                hintText: 'Nhập mật khẩu',
+                                hintStyle: TextStyle(color: Colors.grey[400]),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 35),
+                            
+                            // Nút Đăng nhập
+                            SizedBox(
+                              width: double.infinity,
+                              height: 55,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _handleLogin,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  elevation: 0,
+                                ),
+                                child: _isLoading 
+                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  : const Text('Đăng nhập', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 30),
+                            
+                            Center(
+                              child: Text(
+                                'Liên hệ quản trị viên để được cấp tài khoản',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              Text('Dùng tài khoản được cấp để truy cập hệ thống', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              const SizedBox(height: 50),
             ],
           ),
         ),
