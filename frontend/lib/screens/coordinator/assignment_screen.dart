@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../models/rescue_request.dart';
-import '../../models/rescue_team.dart';
-import '../../models/vehicle.dart';
-import '../../services/rescue_service.dart';
+import 'package:flood_rescue_app/models/rescue_request.dart';
+import 'package:flood_rescue_app/models/rescue_team.dart';
+import 'package:flood_rescue_app/models/vehicle.dart';
+import 'package:flood_rescue_app/services/rescue_service.dart';
 
 class AssignmentScreen extends StatefulWidget {
   final RescueRequest request;

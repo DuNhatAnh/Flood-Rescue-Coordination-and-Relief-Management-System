@@ -17,4 +17,30 @@ class Assignment {
     required this.assignedAt,
     this.status = 'IN_PROGRESS',
   });
+
+  factory Assignment.fromJson(Map<String, dynamic> json) {
+    return Assignment(
+      id: json['id'] ?? '',
+      requestId: json['requestId'] ?? '',
+      teamId: json['teamId'] ?? '',
+      teamName: json['teamName'] ?? '',
+      vehicleId: json['vehicleId'],
+      assignedAt: json['assignedAt'] != null 
+          ? DateTime.parse(json['assignedAt']) 
+          : DateTime.now(),
+      status: json['status'] ?? 'IN_PROGRESS',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'requestId': requestId,
+      'teamId': teamId,
+      'teamName': teamName,
+      'vehicleId': vehicleId,
+      'assignedAt': assignedAt.toIso8601String(),
+      'status': status,
+    };
+  }
 }
