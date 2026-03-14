@@ -1,9 +1,26 @@
 package vn.rescue.core.domain.repositories;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 import vn.rescue.core.domain.entities.Vehicles;
+import java.util.Optional;
 
 @Repository
 public interface VehiclesRepository extends MongoRepository<Vehicles, String> {
+
+    boolean existsByLicensePlate(String licensePlate);
+
+    Optional<Vehicles> findByLicensePlate(String licensePlate);
+
+    Optional<Vehicles> findByTeamId(String teamId);
+
+    // Sử dụng Query Method để Spring tự động xử lý null và khớp trường
+    // Phương thức này sẽ tìm kiếm chính xác theo Loại và Trạng thái
+    Page<Vehicles> findByVehicleTypeContainingAndStatusContaining(
+            String vehicleType, String status, Pageable pageable
+    );
+
+    Page<Vehicles> findAll(Pageable pageable);
 }

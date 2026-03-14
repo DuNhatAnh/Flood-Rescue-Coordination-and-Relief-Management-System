@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import vn.rescue.core.domain.entities.RescueRequest;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 @Repository
 public interface RescueRequestRepository extends MongoRepository<RescueRequest, String> {
@@ -12,4 +13,13 @@ public interface RescueRequestRepository extends MongoRepository<RescueRequest, 
     long countByStatus(String status);
     Optional<RescueRequest> findByCustomId(String customId);
     long countByCustomIdIsNotNull();
+
+    //Them dong nay de kiem tra xem co request nao dang dinh toi team nayboolean existsByTeamIdAndStatusIn(String teamId, Collection<String> statuses);
+    //
+    //    // Hoặc nếu bạn muốn kiểm tra đơn giản hơn cho 1 trạng thái
+    //    boolean existsByTeamIdAndStatus(String teamId, String status);
+    boolean existsByTeamIdAndStatusIn(String teamId, Collection<String> statuses);
+
+    // Hoặc nếu bạn muốn kiểm tra đơn giản hơn cho 1 trạng thái
+    boolean existsByTeamIdAndStatus(String teamId, String status);
 }

@@ -15,7 +15,6 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-// ... (existing imports will be adjusted by tool potentially, but I'll focus on the block)
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -40,7 +39,7 @@ public class SecurityConfig {
                 .map(user -> User.builder()
                         .username(user.getEmail())
                         .password(user.getPassword())
-                        .roles("USER")
+                        .roles(user.getRoleId()) // Sử dụng RoleId thực tế từ DB
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
@@ -48,25 +47,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Vô hiệu hóa CSRF và cấu hình CORS
+                // Tắt CSRF vì chúng ta dùng REST API và JWT/Stateless
                 .csrf(AbstractHttpConfigurer::disable)
+                // Cấu hình CORS cho phép Postman và Frontend truy cập
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // 2. Cho phép truy cập công khai vào các endpoint cần thiết
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/v1/rescue-requests/**",
-                                "/api/v1/attachments/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/api/vehicles/**",
-                                "/api/relief-items",
-                                "/api/relief-items/**",
-                                "/api/warehouses",
-                                "/api/warehouses/**")
-                        .permitAll()
+                        // Cho phép truy cập công khai để Test Postman
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/vehicles/**").permitAll() // Đảm bảo dòng này hoạt động
+                        .requestMatchers("/api/v1/rescue-requests/**").permitAll()
+                        .requestMatchers("/api/v1/attachments/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/relief-items/**", "/api/warehouses/**").permitAll()
+                        // Các yêu cầu khác mới cần đăng nhập
                         .anyRequest().authenticated())
-                // 3. Sử dụng cơ chế Stateless
+                // Thiết lập cơ chế không lưu Session (Stateless)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider());
 
@@ -76,10 +71,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*")); // Cho phép mọi nguồn trong lúc dev
+        configuration.setAllowedOrigins(List.of("*")); // Cho phép tất cả các nguồn
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
-        configuration.setExposedHeaders(List.of("x-auth-token"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "x-auth-token"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

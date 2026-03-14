@@ -49,4 +49,7 @@ public class RescueRequest {
 
     @Field("verified_by")
     private String verifiedBy;
+
+    @Field("team_id")
+    private String teamId;
 }
