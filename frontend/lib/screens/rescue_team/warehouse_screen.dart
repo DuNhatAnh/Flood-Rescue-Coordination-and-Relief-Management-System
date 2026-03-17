@@ -84,7 +84,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedStatus,
+                initialValue: selectedStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái ban đầu',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -177,7 +177,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: currentStatus,
+                initialValue: currentStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

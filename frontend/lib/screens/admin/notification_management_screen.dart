@@ -52,7 +52,7 @@ class _NotificationManagementScreenState extends State<NotificationManagementScr
               maxLines: 3,
             ),
             DropdownButtonFormField<String>(
-              value: selectedType,
+              initialValue: selectedType,
               items: const [
                 DropdownMenuItem(value: 'URGENT', child: Text('Khẩn cấp')),
                 DropdownMenuItem(value: 'GENERAL', child: Text('Chung')),
