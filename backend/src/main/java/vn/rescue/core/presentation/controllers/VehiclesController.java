@@ -10,14 +10,18 @@ import org.springframework.web.bind.annotation.*;
 import vn.rescue.core.application.dto.VehicleRequest;
 import vn.rescue.core.application.dto.VehicleResponse;
 import vn.rescue.core.application.services.VehiclesService;
+import vn.rescue.core.domain.entities.Vehicles;
+import vn.rescue.core.application.services.RescueCoordinationService;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/vehicles")
+@RequestMapping("/api/v1/vehicles")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Cho phép Frontend gọi API dễ dàng hơn
 public class VehiclesController {
 
     private final VehiclesService vehiclesService;
+    private final RescueCoordinationService rescueCoordinationService;
 
     // 1. Tạo mới phương tiện
     @PostMapping
@@ -47,5 +51,10 @@ public class VehiclesController {
             @RequestParam(required = false) String status,
             @PageableDefault(size = 10) Pageable pageable) { // Mặc định 10 phần tử/trang nếu không truyền
         return ResponseEntity.ok(vehiclesService.getAllVehicles(type, status, pageable));
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<List<Vehicles>> getAvailable() {
+        return ResponseEntity.ok(rescueCoordinationService.getAvailableVehicles());
     }
 }

@@ -54,9 +54,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Cho phép truy cập công khai để Test Postman
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/vehicles/**").permitAll() // Đảm bảo dòng này hoạt động
-                        .requestMatchers("/api/v1/rescue-requests/**").permitAll()
-                        .requestMatchers("/api/v1/attachments/**").permitAll()
+                        .requestMatchers("/api/v1/**").permitAll() // Permit all versioned APIs for now
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/relief-items/**", "/api/warehouses/**").permitAll()
                         // Các yêu cầu khác mới cần đăng nhập

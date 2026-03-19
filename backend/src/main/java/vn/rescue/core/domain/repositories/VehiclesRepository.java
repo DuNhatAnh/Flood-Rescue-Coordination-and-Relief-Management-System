@@ -7,8 +7,11 @@ import org.springframework.stereotype.Repository;
 import vn.rescue.core.domain.entities.Vehicles;
 import java.util.Optional;
 
+import java.util.List;
+
 @Repository
 public interface VehiclesRepository extends MongoRepository<Vehicles, String> {
+    List<Vehicles> findByStatusIgnoreCase(String status);
 
     boolean existsByLicensePlate(String licensePlate);
 
