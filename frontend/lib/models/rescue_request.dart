@@ -107,4 +107,34 @@ class RescueRequest {
       case UrgencyLevel.high: return 'Cao';
     }
   }
+
+  RescueRequest copyWith({
+    String? id,
+    String? citizenName,
+    String? phone,
+    double? lat,
+    double? lng,
+    String? address,
+    String? description,
+    UrgencyLevel? urgency,
+    RequestStatus? status,
+    int? numberOfPeople,
+    DateTime? createdAt,
+    bool? isVerified,
+  }) {
+    return RescueRequest(
+      id: id ?? this.id,
+      citizenName: citizenName ?? this.citizenName,
+      phone: phone ?? this.phone,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      address: address ?? this.address,
+      description: description ?? this.description,
+      urgency: urgency ?? this.urgency,
+      status: status ?? this.status,
+      numberOfPeople: numberOfPeople ?? this.numberOfPeople,
+      createdAt: createdAt ?? this.createdAt,
+      isVerified: isVerified ?? this.isVerified,
+    );
+  }
 }

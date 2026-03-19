@@ -1,8 +1,8 @@
 class RescueTeam {
-  final int id;
+  final String id;
   final String teamName;
   final String status; // 'AVAILABLE', 'BUSY'
-  final int leaderId;
+  final String leaderId;
 
   RescueTeam({
     required this.id,
@@ -13,10 +13,10 @@ class RescueTeam {
 
   factory RescueTeam.fromJson(Map<String, dynamic> json) {
     return RescueTeam(
-      id: json['id'],
-      teamName: json['teamName'],
-      status: json['status'],
-      leaderId: json['leaderId'],
+      id: json['id'].toString(),
+      teamName: json['teamName'] ?? '',
+      status: json['status'] ?? 'AVAILABLE',
+      leaderId: json['leaderId']?.toString() ?? '',
     );
   }
 

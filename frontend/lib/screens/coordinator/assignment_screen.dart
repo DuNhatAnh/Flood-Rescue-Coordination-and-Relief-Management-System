@@ -35,6 +35,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
     try {
       final teams = await _rescueService.getAvailableTeams();
       final vehicles = await _rescueService.getAvailableVehicles();
+      
       setState(() {
         _availableTeams = teams;
         _availableVehicles = vehicles;

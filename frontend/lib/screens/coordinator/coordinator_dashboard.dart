@@ -209,44 +209,51 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
   }
 
   Widget _buildRequestList(List<RescueRequest> requests) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: Colors.grey[200]!)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Yêu cứu chờ xử lý (${requests.length})',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                TextButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.sort, size: 16),
-                  label: const Text('Mới nhất', style: TextStyle(fontSize: 12)),
-                ),
+    final unverifiedRequests = requests.where((r) => !r.isVerified).toList();
+    final verifiedRequests = requests.where((r) => r.isVerified).toList();
+
+    return DefaultTabController(
+      length: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(right: BorderSide(color: Colors.grey[200]!)),
+        ),
+        child: Column(
+          children: [
+            TabBar(
+              labelColor: Color(0xFF0288D1),
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Color(0xFF0288D1),
+              tabs: [
+                Tab(child: Text('Chờ xác minh (${unverifiedRequests.length})', style: TextStyle(fontSize: 13))),
+                Tab(child: Text('Đã xác minh (${verifiedRequests.length})', style: TextStyle(fontSize: 13))),
               ],
             ),
-          ),
-          requests.isEmpty 
-            ? const Expanded(child: Center(child: Text('Không có yêu cầu nào')))
-            : Expanded(
-                child: ListView.builder(
-                  itemCount: requests.length,
-                  itemBuilder: (context, index) {
-                    final request = requests[index];
-                    return _buildRequestCard(request);
-                  },
-                ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildFilteredList(unverifiedRequests, 'Không có yêu cầu chờ xác minh'),
+                  _buildFilteredList(verifiedRequests, 'Không có yêu cầu đã xác minh'),
+                ],
               ),
-        ],
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFilteredList(List<RescueRequest> list, String emptyMessage) {
+    if (list.isEmpty) {
+      return Center(child: Text(emptyMessage, style: TextStyle(color: Colors.grey)));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: list.length,
+      itemBuilder: (context, index) {
+        return _buildRequestCard(list[index]);
+      },
     );
   }
 
@@ -372,7 +379,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: () async {
+                        onPressed: !request.isVerified ? null : () async {
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -383,10 +390,11 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0288D1),
-                          foregroundColor: Colors.white,
+                          backgroundColor: request.isVerified ? const Color(0xFF0288D1) : Colors.grey[300],
+                          foregroundColor: request.isVerified ? Colors.white : Colors.grey[600],
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           visualDensity: VisualDensity.compact,
+                          elevation: request.isVerified ? 2 : 0,
                         ),
                         child: const Text('Điều phối', style: TextStyle(fontSize: 12)),
                       ),
@@ -459,121 +467,130 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
     );
   }
 
-  void _showRequestDetails(RescueRequest request) {
+  void _showRequestDetails(RescueRequest initialRequest) {
+    RescueRequest currentRequest = initialRequest;
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Chi tiết yêu cứu', 
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Chi tiết yêu cứu', 
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Divider(),
-            Expanded(
-              child: ListView(
+              const Divider(),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    _buildDetailRow(Icons.person, 'Người gửi', currentRequest.citizenName),
+                    _buildDetailRow(Icons.phone, 'Số điện thoại', currentRequest.phone, isLink: true),
+                    _buildDetailRow(Icons.location_on, 'Địa chỉ', currentRequest.address),
+                    _buildDetailRow(Icons.people, 'Số người cần cứu', '${currentRequest.numberOfPeople} người'),
+                    _buildDetailRow(Icons.priority_high, 'Mức độ khẩn cấp', currentRequest.urgencyLabel, color: currentRequest.urgencyColor),
+                    _buildDetailRow(Icons.access_time, 'Thời gian gửi', DateFormat('dd/MM/yyyy HH:mm').format(currentRequest.createdAt)),
+                    const SizedBox(height: 16),
+                    const Text('Mô tả tình huống:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        currentRequest.description.isEmpty ? 'Không có mô tả' : currentRequest.description,
+                        style: const TextStyle(fontSize: 15, height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
                 padding: const EdgeInsets.all(20),
-                children: [
-                  _buildDetailRow(Icons.person, 'Người gửi', request.citizenName),
-                  _buildDetailRow(Icons.phone, 'Số điện thoại', request.phone, isLink: true),
-                  _buildDetailRow(Icons.location_on, 'Địa chỉ', request.address),
-                  _buildDetailRow(Icons.people, 'Số người cần cứu', '${request.numberOfPeople} người'),
-                  _buildDetailRow(Icons.priority_high, 'Mức độ khẩn cấp', request.urgencyLabel, color: request.urgencyColor),
-                  _buildDetailRow(Icons.access_time, 'Thời gian gửi', DateFormat('dd/MM/yyyy HH:mm').format(request.createdAt)),
-                  const SizedBox(height: 16),
-                  const Text('Mô tả tình huống:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      request.description.isEmpty ? 'Không có mô tả' : request.description,
-                      style: const TextStyle(fontSize: 15, height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  if (!request.isVerified)
+                child: Row(
+                  children: [
+                    if (!currentRequest.isVerified)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final success = await _rescueService.verifyRequest(currentRequest.id, 'Điều phối viên');
+                            if (success) {
+                              setModalState(() {
+                                currentRequest = currentRequest.copyWith(isVerified: true);
+                              });
+                              _refreshData(); // To keep main list updated
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Đã xác minh yêu cầu'))
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.verified),
+                          label: const Text('Xác minh'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    if (!currentRequest.isVerified) const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () async {
+                        onPressed: !currentRequest.isVerified ? null : () {
                           Navigator.pop(context);
-                          final success = await _rescueService.verifyRequest(request.id, 'Điều phối viên');
-                          if (success) {
-                            _refreshData();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Đã xác minh yêu cầu'))
-                            );
-                          }
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AssignmentScreen(request: currentRequest),
+                            ),
+                          ).then((_) => _refreshData());
                         },
-                        icon: const Icon(Icons.verified),
-                        label: const Text('Xác minh'),
+                        icon: const Icon(Icons.send),
+                        label: const Text('Điều phối'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
+                          backgroundColor: currentRequest.isVerified ? Colors.red : Colors.grey[300],
+                          foregroundColor: currentRequest.isVerified ? Colors.white : Colors.grey[600],
                           padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: currentRequest.isVerified ? 2 : 0,
                         ),
                       ),
                     ),
-                  if (!request.isVerified) const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AssignmentScreen(request: request),
-                          ),
-                        ).then((_) => _refreshData());
-                      },
-                      icon: const Icon(Icons.send),
-                      label: const Text('Điều phối'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,10 +1,10 @@
 class Vehicle {
-  final int id;
+  final String id;
   final String vehicleType;
   final String licensePlate;
   final String status; // 'AVAILABLE', 'MAINTENANCE', 'IN_USE'
   final String? currentLocation;
-  final int? teamId;
+  final String? teamId;
 
   Vehicle({
     required this.id,
@@ -17,12 +17,12 @@ class Vehicle {
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     return Vehicle(
-      id: json['id'],
-      vehicleType: json['vehicleType'],
-      licensePlate: json['licensePlate'],
-      status: json['status'],
+      id: json['id'].toString(),
+      vehicleType: json['vehicleType'] ?? '',
+      licensePlate: json['licensePlate'] ?? '',
+      status: json['status'] ?? 'AVAILABLE',
       currentLocation: json['currentLocation'],
-      teamId: json['teamId'],
+      teamId: json['teamId']?.toString(),
     );
   }
 

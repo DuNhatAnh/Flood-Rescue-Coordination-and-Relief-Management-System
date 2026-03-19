@@ -85,11 +85,12 @@ class RescueService {
   }
 
   // TẠO PHÂN CÔNG
-  Future<bool> createAssignment(String requestId, int teamId, int vehicleId) async {
+  Future<bool> createAssignment(String requestId, String teamId, String vehicleId) async {
     try {
       final response = await _dio.post('/assignments', queryParameters: {
         'requestId': requestId,
-        'teamId': teamId.toString(),
+        'teamId': teamId,
+        'vehicleId': vehicleId,
         'assignedBy': 'Coordinator' // Should get from Auth
       });
       return response.statusCode == 200 || response.statusCode == 201;
