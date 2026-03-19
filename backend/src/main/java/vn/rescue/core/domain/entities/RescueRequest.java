@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 @Data
@@ -45,7 +46,16 @@ public class RescueRequest {
     private LocalDateTime createdAt;
 
     @Field("is_verified")
-    private boolean isVerified = false;
+    private boolean verified = false;
+
+    @JsonProperty("isVerified")
+    public boolean isVerified() {
+        return verified;
+    }
+
+    public void setVerified(boolean verified) {
+        this.verified = verified;
+    }
 
     @Field("verified_by")
     private String verifiedBy;

@@ -19,6 +19,9 @@ public class Assignment {
     @Field("team_id")
     private String teamId;
 
+    @Field("vehicle_id")
+    private String vehicleId;
+
     @Field("assigned_by")
     private String assignedBy;
 
