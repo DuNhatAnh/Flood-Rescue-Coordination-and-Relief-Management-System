@@ -22,4 +22,6 @@ public interface RescueRequestRepository extends MongoRepository<RescueRequest, 
 
     // Hoặc nếu bạn muốn kiểm tra đơn giản hơn cho 1 trạng thái
     boolean existsByTeamIdAndStatus(String teamId, String status);
+
+    List<RescueRequest> findByStatusOrderByCreatedAtDesc(String status);
 }

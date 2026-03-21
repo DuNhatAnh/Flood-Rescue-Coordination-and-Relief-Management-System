@@ -19,6 +19,7 @@ public interface VehiclesRepository extends MongoRepository<Vehicles, String> {
 
     Optional<Vehicles> findByTeamId(String teamId);
 
+    List<Vehicles> findByTeamIdAndStatus(String teamId, String status);
     // Sử dụng Query Method để Spring tự động xử lý null và khớp trường
     // Phương thức này sẽ tìm kiếm chính xác theo Loại và Trạng thái
     Page<Vehicles> findByVehicleTypeContainingAndStatusContaining(

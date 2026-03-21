@@ -18,8 +18,8 @@ public class RequestStatusHistory {
 
     private String status;
 
-    @Field("updated_at")
-    private LocalDateTime updatedAt;
+    @Field("created_at")
+    private LocalDateTime createdAt;
 
     private String note;
 }
