@@ -25,12 +25,12 @@ public class WarehouseController {
     }
 
     @PutMapping("/{id}")
-    public Warehouse updateWarehouse(@PathVariable String id, @RequestBody WarehouseRequest request) {
+    public Warehouse updateWarehouse(@PathVariable("id") String id, @RequestBody WarehouseRequest request) {
         return warehouseService.updateWarehouse(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteWarehouse(@PathVariable String id) {
+    public void deleteWarehouse(@PathVariable("id") String id) {
         warehouseService.deleteWarehouse(id);
     }
 }

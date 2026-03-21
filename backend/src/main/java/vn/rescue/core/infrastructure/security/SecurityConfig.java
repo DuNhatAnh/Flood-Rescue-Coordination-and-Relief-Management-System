@@ -56,7 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/v1/**").permitAll() // Permit all versioned APIs for now
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/relief-items/**", "/api/warehouses/**").permitAll()
+                                .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/inventory/**", "/api/upload/**", "/uploads/**").permitAll()
                         // Các yêu cầu khác mới cần đăng nhập
                         .anyRequest().authenticated())
                 // Thiết lập cơ chế không lưu Session (Stateless)

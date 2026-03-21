@@ -23,6 +23,7 @@ public class ReliefItemService {
         item.setItemName(request.getItemName());
         item.setUnit(request.getUnit());
         item.setDescription(request.getDescription());
+        item.setImageUrl(request.getImageUrl());
         return reliefItemRepository.save(item);
     }
 
@@ -32,6 +33,7 @@ public class ReliefItemService {
         item.setItemName(request.getItemName());
         item.setUnit(request.getUnit());
         item.setDescription(request.getDescription());
+        item.setImageUrl(request.getImageUrl());
         return reliefItemRepository.save(item);
     }
 

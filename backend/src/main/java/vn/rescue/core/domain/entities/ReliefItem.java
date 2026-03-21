@@ -17,4 +17,7 @@ public class ReliefItem {
     private String unit;
 
     private String description;
+    
+    @Field("image_url")
+    private String imageUrl;
 }

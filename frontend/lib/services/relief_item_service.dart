@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/relief_item.dart';
 
 class ReliefItemService {
@@ -61,6 +62,33 @@ class ReliefItemService {
     } catch (e) {
       print('Error deleting relief item: $e');
       return false;
+    }
+  }
+
+  Future<String?> uploadImage(XFile file) async {
+    try {
+      final bytes = await file.readAsBytes();
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: file.name,
+        ),
+      });
+
+      // Use a separate Dio instance or the full URL because the endpoint is /api/upload/image
+      // while _dio.baseUrl is likely http://localhost:8080/api
+      final response = await _dio.post(
+        '/upload/image',
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        return response.data['url'];
+      }
+      return null;
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
     }
   }
 }

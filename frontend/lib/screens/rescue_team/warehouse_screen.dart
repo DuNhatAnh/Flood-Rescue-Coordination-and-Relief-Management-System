@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/warehouse.dart';
 import '../../services/warehouse_service.dart';
 import '../relief_item_screen.dart';
+import 'warehouse_inventory_screen.dart';
+import '../../utils/staff_theme.dart';
 
 class WarehouseScreen extends StatefulWidget {
   const WarehouseScreen({Key? key}) : super(key: key);
@@ -36,7 +38,6 @@ class WarehouseScreenState extends State<WarehouseScreen> {
     setState(() => _isLoading = true);
     final warehouses = await _service.getAll();
     
-    // Priority Sorting: ACTIVE first, then alphabetical (optional but good)
     warehouses.sort((a, b) {
       if (a.status == 'ACTIVE' && b.status != 'ACTIVE') return -1;
       if (a.status != 'ACTIVE' && b.status == 'ACTIVE') return 1;
@@ -58,8 +59,8 @@ class WarehouseScreenState extends State<WarehouseScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Thêm Kho hàng mới', style: TextStyle(fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(StaffTheme.cardRadius)),
+          title: Text('Thêm Kho hàng mới', style: StaffTheme.cardTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -68,7 +69,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 decoration: InputDecoration(
                   labelText: 'Tên kho',
                   hintText: 'VD: Kho Liên Chiểu',
-                  prefixIcon: const Icon(Icons.warehouse_outlined),
+                  prefixIcon: const Icon(Icons.warehouse_outlined, color: StaffTheme.primaryBlue),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -78,17 +79,17 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 decoration: InputDecoration(
                   labelText: 'Địa điểm',
                   hintText: 'Quận Liên Chiểu, Đà Nẵng',
-                  prefixIcon: const Icon(Icons.location_on_outlined),
+                  prefixIcon: const Icon(Icons.location_on_outlined, color: StaffTheme.primaryBlue),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: selectedStatus,
+                value: selectedStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái ban đầu',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.info_outline_rounded),
+                  prefixIcon: const Icon(Icons.info_outline_rounded, color: StaffTheme.primaryBlue),
                 ),
                 items: const [
                   DropdownMenuItem(value: 'ACTIVE', child: Text('Đang hoạt động')),
@@ -103,17 +104,15 @@ class WarehouseScreenState extends State<WarehouseScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0288D1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                backgroundColor: StaffTheme.primaryBlue,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () async {
-                if (nameController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập tên kho')));
-                  return;
-                }
+                if (nameController.text.isEmpty) return;
                 
                 final newWarehouse = Warehouse(
                   warehouseName: nameController.text,
@@ -125,18 +124,11 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 if (mounted) {
                   Navigator.pop(context);
                   if (result != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Đã thêm kho ${newWarehouse.warehouseName} thành công!'), backgroundColor: Colors.green),
-                    );
                     loadWarehouses();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Lỗi: Không thể kết nối đến máy chủ.'), backgroundColor: Colors.red),
-                    );
                   }
                 }
               },
-              child: const Text('Lưu', style: TextStyle(color: Colors.white)),
+              child: const Text('Lưu', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -153,8 +145,8 @@ class WarehouseScreenState extends State<WarehouseScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Chỉnh sửa Kho', style: TextStyle(fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(StaffTheme.cardRadius)),
+          title: Text('Chỉnh sửa Kho', style: StaffTheme.cardTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -162,7 +154,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 controller: nameController,
                 decoration: InputDecoration(
                   labelText: 'Tên kho',
-                  prefixIcon: const Icon(Icons.warehouse_outlined),
+                  prefixIcon: const Icon(Icons.warehouse_outlined, color: StaffTheme.primaryBlue),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -171,16 +163,17 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 controller: locationController,
                 decoration: InputDecoration(
                   labelText: 'Địa điểm',
-                  prefixIcon: const Icon(Icons.location_on_outlined),
+                  prefixIcon: const Icon(Icons.location_on_outlined, color: StaffTheme.primaryBlue),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: currentStatus,
+                value: currentStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.info_outline_rounded, color: StaffTheme.primaryBlue),
                 ),
                 items: const [
                   DropdownMenuItem(value: 'ACTIVE', child: Text('Đang hoạt động')),
@@ -195,11 +188,12 @@ class WarehouseScreenState extends State<WarehouseScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0288D1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                backgroundColor: StaffTheme.primaryBlue,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () async {
                 if (nameController.text.isEmpty) return;
@@ -215,19 +209,10 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 final result = await _service.update(warehouse.id!, updated);
                 if (mounted) {
                   Navigator.pop(context);
-                  if (result != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cập nhật thông tin kho thành công!'), backgroundColor: Colors.green),
-                    );
-                    loadWarehouses();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Lỗi khi cập nhật kho.'), backgroundColor: Colors.red),
-                    );
-                  }
+                  if (result != null) loadWarehouses();
                 }
               },
-              child: const Text('Cập nhật', style: TextStyle(color: Colors.white)),
+              child: const Text('Cập nhật', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -239,13 +224,14 @@ class WarehouseScreenState extends State<WarehouseScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(StaffTheme.cardRadius)),
         title: const Text('Xác nhận xóa'),
         content: Text('Xóa kho "${warehouse.warehouseName}"? Thao tác này không thể hoàn tác.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
           TextButton(
             onPressed: () => Navigator.pop(context, true), 
-            child: const Text('Xóa', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text('Xóa', style: TextStyle(color: StaffTheme.errorRed, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -253,18 +239,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
 
     if (confirm == true && warehouse.id != null) {
       final success = await _service.delete(warehouse.id!);
-      if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã xóa kho.'), backgroundColor: Colors.black87),
-          );
-          loadWarehouses();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không thể xóa kho.'), backgroundColor: Colors.red),
-          );
-        }
-      }
+      if (mounted && success) loadWarehouses();
     }
   }
 
@@ -273,71 +248,39 @@ class WarehouseScreenState extends State<WarehouseScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: StaffTheme.softShadow,
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            flex: 2,
-            child: TextField(
-              onChanged: (val) => setState(() => _searchQuery = val),
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm tên kho hoặc địa điểm...',
-                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF0288D1)),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          TextField(
+            onChanged: (val) => setState(() => _searchQuery = val),
+            decoration: InputDecoration(
+              hintText: 'Tìm kiếm tên kho hoặc địa điểm...',
+              prefixIcon: const Icon(Icons.search_rounded, color: StaffTheme.primaryBlue),
+              filled: true,
+              fillColor: StaffTheme.background,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
               ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 3,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    _buildFilterChip('ALL', 'Tất cả'),
-                    _buildFilterChip('ACTIVE', 'Hoạt động'),
-                    _buildFilterChip('MAINTENANCE', 'Sửa chữa'),
-                    _buildFilterChip('CONSTRUCTING', 'Đang xây'),
-                    _buildFilterChip('INACTIVE', 'Tạm nghỉ'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF0288D1).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.settings_outlined, color: Color(0xFF0288D1), size: 20),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ReliefItemScreen()),
-                );
-              },
-              tooltip: 'Quản lý Danh mục',
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip('ALL', 'Tất cả'),
+                const SizedBox(width: 8),
+                _buildFilterChip('ACTIVE', 'Hoạt động'),
+                const SizedBox(width: 8),
+                _buildFilterChip('MAINTENANCE', 'Sửa chữa'),
+                const SizedBox(width: 8),
+                _buildFilterChip('CONSTRUCTING', 'Đang xây'),
+                const SizedBox(width: 8),
+                _buildFilterChip('INACTIVE', 'Tạm nghỉ'),
+              ],
             ),
           ),
         ],
@@ -347,37 +290,38 @@ class WarehouseScreenState extends State<WarehouseScreen> {
 
   Widget _buildFilterChip(String status, String label) {
     bool isSelected = _filterStatus == status;
-    Color themeColor = const Color(0xFF0288D1);
-    
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.grey.shade600,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-        fontSize: 11,
+    return GestureDetector(
+      onTap: () => setState(() => _filterStatus = status),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? StaffTheme.primaryBlue : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? StaffTheme.primaryBlue : StaffTheme.border),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : StaffTheme.textMedium,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 12,
+          ),
+        ),
       ),
-      selectedColor: themeColor,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      pressElevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide.none),
-      onSelected: (selected) {
-        if (selected) setState(() => _filterStatus = status);
-      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: StaffTheme.background,
       body: Column(
         children: [
           _buildSearchAndFilterHeader(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF0288D1)))
+                ? const Center(child: CircularProgressIndicator(color: StaffTheme.primaryBlue))
                 : _filteredWarehouses.isEmpty
                     ? _buildEmptyState()
                     : _buildWarehouseList(),
@@ -396,31 +340,18 @@ class WarehouseScreenState extends State<WarehouseScreen> {
           Icon(
             isSearching ? Icons.search_off_rounded : Icons.house_siding_rounded,
             size: 80,
-            color: Colors.grey.shade300,
+            color: Colors.grey.shade200,
           ),
           const SizedBox(height: 16),
           Text(
             isSearching ? 'Không tìm thấy kho phù hợp' : 'Chưa có dữ liệu kho bãi',
-            style: const TextStyle(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.w500),
+            style: TextStyle(color: StaffTheme.textLight, fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          Text(
-            isSearching ? 'Thử thay đổi từ khóa hoặc bộ lọc' : 'Nhấn nút "+" bên dưới để thêm kho mới',
-            style: const TextStyle(color: Colors.grey),
+          TextButton(
+            onPressed: () => setState(() { _searchQuery = ''; _filterStatus = 'ALL'; }),
+            child: const Text('Xóa bộ lọc'),
           ),
-          if (isSearching)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: TextButton(
-                onPressed: () {
-                  setState(() {
-                    _searchQuery = '';
-                    _filterStatus = 'ALL';
-                  });
-                },
-                child: const Text('Xóa bộ lọc'),
-              ),
-            ),
         ],
       ),
     );
@@ -429,8 +360,9 @@ class WarehouseScreenState extends State<WarehouseScreen> {
   Widget _buildWarehouseList() {
     return RefreshIndicator(
       onRefresh: loadWarehouses,
+      color: StaffTheme.primaryBlue,
       child: ListView.builder(
-        padding: const EdgeInsets.only(top: 12, bottom: 100),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         itemCount: _filteredWarehouses.length,
         itemBuilder: (context, index) {
           final warehouse = _filteredWarehouses[index];
@@ -441,98 +373,103 @@ class WarehouseScreenState extends State<WarehouseScreen> {
   }
 
   Widget _buildWarehouseCard(Warehouse warehouse) {
+    final Color statusColor = _getStatusColor(warehouse.status);
+    
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: _getStatusColor(warehouse.status).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: _getStatusColor(warehouse.status).withOpacity(0.3),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _getStatusColor(warehouse.status).withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(StaffTheme.cardRadius),
+        border: Border.all(color: StaffTheme.border),
+        boxShadow: StaffTheme.softShadow,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F7FF),
-                  borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(StaffTheme.cardRadius),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => WarehouseInventoryScreen(warehouse: warehouse)),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Professional Ledger Icon
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: StaffTheme.primaryBlue.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.store_rounded, color: StaffTheme.primaryBlue.withOpacity(0.7), size: 32),
                 ),
-                child: const Icon(Icons.store_rounded, color: Color(0xFF0288D1)),
-              ),
-              title: Text(
-                warehouse.warehouseName,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Row(
+                const SizedBox(width: 16),
+                // Warehouse Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Expanded(
+                      Text(warehouse.warehouseName, style: StaffTheme.cardTitle),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_outlined, size: 14, color: StaffTheme.textLight),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              warehouse.location,
+                              style: StaffTheme.cardSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Professional Status Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                         child: Text(
-                          warehouse.location,
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          _getStatusLabel(warehouse.status),
+                          style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildStatusTag(warehouse.status),
-                ],
-              ),
-              trailing: PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.grey),
-                onSelected: (val) {
-                  if (val == 'edit') showEditDialog(warehouse);
-                  if (val == 'delete') deleteWarehouse(warehouse);
-                },
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 20, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text('Sửa thông tin'),
-                      ],
+                ),
+                // Action Menu
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),
+                  onSelected: (val) {
+                    if (val == 'edit') showEditDialog(warehouse);
+                    if (val == 'delete') deleteWarehouse(warehouse);
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [Icon(Icons.edit_outlined, size: 20), SizedBox(width: 8), Text('Sửa')],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Xóa kho', style: TextStyle(color: Colors.red)),
-                      ],
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [Icon(Icons.delete_outline, size: 20, color: StaffTheme.errorRed), const SizedBox(width: 8), Text('Xóa', style: TextStyle(color: StaffTheme.errorRed))],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              onTap: () {
-                // Future: Xem chi tiết tồn kho
-              },
+                  ],
+                ),
+              ],
             ),
-            if (warehouse.status != 'ACTIVE') _buildRibbon(warehouse.status),
-          ],
+          ),
         ),
       ),
     );
@@ -540,104 +477,20 @@ class WarehouseScreenState extends State<WarehouseScreen> {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'ACTIVE':
-        return Colors.green;
-      case 'MAINTENANCE':
-        return Colors.orange;
-      case 'CONSTRUCTING':
-        return Colors.blue;
-      case 'INACTIVE':
-      default:
-        return Colors.red;
+      case 'ACTIVE': return StaffTheme.successGreen;
+      case 'MAINTENANCE': return StaffTheme.warningOrange;
+      case 'CONSTRUCTING': return StaffTheme.primaryBlue;
+      default: return StaffTheme.errorRed;
     }
   }
 
-  Widget _buildRibbon(String status) {
-    final color = _getStatusColor(status);
-    String label;
-    
+  String _getStatusLabel(String status) {
     switch (status) {
-      case 'MAINTENANCE':
-        label = 'BẢO TRÌ';
-        break;
-      case 'CONSTRUCTING':
-        label = 'ĐANG XÂY';
-        break;
-      case 'INACTIVE':
-      default:
-        label = 'TẠM DỪNG';
-        break;
+      case 'ACTIVE': return 'HOẠT ĐỘNG';
+      case 'MAINTENANCE': return 'BẢO TRÌ';
+      case 'CONSTRUCTING': return 'ĐANG XÂY';
+      case 'INACTIVE': return 'TẠM NGHỈ';
+      default: return status;
     }
-
-    return Positioned(
-      top: 15,
-      right: -35,
-      child: Transform.rotate(
-        angle: 0.785, // 45 degrees
-        child: Container(
-          width: 140,
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.9),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusTag(String status) {
-    final color = _getStatusColor(status);
-    String label;
-    
-    switch (status) {
-      case 'ACTIVE':
-        label = 'ĐANG HOẠT ĐỘNG';
-        break;
-      case 'MAINTENANCE':
-        label = 'ĐANG SỬA CHỮA';
-        break;
-      case 'CONSTRUCTING':
-        label = 'ĐANG XÂY DỰNG';
-        break;
-      case 'INACTIVE':
-      default:
-        label = 'TẠM NGHỈ';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
   }
 }

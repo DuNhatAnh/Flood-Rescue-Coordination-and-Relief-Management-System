@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/relief_item.dart';
-import '../services/relief_item_service.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import '../../models/relief_item.dart';
+import '../../services/relief_item_service.dart';
+import '../../utils/staff_theme.dart';
 
 class ReliefItemScreen extends StatefulWidget {
   const ReliefItemScreen({Key? key}) : super(key: key);
@@ -13,6 +16,7 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
   final ReliefItemService _service = ReliefItemService();
   List<ReliefItem> _items = [];
   bool _isLoading = true;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -29,96 +33,146 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
     });
   }
 
+  Future<String?> _pickAndUploadImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (image != null) {
+      return await _service.uploadImage(image);
+    }
+    return null;
+  }
+
   void showAddDialog() {
     final nameController = TextEditingController();
     final unitController = TextEditingController();
     final descController = TextEditingController();
+    String? uploadedImageUrl;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.add_circle_outline, color: Color(0xFF0288D1)),
-            SizedBox(width: 10),
-            Text('Thêm hàng cứu trợ', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(StaffTheme.cardRadius)),
+          title: Row(
             children: [
-              const Text(
-                'Nhập thông tin vật phẩm mới để lưu vào kho hệ thống.',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Tên vật phẩm',
-                  prefixIcon: const Icon(Icons.label_important_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: unitController,
-                decoration: InputDecoration(
-                  labelText: 'Đơn vị tính (ví dụ: Thùng, Bộ)',
-                  prefixIcon: const Icon(Icons.scale_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'Mô tả chi tiết',
-                  prefixIcon: const Icon(Icons.description_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
+              const Icon(Icons.add_circle_outline, color: StaffTheme.primaryBlue),
+              const SizedBox(width: 10),
+              Text('Thêm hàng cứu trợ', style: StaffTheme.cardTitle),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy bỏ', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0288D1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                final newItem = ReliefItem(
-                  itemName: nameController.text,
-                  unit: unitController.text,
-                  description: descController.text,
-                );
-                await _service.create(newItem);
-                if (mounted) {
-                  Navigator.pop(context);
-                  loadItems();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Đã thêm ${newItem.itemName} thành công!'),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Nhập thông tin vật phẩm mới để lưu vào kho hệ thống.',
+                  style: TextStyle(color: StaffTheme.textLight, fontSize: 13),
+                ),
+                const SizedBox(height: 20),
+                
+                // Image Picker Preview
+                GestureDetector(
+                  onTap: () async {
+                    final url = await _pickAndUploadImage();
+                    if (url != null) {
+                      setDialogState(() => uploadedImageUrl = url);
+                    }
+                  },
+                  child: Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: StaffTheme.background,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: StaffTheme.border),
                     ),
-                  );
-                }
-              }
-            },
-            child: const Text('Lưu vào kho', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: uploadedImageUrl == null
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo_outlined, color: StaffTheme.textLight, size: 40),
+                              const SizedBox(height: 8),
+                              Text('Thêm hình ảnh', style: TextStyle(color: StaffTheme.textLight)),
+                            ],
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: Image.network(
+                              'http://localhost:8080$uploadedImageUrl',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Tên vật phẩm',
+                    prefixIcon: const Icon(Icons.label_important_outline, color: StaffTheme.primaryBlue),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: unitController,
+                  decoration: InputDecoration(
+                    labelText: 'Đơn vị tính (ví dụ: Thùng, Bộ)',
+                    prefixIcon: const Icon(Icons.scale_outlined, color: StaffTheme.primaryBlue),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Mô tả chi tiết',
+                    prefixIcon: const Icon(Icons.description_outlined, color: StaffTheme.primaryBlue),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Hủy bỏ', style: TextStyle(color: StaffTheme.textLight)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: StaffTheme.primaryBlue,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              onPressed: () async {
+                if (nameController.text.isNotEmpty) {
+                  final newItem = ReliefItem(
+                    itemName: nameController.text,
+                    unit: unitController.text,
+                    description: descController.text,
+                    imageUrl: uploadedImageUrl,
+                  );
+                  await _service.create(newItem);
+                  if (mounted) {
+                    Navigator.pop(context);
+                    loadItems();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Đã thêm ${newItem.itemName} thành công!'),
+                        backgroundColor: StaffTheme.successGreen,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Lưu vào kho', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -127,83 +181,123 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
     final nameController = TextEditingController(text: item.itemName);
     final unitController = TextEditingController(text: item.unit);
     final descController = TextEditingController(text: item.description);
+    String? uploadedImageUrl = item.imageUrl;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.edit_note_rounded, color: Color(0xFF0288D1)),
-            SizedBox(width: 10),
-            Text('Chỉnh sửa vật phẩm', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
             children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Tên vật phẩm',
-                  prefixIcon: const Icon(Icons.label_important_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: unitController,
-                decoration: InputDecoration(
-                  labelText: 'Đơn vị tính',
-                  prefixIcon: const Icon(Icons.scale_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'Mô tả chi tiết',
-                  prefixIcon: const Icon(Icons.description_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
+              Icon(Icons.edit_note_rounded, color: Color(0xFF0288D1)),
+              SizedBox(width: 10),
+              Text('Chỉnh sửa vật phẩm', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy bỏ', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0288D1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Image Picker Preview
+                GestureDetector(
+                  onTap: () async {
+                    final url = await _pickAndUploadImage();
+                    if (url != null) {
+                      setDialogState(() => uploadedImageUrl = url);
+                    }
+                  },
+                  child: Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: uploadedImageUrl == null
+                        ? const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo_outlined, color: Colors.grey, size: 40),
+                              SizedBox(height: 8),
+                              Text('Thêm hình ảnh', style: TextStyle(color: Colors.grey)),
+                            ],
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: Image.network(
+                              'http://localhost:8080$uploadedImageUrl',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Tên vật phẩm',
+                    prefixIcon: const Icon(Icons.label_important_outline),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: unitController,
+                  decoration: InputDecoration(
+                    labelText: 'Đơn vị tính',
+                    prefixIcon: const Icon(Icons.scale_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Mô tả chi tiết',
+                    prefixIcon: const Icon(Icons.description_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
             ),
-            onPressed: () async {
-              if (nameController.text.isNotEmpty && item.id != null) {
-                final updatedItem = ReliefItem(
-                  id: item.id,
-                  itemName: nameController.text,
-                  unit: unitController.text,
-                  description: descController.text,
-                );
-                await _service.update(item.id!, updatedItem);
-                if (mounted) {
-                  Navigator.pop(context);
-                  loadItems();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã cập nhật thành công!'), behavior: SnackBarBehavior.floating),
-                  );
-                }
-              }
-            },
-            child: const Text('Cập nhật', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy bỏ', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0288D1),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                if (nameController.text.isNotEmpty && item.id != null) {
+                  final updatedItem = ReliefItem(
+                    id: item.id,
+                    itemName: nameController.text,
+                    unit: unitController.text,
+                    description: descController.text,
+                    imageUrl: uploadedImageUrl,
+                  );
+                  await _service.update(item.id!, updatedItem);
+                  if (mounted) {
+                    Navigator.pop(context);
+                    loadItems();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Đã cập nhật thành công!'), behavior: SnackBarBehavior.floating),
+                    );
+                  }
+                }
+              },
+              child: const Text('Cập nhật', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -239,14 +333,15 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Danh mục Hàng cứu trợ', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF0288D1),
-        foregroundColor: Colors.white,
+        title: Text('DANH MỤC HÀNG CỨU TRỢ', style: StaffTheme.titleLarge),
+        flexibleSpace: Container(decoration: BoxDecoration(gradient: StaffTheme.primaryGradient)),
+        elevation: 0,
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: showAddDialog,
-        backgroundColor: const Color(0xFF0288D1),
+        backgroundColor: StaffTheme.primaryBlue,
+        elevation: 4,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -278,72 +373,113 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 12, bottom: 80),
-      itemCount: _items.length,
-      itemBuilder: (context, index) {
-        final item = _items[index];
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            leading: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE1F5FE),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.inventory_2_rounded, color: Color(0xFF0288D1)),
+    return Container(
+      color: Colors.grey.shade50,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        itemCount: _items.length,
+        itemBuilder: (context, index) {
+          final item = _items[index];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: StaffTheme.border),
+              boxShadow: StaffTheme.softShadow,
             ),
-            title: Text(
-              item.itemName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF263238)),
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Text(
-                '${item.unit} • ${item.description}',
-                style: TextStyle(color: Colors.blueGrey.shade400, fontSize: 13),
-              ),
-            ),
-            trailing: PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  showEditDialog(item);
-                } else if (value == 'delete') {
-                  deleteItem(item);
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => showEditDialog(item),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
                   child: Row(
-                    children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Sửa')],
+                    children: [
+                      // Compact Thumbnail
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: StaffTheme.primaryBlue.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: item.imageUrl != null
+                              ? Image.network(
+                                  'http://localhost:8080${item.imageUrl}',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => 
+                                      Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue.withOpacity(0.5), size: 28),
+                                )
+                              : Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue.withOpacity(0.5), size: 28),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Item Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.itemName.toUpperCase(),
+                              style: StaffTheme.cardTitle.copyWith(fontSize: 14, letterSpacing: 0.5),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Đơn vị: ${item.unit}',
+                              style: StaffTheme.cardSubtitle,
+                            ),
+                            if (item.description.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                item.description,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: StaffTheme.textLight,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      // Action Menu
+                      PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            showEditDialog(item);
+                          } else if (value == 'delete') {
+                            deleteItem(item);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [Icon(Icons.edit_outlined, size: 20), SizedBox(width: 8), Text('Sửa')],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [Icon(Icons.delete_outline, size: 20, color: StaffTheme.errorRed), const SizedBox(width: 8), Text('Xóa', style: TextStyle(color: StaffTheme.errorRed))],
+                            ),
+                          ),
+                        ],
+                        icon: Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),
+                      ),
+                    ],
                   ),
                 ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [Icon(Icons.delete, size: 20, color: Colors.red), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: Colors.red))],
-                  ),
-                ),
-              ],
-              icon: const Icon(Icons.more_vert_rounded),
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

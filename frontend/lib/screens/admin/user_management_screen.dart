@@ -53,7 +53,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
             TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Số điện thoại')),
             DropdownButtonFormField<String>(
-              initialValue: selectedRole,
+              value: selectedRole,
               items: const [
                 DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
                 DropdownMenuItem(value: 'COORDINATOR', child: Text('Coordinator')),

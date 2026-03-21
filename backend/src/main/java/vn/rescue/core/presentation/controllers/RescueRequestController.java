@@ -33,7 +33,7 @@ public class RescueRequestController {
     }
 
     @GetMapping("/track/{id}")
-    public ResponseEntity<ApiResponse<RescueRequest>> trackRequest(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<RescueRequest>> trackRequest(@PathVariable("id") String id) {
         RescueRequest request = rescueRequestService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(request, "Rescue request found"));
     }

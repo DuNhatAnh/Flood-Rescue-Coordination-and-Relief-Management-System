@@ -26,12 +26,12 @@ public class ReliefItemController {
     }
 
     @PutMapping("/{id}")
-    public ReliefItem updateReliefItem(@PathVariable String id, @RequestBody ReliefItemRequest request) {
+    public ReliefItem updateReliefItem(@PathVariable("id") String id, @RequestBody ReliefItemRequest request) {
         return reliefItemService.updateReliefItem(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteReliefItem(@PathVariable String id) {
+    public void deleteReliefItem(@PathVariable("id") String id) {
         reliefItemService.deleteReliefItem(id);
     }
 }
