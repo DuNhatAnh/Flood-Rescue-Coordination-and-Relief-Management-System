@@ -44,3 +44,7 @@ Thumbs.db
 
 # Docker
 .env
+.gitnexus
+.claude/
+AGENTS.md
+CLAUDE.md
