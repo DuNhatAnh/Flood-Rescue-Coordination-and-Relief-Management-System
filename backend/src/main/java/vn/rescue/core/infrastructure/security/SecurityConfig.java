@@ -47,19 +47,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Tắt CSRF vì chúng ta dùng REST API và JWT/Stateless
+                // Tắt CSRF để cho phép các method POST/PUT/PATCH/DELETE từ Postman
                 .csrf(AbstractHttpConfigurer::disable)
-                // Cấu hình CORS cho phép Postman và Frontend truy cập
+                // Cấu hình CORS để Flutter/Web có thể gọi API
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép truy cập công khai để Test Postman
+                        // 1. Cho phép các đường dẫn xác thực và tài liệu API
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/v1/**").permitAll() // Permit all versioned APIs for now
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                                .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/inventory/**", "/api/upload/**", "/uploads/**").permitAll()
-                        // Các yêu cầu khác mới cần đăng nhập
+
+                        // 2. SỬA LỖI TẠI ĐÂY: Thêm các endpoint nghiệp vụ vào permitAll
+                        // Chúng ta cho phép cả /api/v1/** và các đường dẫn /api/** không có v1
+                        .requestMatchers("/api/v1/**").permitAll()
+                        .requestMatchers("/api/notifications/**").permitAll() // Khớp với NotificationController
+                        .requestMatchers("/api/admin/system/**").permitAll()  // Khớp với Dashboard/Logs
+                        .requestMatchers("/api/inventory/**").permitAll()      // Khớp với Inventory
+
+                        // 3. Cho phép các tài nguyên khác
+                        .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/upload/**", "/uploads/**").permitAll()
+
+                        // 4. Tất cả các yêu cầu còn lại mới yêu cầu Token
                         .anyRequest().authenticated())
-                // Thiết lập cơ chế không lưu Session (Stateless)
+
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider());
 

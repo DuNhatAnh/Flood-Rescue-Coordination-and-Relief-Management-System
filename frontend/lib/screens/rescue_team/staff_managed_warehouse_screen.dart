@@ -30,10 +30,14 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   List<Vehicle> _vehicles = [];
   bool _isLoading = true;
 
-  // Import form state
+  // Form state cho Nhập hàng
   String? _importSource;
   Inventory? _selectedImportItem;
   final TextEditingController _importQtyController = TextEditingController();
+
+  // Form state cho Thêm phương tiện
+  final TextEditingController _plateController = TextEditingController();
+  String? _selectedVehicleType;
 
   @override
   void initState() {
@@ -45,6 +49,8 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   @override
   void dispose() {
     _tabController.dispose();
+    _importQtyController.dispose();
+    _plateController.dispose();
     super.dispose();
   }
 
@@ -54,13 +60,9 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
       final String? userId = AuthService.currentUser?.id;
       if (userId == null) return;
 
-      // 1. Get managed warehouse
       final managed = await _warehouseService.getByManagerId(userId);
-      
-      // 2. Get all warehouses for map
       final all = await _warehouseService.getAll();
 
-      // 3. Get vehicles
       List<Vehicle> vehicles = [];
       try {
         final vehicleData = await _vehicleService.getAvailableVehicles();
@@ -75,7 +77,6 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
         _vehicles = vehicles;
       });
 
-      // 4. Get inventory if managed exists
       if (managed != null) {
         final inv = await _inventoryService.getWarehouseInventory(managed.id!);
         setState(() => _inventory = inv);
@@ -87,101 +88,389 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_myWarehouse == null) return _buildNoWarehouseState();
+  // --- LOGIC THÊM PHƯƠNG TIỆN ---
+  Future<void> _handleAddVehicle(BuildContext ctx) async {
+    if (_selectedVehicleType == null || _plateController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập đầy đủ biển số và loại xe')));
+      return;
+    }
 
-    return Scaffold(
-      backgroundColor: StaffTheme.background,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(_myWarehouse!.warehouseName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-        flexibleSpace: Container(decoration: BoxDecoration(gradient: StaffTheme.primaryGradient)),
-        elevation: 0,
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth > 900) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    setState(() => _isLoading = true);
+    Navigator.pop(ctx);
+
+    try {
+      // Giả sử API yêu cầu object: { vehicleType: string, licensePlate: string, status: "AVAILABLE" }
+      await _vehicleService.createVehicle({
+        'vehicleType': _selectedVehicleType,
+        'licensePlate': _plateController.text.trim(),
+        'status': 'AVAILABLE',
+        'warehouseId': _myWarehouse?.id // Nếu backend cần gán xe vào kho
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thêm phương tiện thành công!'), backgroundColor: StaffTheme.successGreen));
+      _loadData();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed));
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showAddVehicleDialog() {
+    _selectedVehicleType = null;
+    _plateController.clear();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Left Panel: Info & Map
-                Expanded(
-                  flex: 2,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildWarehouseInfoCard(),
-                        const SizedBox(height: 20),
-                        _buildMapSection(height: 400),
-                      ],
-                    ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  decoration: BoxDecoration(gradient: StaffTheme.primaryGradient, borderRadius: const BorderRadius.vertical(top: Radius.circular(25))),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('ĐĂNG KÝ PHƯƠNG TIỆN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                      IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close, color: Colors.white)),
+                    ],
                   ),
                 ),
-                // Right Panel: Inventory List
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    margin: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: StaffTheme.softShadow,
-                    ),
-                    child: Column(
-                      children: [
-                        _buildInventoryHeader(),
-                        const Divider(height: 1),
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildInventoryList(isScrollable: true),
-                              _buildVehicleList(isScrollable: true),
-                            ],
-                          ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('LOẠI PHƯƠNG TIỆN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: StaffTheme.background,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                         ),
-                        _buildBottomActionButtons(),
-                      ],
-                    ),
+                        hint: const Text('Chọn loại xe/xuồng'),
+                        value: _selectedVehicleType,
+                        items: ['Xe tải cứu trợ', 'Xe bán tải', 'Xuồng máy', 'Cano']
+                            .map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (val) => setDialogState(() => _selectedVehicleType = val),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('BIỂN KIỂM SOÁT / MÃ ĐỊNH DANH', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _plateController,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: InputDecoration(
+                          hintText: 'VD: 43A-123.45',
+                          filled: true,
+                          fillColor: StaffTheme.background,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _handleAddVehicle(ctx),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: StaffTheme.primaryBlue,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          ),
+                          child: const Text('XÁC NHẬN THÊM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            );
-          } else {
-            // Mobile Layout (Current)
-            return Stack(
-              children: [
-                CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: _buildWarehouseInfoCard(),
-                    )),
-                    SliverToBoxAdapter(child: _buildMapSection()),
-                    SliverToBoxAdapter(child: _buildInventoryHeader()),
-                    // For mobile, we might want both or a different toggle. 
-                    // Let's keep it simple: show Inventory first then Vehicles
-                    _buildInventoryList(isScrollable: false),
-                    const SliverToBoxAdapter(child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text('PHƯƠNG TIỆN CỨU HỘ', style: TextStyle(fontWeight: FontWeight.bold, color: StaffTheme.textMedium)),
-                    )),
-                    _buildVehicleList(isScrollable: false),
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                  ],
-                ),
-                _buildBottomActionButtons(),
-              ],
-            );
-          }
-        },
+            ),
+          ),
+        ),
       ),
     );
   }
+
+  // --- 1. LOGIC XÓA PHƯƠNG TIỆN ---
+  Future<void> _handleDeleteVehicle(String vehicleId) async {
+    // Hiện thông báo xác nhận để tránh bấm nhầm
+    bool confirm = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Text('Xác nhận xóa', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Bạn có chắc chắn muốn gỡ bỏ phương tiện này khỏi hệ thống?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false), 
+            child: const Text('HỦY', style: TextStyle(color: StaffTheme.textLight))
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('XÓA NGAY', style: TextStyle(color: StaffTheme.errorRed, fontWeight: FontWeight.bold))
+          ),
+        ],
+      ),
+    ) ?? false;
+
+    if (!confirm) return;
+
+    setState(() => _isLoading = true);
+    try {
+      // Gọi service để xóa (Đảm bảo VehicleService đã có hàm deleteVehicle)
+      await _vehicleService.deleteVehicle(vehicleId); 
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã xóa phương tiện thành công!'), backgroundColor: StaffTheme.successGreen)
+      );
+      _loadData(); // Tải lại danh sách mới
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi khi xóa: $e'), backgroundColor: StaffTheme.errorRed)
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // --- 2. LOGIC CẬP NHẬT PHƯƠNG TIỆN ---
+  Future<void> _handleUpdateVehicle(BuildContext ctx, String vehicleId) async {
+    if (_selectedVehicleType == null || _plateController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng không để trống thông tin'))
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    Navigator.pop(ctx); // Đóng dialog
+
+    try {
+      await _vehicleService.updateVehicle(vehicleId, {
+        'vehicleType': _selectedVehicleType,
+        'licensePlate': _plateController.text.trim().toUpperCase(),
+        'warehouseId': _myWarehouse?.id
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cập nhật thông tin thành công!'), backgroundColor: StaffTheme.successGreen)
+      );
+      _loadData(); 
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi cập nhật: $e'), backgroundColor: StaffTheme.errorRed)
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // --- 3. DIALOG CHỈNH SỬA PHƯƠNG TIỆN ---
+  void _showEditVehicleDialog(Vehicle vehicle) {
+    // Đổ dữ liệu cũ vào các trường nhập liệu
+    _selectedVehicleType = vehicle.vehicleType;
+    _plateController.text = vehicle.licensePlate;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  decoration: BoxDecoration(
+                    gradient: StaffTheme.primaryGradient, 
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(25))
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('CẬP NHẬT PHƯƠNG TIỆN', 
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                      IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close, color: Colors.white)),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('LOẠI PHƯƠNG TIỆN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: StaffTheme.background,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                        value: _selectedVehicleType,
+                        items: ['Xe tải cứu trợ', 'Xe bán tải', 'Xuồng máy', 'Cano']
+                            .map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (val) => setDialogState(() => _selectedVehicleType = val),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('BIỂN KIỂM SOÁT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _plateController,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: StaffTheme.background,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _handleUpdateVehicle(ctx, vehicle.id!),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: StaffTheme.primaryBlue,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          ),
+                          child: const Text('LƯU THAY ĐỔI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+Widget build(BuildContext context) {
+  if (_isLoading) return const Center(child: CircularProgressIndicator());
+  if (_myWarehouse == null) return _buildNoWarehouseState();
+
+  return Scaffold(
+    backgroundColor: StaffTheme.background,
+
+    appBar: AppBar(
+      automaticallyImplyLeading: false,
+      title: Text(
+        _myWarehouse!.warehouseName,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+          color: Colors.white,
+        ),
+      ),
+      flexibleSpace: Container(
+        decoration: BoxDecoration(gradient: StaffTheme.primaryGradient),
+      ),
+      elevation: 0,
+    ),
+
+    body: LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth > 900) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWarehouseInfoCard(),
+                      const SizedBox(height: 20),
+                      _buildMapSection(height: 400),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: StaffTheme.softShadow,
+                  ),
+                  child: Column(
+                    children: [
+                      _buildInventoryHeader(),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildInventoryList(isScrollable: true),
+                            _buildVehicleList(isScrollable: true),
+                          ],
+                        ),
+                      ),
+                      _buildBottomActionButtons(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        } else {
+          return Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: _buildWarehouseInfoCard(),
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: _buildMapSection()),
+                  SliverToBoxAdapter(child: _buildInventoryHeader()),
+                  _buildInventoryList(isScrollable: false),
+                  _buildVehicleList(isScrollable: false),
+                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
+                ],
+              ),
+              _buildBottomActionButtons(),
+            ],
+          );
+        }
+      },
+    ),
+
+    // ✅🔥 NÚT THÊM PHƯƠNG TIỆN LUÔN HIỆN
+    floatingActionButton: FloatingActionButton.extended(
+      onPressed: _showAddVehicleDialog,
+      backgroundColor: StaffTheme.primaryBlue,
+      icon: const Icon(Icons.local_shipping, color: Colors.white),
+      label: const Text(
+        "THÊM XE",
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+
+    floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+  );
+}
 
   Widget _buildWarehouseInfoCard() {
     return Container(
@@ -263,18 +552,64 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   }
 
   Widget _buildInventoryHeader() {
-    return Column(
+  return Container(
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('DANH MỤC QUẢN LÝ', style: TextStyle(fontWeight: FontWeight.bold, color: StaffTheme.textMedium, fontSize: 13)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: StaffTheme.background, borderRadius: BorderRadius.circular(20)),
-                child: Text('${_inventory.length} hàng, ${_vehicles.length} xe', style: const TextStyle(color: StaffTheme.textLight, fontSize: 11)),
+              const Text(
+                'DANH MỤC QUẢN LÝ',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: StaffTheme.textMedium,
+                  fontSize: 13,
+                ),
+              ),
+              const Spacer(),
+              // Sử dụng AnimatedBuilder để nút phản ứng ngay khi chuyển Tab
+              AnimatedBuilder(
+                animation: _tabController,
+                builder: (context, child) {
+                  // Chỉ hiển thị nút THÊM XE khi đang ở Tab thứ 2 (index == 1)
+                  if (_tabController.index == 1) {
+                    return SizedBox(
+                      height: 34,
+                      child: ElevatedButton.icon(
+                        onPressed: _showAddVehicleDialog,
+                        icon: const Icon(Icons.add_circle, size: 16, color: Colors.white),
+                        label: const Text(
+                          "THÊM XE",
+                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: StaffTheme.primaryBlue,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                      ),
+                    );
+                  }
+                  // Khi ở Tab hàng hóa, hiển thị badge số lượng tổng quát
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: StaffTheme.background,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_inventory.length} hàng, ${_vehicles.length} xe',
+                      style: const TextStyle(color: StaffTheme.textLight, fontSize: 10, fontWeight: FontWeight.w600),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -286,18 +621,31 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
           indicatorColor: StaffTheme.primaryBlue,
           indicatorWeight: 3,
           indicatorSize: TabBarIndicatorSize.label,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          // Lắng nghe sự kiện tap để UI update ngay lập tức
+          onTap: (index) => setState(() {}), 
           tabs: const [
-            Tab(text: 'HÀNG HÓA'),
-            Tab(text: 'PHƯƠNG TIỆN'),
+            Tab(child: Text('HÀNG HÓA', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+            Tab(child: Text('PHƯƠNG TIỆN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
           ],
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   dynamic _buildVehicleList({required bool isScrollable}) {
-    final content = (context, index) {
+    if (isScrollable && _vehicles.isEmpty) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Không có phương tiện nào', style: TextStyle(color: Colors.grey)),
+          TextButton(onPressed: _showAddVehicleDialog, child: const Text('Thêm phương tiện mới'))
+        ],
+      );
+    }
+
+    // Phần build từng item trong danh sách
+    final itemBuilder = (context, index) {
       final vehicle = _vehicles[index];
       final bool isAvailable = vehicle.status == 'AVAILABLE';
 
@@ -312,6 +660,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
         ),
         child: Row(
           children: [
+            // Icon xe
             Container(
               width: 60,
               height: 60,
@@ -319,6 +668,8 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
               child: Icon(_getVehicleIcon(vehicle.vehicleType), color: StaffTheme.primaryBlue, size: 30),
             ),
             const SizedBox(width: 15),
+            
+            // Thông tin xe (Dùng Expanded để chiếm phần không gian ở giữa)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,21 +696,42 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
                 ],
               ),
             ),
+
+            // --- VỊ TRÍ THÊM NÚT SỬA & XÓA Ở ĐÂY ---
+            const SizedBox(width: 10), // Khoảng cách giữa thông tin và nút bấm
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  visualDensity: VisualDensity.compact, // Thu nhỏ diện tích icon để tiết kiệm không gian
+                  icon: const Icon(Icons.edit_rounded, color: StaffTheme.primaryBlue, size: 22),
+                  onPressed: () => _showEditVehicleDialog(vehicle),
+                  tooltip: 'Chỉnh sửa',
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.delete_outline_rounded, color: StaffTheme.errorRed, size: 22),
+                  onPressed: () => _handleDeleteVehicle(vehicle.id!),
+                  tooltip: 'Xóa xe',
+                ),
+              ],
+            ),
+            // ---------------------------------------
           ],
         ),
       );
     };
 
+    // Trả về ListView tùy theo thiết kế của bạn (Sliver hoặc Scrollable)
     if (isScrollable) {
-      if (_vehicles.isEmpty) return const Center(child: Text('Không có phương tiện nào', style: TextStyle(color: Colors.grey)));
       return ListView.builder(
         itemCount: _vehicles.length,
-        itemBuilder: (ctx, idx) => content(ctx, idx),
+        itemBuilder: itemBuilder,
       );
     } else {
       return SliverList(
         delegate: SliverChildBuilderDelegate(
-          (ctx, idx) => content(ctx, idx),
+          itemBuilder,
           childCount: _vehicles.length,
         ),
       );
@@ -367,16 +739,16 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   }
 
   IconData _getVehicleIcon(String type) {
-    if (type.contains('Xuồng')) return Icons.directions_boat_filled_rounded;
+    if (type.contains('Xuồng') || type.contains('Cano')) return Icons.directions_boat_filled_rounded;
     if (type.contains('Xe tải')) return Icons.local_shipping_rounded;
     if (type.contains('Xe bán tải')) return Icons.directions_car_filled_rounded;
-    return Icons.local_shipping; // Fallback
+    return Icons.local_shipping;
   }
 
   dynamic _buildInventoryList({required bool isScrollable}) {
     final content = (context, index) {
       final item = _inventory[index];
-      final bool isLowStock = item.quantity < 100; // Định mức mặc định
+      final bool isLowStock = item.quantity < 100; 
       
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -389,7 +761,6 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
         ),
         child: Row(
           children: [
-            // Hình ảnh minh họa
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Container(
@@ -503,6 +874,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
     );
   }
 
+  // --- DIALOGS ---
   void _showEditThresholdDialog(item) {
     showDialog(
       context: context,
@@ -541,7 +913,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
     }
 
     setState(() => _isLoading = true);
-    Navigator.pop(ctx); // Close dialog first
+    Navigator.pop(ctx);
 
     try {
       await _inventoryService.importStock(
@@ -551,7 +923,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
         source: _importSource,
       );
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nhập kho thành công!'), backgroundColor: StaffTheme.successGreen));
-      _loadData(); // Refresh current inventory
+      _loadData(); 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed));
     } finally {
@@ -560,37 +932,28 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   }
 
   void _showImportDialog() {
-    // Reset state
     _importSource = null;
     _selectedImportItem = null;
     _importQtyController.clear();
 
     showDialog(
       context: context,
-      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-          clipBehavior: Clip.antiAlias,
           child: Container(
             constraints: const BoxConstraints(maxWidth: 500),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Custom Header
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  decoration: BoxDecoration(gradient: StaffTheme.primaryGradient),
+                  decoration: BoxDecoration(gradient: StaffTheme.primaryGradient, borderRadius: const BorderRadius.vertical(top: Radius.circular(25))),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('BIỂU MẪU NHẬP HÀNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                      IconButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
+                      IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close, color: Colors.white)),
                     ],
                   ),
                 ),
@@ -599,24 +962,18 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('1. THÔNG TIN NGUỒN HÀNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight, letterSpacing: 1.1)),
+                      const Text('1. THÔNG TIN NGUỒN HÀNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
                         isExpanded: true,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: StaffTheme.background,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        hint: const Text('Chọn nguồn cung cấp (Trung ương/...)', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                        decoration: InputDecoration(filled: true, fillColor: StaffTheme.background, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+                        hint: const Text('Chọn nguồn cung cấp'),
                         value: _importSource,
-                        items: ['Cứu trợ Trung ương', 'Mạnh thường quân', 'Điều chuyển từ kho khác', 'Nhập khẩu hỗ trợ']
-                            .map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis))).toList(),
+                        items: ['Cứu trợ Trung ương', 'Mạnh thường quân', 'Điều chuyển từ kho khác', 'Nhập khẩu hỗ trợ'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                         onChanged: (val) => setDialogState(() => _importSource = val),
                       ),
                       const SizedBox(height: 20),
-                      const Text('2. CHI TIẾT LÔ HÀNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight, letterSpacing: 1.1)),
+                      const Text('2. CHI TIẾT LÔ HÀNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
                       const SizedBox(height: 10),
                       Row(
                         children: [
@@ -624,65 +981,21 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
                             flex: 3,
                             child: DropdownButtonFormField<Inventory>(
                               isExpanded: true,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: StaffTheme.background,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                                hintText: 'Tên hàng',
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                              ),
+                              decoration: InputDecoration(filled: true, fillColor: StaffTheme.background, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), hintText: 'Tên hàng'),
                               value: _selectedImportItem,
-                              items: _inventory.map((e) => DropdownMenuItem(value: e, child: Text(e.itemName, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
+                              items: _inventory.map((e) => DropdownMenuItem(value: e, child: Text(e.itemName))).toList(),
                               onChanged: (val) => setDialogState(() => _selectedImportItem = val),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             flex: 2,
-                            child: TextField(
-                              controller: _importQtyController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: StaffTheme.background,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                                hintText: 'Số lượng',
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                              ),
-                            ),
+                            child: TextField(controller: _importQtyController, keyboardType: TextInputType.number, decoration: InputDecoration(filled: true, fillColor: StaffTheme.background, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), hintText: 'Số lượng')),
                           ),
                         ],
                       ),
                       const SizedBox(height: 30),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                side: BorderSide(color: StaffTheme.primaryBlue.withOpacity(0.5)),
-                              ),
-                              child: const Text('HỦY', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton(
-                              onPressed: () => _handleImport(ctx),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: StaffTheme.primaryBlue,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                elevation: 0,
-                              ),
-                              child: const Text('XÁC NHẬN NHẬP KHO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ],
-                      ),
+                      SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => _handleImport(ctx), style: ElevatedButton.styleFrom(backgroundColor: StaffTheme.primaryBlue, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))), child: const Text('XÁC NHẬN NHẬP KHO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
                     ],
                   ),
                 ),
@@ -697,40 +1010,25 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   void _showExportDialog() {
     showDialog(
       context: context,
-      barrierDismissible: true,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        clipBehavior: Clip.antiAlias,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Custom Header
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                decoration: BoxDecoration(gradient: StaffTheme.primaryGradient),
+                decoration: BoxDecoration(gradient: StaffTheme.primaryGradient, borderRadius: const BorderRadius.vertical(top: Radius.circular(25))),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('BIỂU MẪU XUẤT HÀNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                    IconButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
+                    IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close, color: Colors.white)),
                   ],
                 ),
               ),
-              Flexible(
-                child: DistributionExportForm(
-                  onSuccess: () {
-                    Navigator.pop(ctx);
-                    _loadData(); // Tải lại dữ liệu sau khi xuất hàng thành công
-                  },
-                ),
-              ),
+              Flexible(child: DistributionExportForm(onSuccess: () { Navigator.pop(ctx); _loadData(); })),
             ],
           ),
         ),

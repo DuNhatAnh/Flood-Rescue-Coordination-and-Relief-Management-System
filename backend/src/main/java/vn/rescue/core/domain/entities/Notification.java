@@ -17,13 +17,27 @@ import java.time.LocalDateTime;
 public class Notification {
     @Id
     private String id;
+
     private String title;
     private String content;
-    private String type; // INFO, WARNING, SOS
-    
+
+    // INFO, WARNING, SOS (Khớp với màu sắc trên UI Flutter)
+    private String type;
+
+    // HIGH, NORMAL, LOW (Để sắp xếp độ quan trọng)
+    private String priority;
+
+    @Field("is_read")
+    @Builder.Default
+    private boolean isRead = false; // Quan trọng: Để lọc thông báo chưa đọc
+
+    @Field("sender_id")
+    private String senderId; // ID người gửi (Admin hoặc Hệ thống)
+
     @Field("user_id")
-    private String userId; // Specific user or null for all
-    
+    private String userId; // ID người nhận (Null nếu là thông báo chung cho toàn hệ thống)
+
     @Field("created_at")
-    private LocalDateTime createdAt;
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now(); // Tự động lấy thời gian hiện tại
 }

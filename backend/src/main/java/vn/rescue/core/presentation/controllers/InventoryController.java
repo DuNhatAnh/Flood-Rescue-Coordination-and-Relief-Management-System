@@ -7,22 +7,36 @@ import org.springframework.web.bind.annotation.*;
 import vn.rescue.core.application.dto.InventoryResponse;
 import vn.rescue.core.application.dto.StockInRequest;
 import vn.rescue.core.application.services.InventoryService;
+import vn.rescue.core.presentation.common.ApiResponse; // Giả định bạn dùng ApiResponse chung
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/inventory")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*") // Hỗ trợ Flutter gọi API
 public class InventoryController {
     private final InventoryService inventoryService;
 
+    // SỬA LỖI: Thêm @RequestParam userId để truyền vào Service ghi log
     @PostMapping("/import")
-    public ResponseEntity<InventoryResponse> importStock(@Valid @RequestBody StockInRequest request) {
-        return ResponseEntity.ok(inventoryService.importStock(request));
+    public ResponseEntity<InventoryResponse> importStock(
+            @Valid @RequestBody StockInRequest request,
+            @RequestParam String userId) {
+        // Truyền đủ 2 tham số (request, userId) như Service yêu cầu
+        return ResponseEntity.ok(inventoryService.importStock(request, userId));
     }
 
     @GetMapping("/warehouse/{warehouseId}")
-    public ResponseEntity<List<InventoryResponse>> getWarehouseInventory(@PathVariable("warehouseId") String warehouseId) {
+    public ResponseEntity<List<InventoryResponse>> getWarehouseInventory(
+            @PathVariable("warehouseId") String warehouseId) {
         return ResponseEntity.ok(inventoryService.getWarehouseInventory(warehouseId));
+    }
+
+    // Bổ sung: Lấy danh sách hàng sắp hết cho Dashboard (SCRUM-55)
+    @GetMapping("/warehouse/{warehouseId}/low-stock")
+    public ResponseEntity<List<InventoryResponse>> getLowStock(
+            @PathVariable("warehouseId") String warehouseId) {
+        return ResponseEntity.ok(inventoryService.getLowStockItems(warehouseId));
     }
 }

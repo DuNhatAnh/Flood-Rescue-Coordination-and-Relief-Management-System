@@ -17,4 +17,9 @@ public class InventoryResponse {
     private String unit;
     private Integer quantity;
     private String imageUrl;
+
+    // Nguong toi thieu de bao bong
+    private Integer minThreshold;
+    private Integer maxCapacity;
+    private String status;
 }

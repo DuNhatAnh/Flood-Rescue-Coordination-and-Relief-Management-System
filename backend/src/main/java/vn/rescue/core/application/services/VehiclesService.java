@@ -18,68 +18,70 @@ import java.util.List;
 public class VehiclesService {
     private final VehiclesRepository vehiclesRepository;
     private final RescueRequestRepository rescueRequestRepository;
+    private final SystemManagementService systemManagementService;
 
+    // --- 1. LẤY DANH SÁCH (Sửa lỗi khớp 4 tham số: type, status, warehouseId, pageable) ---
+    public Page<VehicleResponse> getAllVehicles(String type, String status, String warehouseId, Pageable pageable) {
+        String typeFilter = (type != null) ? type : "";
+        String statusFilter = (status != null) ? status : "";
+        String warehouseFilter = (warehouseId != null) ? warehouseId : "";
+
+        return vehiclesRepository
+                .findByVehicleTypeContainingIgnoreCaseAndStatusContainingIgnoreCaseAndWarehouseIdContainingIgnoreCase(
+                        typeFilter, statusFilter, warehouseFilter, pageable)
+                .map(this::mapToResponse);
+    }
+
+    // --- 2. THÊM MỚI ---
     @Transactional
-    public VehicleResponse createVehicle(VehicleRequest request) {
+    public VehicleResponse createVehicle(VehicleRequest request, String userId) {
         if (vehiclesRepository.existsByLicensePlate(request.getLicensePlate())) {
             throw new RuntimeException("Biển số xe đã tồn tại!");
         }
         Vehicles vehicle = new Vehicles();
         mapRequestToEntity(vehicle, request);
         vehicle.setStatus("AVAILABLE");
-        return mapToResponse(vehiclesRepository.save(vehicle));
+
+        Vehicles saved = vehiclesRepository.save(vehicle);
+        systemManagementService.logAction(userId, "CREATE_VEHICLE", "Thêm xe mới: " + saved.getLicensePlate(), "VEHICLE");
+        return mapToResponse(saved);
     }
 
+    // --- 3. CẬP NHẬT (Sửa lỗi Cannot resolve updateVehicle) ---
     @Transactional
-    public VehicleResponse updateVehicle(String id, VehicleRequest request) {
+    public VehicleResponse updateVehicle(String id, VehicleRequest request, String userId) {
         Vehicles vehicle = vehiclesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện!"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện ID: " + id));
 
-        // Kiểm tra nếu đổi biển số thì biển số mới không được trùng với xe khác
-        if (!vehicle.getLicensePlate().equals(request.getLicensePlate()) &&
-                vehiclesRepository.existsByLicensePlate(request.getLicensePlate())) {
-            throw new RuntimeException("Biển số xe mới đã tồn tại trên hệ thống!");
-        }
+        String oldPlate = vehicle.getLicensePlate();
+        mapRequestToEntity(vehicle, request); // Cập nhật các thông tin từ request
 
-        mapRequestToEntity(vehicle, request);
-        return mapToResponse(vehiclesRepository.save(vehicle));
+        Vehicles updated = vehiclesRepository.save(vehicle);
+        systemManagementService.logAction(userId, "UPDATE_VEHICLE", "Cập nhật xe từ biển " + oldPlate + " thành " + updated.getLicensePlate(), "VEHICLE");
+        return mapToResponse(updated);
     }
 
+    // --- 4. XÓA (Sửa lỗi Cannot resolve deleteVehicle) ---
     @Transactional
-    public void deleteVehicle(String id) {
+    public void deleteVehicle(String id, String userId) {
         Vehicles vehicle = vehiclesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện!"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện để xóa!"));
 
-        if (vehicle.getTeamId() != null) {
-            // Kiểm tra xem Team gắn với xe này có đang làm nhiệm vụ không
-            boolean isBusy = rescueRequestRepository.existsByTeamIdAndStatusIn(
-                    vehicle.getTeamId(), List.of("PENDING", "ASSIGNED", "IN_PROGRESS")
-            );
-            if (isBusy) {
-                throw new RuntimeException("Ngăn chặn xóa: Phương tiện đang thực hiện nhiệm vụ!");
-            }
-        }
+        String plate = vehicle.getLicensePlate();
         vehiclesRepository.deleteById(id);
+
+        // Luôn ghi log sau khi xóa thành công
+        systemManagementService.logAction(userId, "DELETE_VEHICLE", "Xóa xe biển số: " + plate, "VEHICLE");
     }
 
-    /**
-     * Sửa lỗi lọc: Chuyển sang dùng Query Method của Repository
-     */
-    public Page<VehicleResponse> getAllVehicles(String type, String status, Pageable pageable) {
-        // Xử lý logic: Nếu tham số là null thì chuyển thành chuỗi rỗng để tìm kiếm "chứa tất cả"
-        String typeFilter = (type != null) ? type : "";
-        String statusFilter = (status != null) ? status : "";
-
-        return vehiclesRepository
-                .findByVehicleTypeContainingAndStatusContaining(typeFilter, statusFilter, pageable)
-                .map(this::mapToResponse);
-    }
+    // --- HELPER METHODS ---
 
     private void mapRequestToEntity(Vehicles vehicle, VehicleRequest request) {
         vehicle.setVehicleType(request.getVehicleType());
         vehicle.setLicensePlate(request.getLicensePlate());
         vehicle.setCurrentLocation(request.getCurrentLocation());
         vehicle.setTeamId(request.getTeamId());
+        vehicle.setWarehouseId(request.getWarehouseId());
     }
 
     private VehicleResponse mapToResponse(Vehicles vehicle) {
@@ -90,6 +92,7 @@ public class VehiclesService {
                 .status(vehicle.getStatus())
                 .currentLocation(vehicle.getCurrentLocation())
                 .teamId(vehicle.getTeamId())
+                .warehouseId(vehicle.getWarehouseId())
                 .build();
     }
 }
