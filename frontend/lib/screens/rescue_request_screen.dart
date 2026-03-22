@@ -444,11 +444,11 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
       appBar: AppBar(
         title: const Text("Gửi yêu cầu cứu hỗ",
             style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
+        actions: const [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: EdgeInsets.only(right: 16),
             child: Chip(
-              label: const Text("SOS",
+              label: Text("SOS",
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
               backgroundColor: Colors.red,

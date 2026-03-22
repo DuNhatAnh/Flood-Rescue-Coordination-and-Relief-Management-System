@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../models/relief_item.dart';
 import '../../services/relief_item_service.dart';
@@ -63,7 +62,7 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                const Text(
                   'Nhập thông tin vật phẩm mới để lưu vào kho hệ thống.',
                   style: TextStyle(color: StaffTheme.textLight, fontSize: 13),
                 ),
@@ -86,11 +85,11 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
                       border: Border.all(color: StaffTheme.border),
                     ),
                     child: uploadedImageUrl == null
-                        ? Column(
+                        ? const Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.add_a_photo_outlined, color: StaffTheme.textLight, size: 40),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               Text('Thêm hình ảnh', style: TextStyle(color: StaffTheme.textLight)),
                             ],
                           )
@@ -138,7 +137,7 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Hủy bỏ', style: TextStyle(color: StaffTheme.textLight)),
+              child: const Text('Hủy bỏ', style: TextStyle(color: StaffTheme.textLight)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -156,17 +155,17 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
                     imageUrl: uploadedImageUrl,
                   );
                   await _service.create(newItem);
-                  if (mounted) {
-                    Navigator.pop(context);
-                    loadItems();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Đã thêm ${newItem.itemName} thành công!'),
-                        backgroundColor: StaffTheme.successGreen,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
+                  await _service.create(newItem);
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
+                  loadItems();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Đã thêm ${newItem.itemName} thành công!'),
+                      backgroundColor: StaffTheme.successGreen,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
                 }
               },
               child: const Text('Lưu vào kho', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -285,13 +284,13 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
                     imageUrl: uploadedImageUrl,
                   );
                   await _service.update(item.id!, updatedItem);
-                  if (mounted) {
-                    Navigator.pop(context);
-                    loadItems();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã cập nhật thành công!'), behavior: SnackBarBehavior.floating),
-                    );
-                  }
+                  await _service.update(item.id!, updatedItem);
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
+                  loadItems();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Đã cập nhật thành công!'), behavior: SnackBarBehavior.floating),
+                  );
                 }
               },
               child: const Text('Cập nhật', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -438,7 +437,7 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
                                 item.description,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: StaffTheme.textLight,
                                   fontSize: 12,
                                 ),
@@ -463,14 +462,14 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
                               children: [Icon(Icons.edit_outlined, size: 20), SizedBox(width: 8), Text('Sửa')],
                             ),
                           ),
-                          PopupMenuItem(
+                          const PopupMenuItem(
                             value: 'delete',
                             child: Row(
-                              children: [Icon(Icons.delete_outline, size: 20, color: StaffTheme.errorRed), const SizedBox(width: 8), Text('Xóa', style: TextStyle(color: StaffTheme.errorRed))],
+                              children: [Icon(Icons.delete_outline, size: 20, color: StaffTheme.errorRed), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: StaffTheme.errorRed))],
                             ),
                           ),
                         ],
-                        icon: Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),
+                        icon: const Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),
                       ),
                     ],
                   ),

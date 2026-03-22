@@ -66,7 +66,7 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
               Text('KẾT QUẢ CỨU HỘ THỰC TẾ', style: StaffTheme.cardTitle.copyWith(color: StaffTheme.primaryBlue)),
               const SizedBox(height: 24),
               
-              Text('SỐ NGƯỜI ĐÃ CỨU ĐƯỢC', style: TextStyle(color: StaffTheme.textMedium, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+              const Text('SỐ NGƯỜI ĐÃ CỨU ĐƯỢC', style: TextStyle(color: StaffTheme.textMedium, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -93,14 +93,14 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
               ),
               
               const SizedBox(height: 32),
-              Text('GHI CHÚ / TÌNH HÌNH THỰC TẾ', style: TextStyle(color: StaffTheme.textMedium, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+              const Text('GHI CHÚ / TÌNH HÌNH THỰC TẾ', style: TextStyle(color: StaffTheme.textMedium, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _noteController,
                 maxLines: 5,
                 decoration: InputDecoration(
                   hintText: 'Mô tả tình trạng sức khỏe người dân, khó khăn gặp phải...',
-                  hintStyle: TextStyle(color: StaffTheme.textLight, fontSize: 14),
+                  hintStyle: const TextStyle(color: StaffTheme.textLight, fontSize: 14),
                   fillColor: Colors.white,
                   filled: true,
                   border: OutlineInputBorder(

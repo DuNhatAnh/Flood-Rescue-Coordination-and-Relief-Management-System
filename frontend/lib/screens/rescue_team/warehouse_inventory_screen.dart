@@ -74,14 +74,14 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
           insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(StaffTheme.cardRadius)),
           title: Text('Nhập hàng vào kho', style: StaffTheme.cardTitle),
-          content: Container(
+          content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                 DropdownButtonFormField<ReliefItem>(
-                  value: selectedItem,
+                  initialValue: selectedItem,
                   decoration: InputDecoration(
                     labelText: 'Chọn loại hàng',
                     prefixIcon: const Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue),
@@ -114,7 +114,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                     Expanded(
                       flex: 3,
                       child: DropdownButtonFormField<String>(
-                        value: selectedCondition,
+                        initialValue: selectedCondition,
                         decoration: InputDecoration(
                           labelText: 'Tình trạng',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -183,7 +183,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
           ),
         ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: StaffTheme.primaryBlue,
@@ -207,19 +207,17 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                     expiryDate: expiryDate,
                     condition: selectedCondition,
                   );
-                  if (mounted) {
-                    Navigator.pop(context);
-                    loadInventory();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Nhập hàng thành công!'), backgroundColor: StaffTheme.successGreen),
-                    );
-                  }
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
+                  loadInventory();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Nhập hàng thành công!'), backgroundColor: StaffTheme.successGreen),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed),
-                    );
-                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed),
+                  );
                 }
               },
               child: const Text('Xác nhận nhập', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

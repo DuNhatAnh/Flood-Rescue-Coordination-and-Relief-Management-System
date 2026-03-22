@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/warehouse.dart';
 import '../../services/warehouse_service.dart';
-import '../relief_item_screen.dart';
 import 'warehouse_inventory_screen.dart';
 import '../../utils/staff_theme.dart';
 
@@ -85,7 +84,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedStatus,
+                initialValue: selectedStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái ban đầu',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -104,7 +103,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: StaffTheme.primaryBlue,
@@ -121,11 +120,10 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 );
                 
                 final result = await _service.create(newWarehouse);
-                if (mounted) {
-                  Navigator.pop(context);
-                  if (result != null) {
-                    loadWarehouses();
-                  }
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                if (result != null) {
+                  loadWarehouses();
                 }
               },
               child: const Text('Lưu', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -169,7 +167,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: currentStatus,
+                initialValue: currentStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -188,7 +186,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: StaffTheme.primaryBlue,
@@ -207,10 +205,9 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 );
                 
                 final result = await _service.update(warehouse.id!, updated);
-                if (mounted) {
-                  Navigator.pop(context);
-                  if (result != null) loadWarehouses();
-                }
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                if (result != null) loadWarehouses();
               },
               child: const Text('Cập nhật', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
@@ -228,7 +225,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
         title: const Text('Xác nhận xóa'),
         content: Text('Xóa kho "${warehouse.warehouseName}"? Thao tác này không thể hoàn tác.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy', style: TextStyle(color: StaffTheme.textLight))),
           TextButton(
             onPressed: () => Navigator.pop(context, true), 
             child: const Text('Xóa', style: TextStyle(color: StaffTheme.errorRed, fontWeight: FontWeight.bold)),
@@ -345,7 +342,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
           const SizedBox(height: 16),
           Text(
             isSearching ? 'Không tìm thấy kho phù hợp' : 'Chưa có dữ liệu kho bãi',
-            style: TextStyle(color: StaffTheme.textLight, fontSize: 18, fontWeight: FontWeight.w600),
+            style: const TextStyle(color: StaffTheme.textLight, fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           TextButton(
@@ -417,7 +414,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.location_on_outlined, size: 14, color: StaffTheme.textLight),
+                          const Icon(Icons.location_on_outlined, size: 14, color: StaffTheme.textLight),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -447,7 +444,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 ),
                 // Action Menu
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),
+                  icon: const Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),
                   onSelected: (val) {
                     if (val == 'edit') showEditDialog(warehouse);
                     if (val == 'delete') deleteWarehouse(warehouse);
@@ -459,10 +456,10 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                         children: [Icon(Icons.edit_outlined, size: 20), SizedBox(width: 8), Text('Sửa')],
                       ),
                     ),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'delete',
                       child: Row(
-                        children: [Icon(Icons.delete_outline, size: 20, color: StaffTheme.errorRed), const SizedBox(width: 8), Text('Xóa', style: TextStyle(color: StaffTheme.errorRed))],
+                        children: [Icon(Icons.delete_outline, size: 20, color: StaffTheme.errorRed), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: StaffTheme.errorRed))],
                       ),
                     ),
                   ],

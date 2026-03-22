@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:ui_web' as ui;
+// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html;
+// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:js' as js;
 import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
 import 'package:flood_rescue_app/screens/track_rescue_request_screen.dart';
@@ -16,21 +18,21 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Column(
         children: [
-          const TopBar(),
+          TopBar(),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  const StatBoard(),
-                  const MainContent(),
+                  StatBoard(),
+                  MainContent(),
                 ],
               ),
             ),
           ),
-          const BottomBar(),
+          BottomBar(),
         ],
       ),
     );
@@ -193,6 +195,7 @@ class _TopBarState extends State<TopBar> {
                     IconButton(
                       onPressed: () async {
                         await AuthService.logout();
+                        if (!mounted) return;
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (context) => const HomeScreen()),

@@ -178,7 +178,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(8),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,12 +222,12 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
         child: Column(
           children: [
             TabBar(
-              labelColor: Color(0xFF0288D1),
+              labelColor: const Color(0xFF0288D1),
               unselectedLabelColor: Colors.grey,
-              indicatorColor: Color(0xFF0288D1),
+              indicatorColor: const Color(0xFF0288D1),
               tabs: [
-                Tab(child: Text('Chờ xác minh (${unverifiedRequests.length})', style: TextStyle(fontSize: 13))),
-                Tab(child: Text('Đã xác minh (${verifiedRequests.length})', style: TextStyle(fontSize: 13))),
+                Tab(child: Text('Chờ xác minh (${unverifiedRequests.length})', style: const TextStyle(fontSize: 13))),
+                Tab(child: Text('Đã xác minh (${verifiedRequests.length})', style: const TextStyle(fontSize: 13))),
               ],
             ),
             Expanded(
@@ -246,7 +246,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
 
   Widget _buildFilteredList(List<RescueRequest> list, String emptyMessage) {
     if (list.isEmpty) {
-      return Center(child: Text(emptyMessage, style: TextStyle(color: Colors.grey)));
+      return Center(child: Text(emptyMessage, style: const TextStyle(color: Colors.grey)));
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -342,6 +342,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                         IconButton(
                           onPressed: () async {
                             final success = await _rescueService.verifyRequest(request.id, 'Điều phối viên A');
+                            if (!mounted) return;
                             if (success) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Yêu cầu đã được xác minh thành công')),
@@ -411,8 +412,8 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
 
   Widget _buildMap(List<RescueRequest> requests) {
     return FlutterMap(
-      options: MapOptions(
-        initialCenter: const LatLng(16.0471, 108.2062),
+      options: const MapOptions(
+        initialCenter: LatLng(16.0471, 108.2062),
         initialZoom: 13.0,
       ),
       children: [
@@ -543,16 +544,15 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             final success = await _rescueService.verifyRequest(currentRequest.id, 'Điều phối viên');
+                            if (!mounted) return;
                             if (success) {
                               setModalState(() {
                                 currentRequest = currentRequest.copyWith(isVerified: true);
                               });
                               _refreshData(); // To keep main list updated
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Đã xác minh yêu cầu'))
-                                );
-                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Đã xác minh yêu cầu'))
+                              );
                             }
                           },
                           icon: const Icon(Icons.verified),

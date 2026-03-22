@@ -122,8 +122,8 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('NHIỆM VỤ #${task.id?.toString().substring(0, 4) ?? "NEW"}', style: StaffTheme.cardTitle),
-                          Text(timeStr, style: TextStyle(color: StaffTheme.textLight, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text('NHIỆM VỤ #${task.id.toString().substring(0, 4) ?? "NEW"}', style: StaffTheme.cardTitle),
+                          Text(timeStr, style: const TextStyle(color: StaffTheme.textLight, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -163,7 +163,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     icon: const Icon(Icons.map_rounded, size: 18, color: StaffTheme.primaryBlue),
-                    label: Text('BẢN ĐỒ', style: TextStyle(color: StaffTheme.primaryBlue, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+                    label: const Text('BẢN ĐỒ', style: TextStyle(color: StaffTheme.primaryBlue, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -201,7 +201,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(color: StaffTheme.textMedium, fontSize: 13, fontWeight: FontWeight.w500),
+            style: const TextStyle(color: StaffTheme.textMedium, fontSize: 13, fontWeight: FontWeight.w500),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

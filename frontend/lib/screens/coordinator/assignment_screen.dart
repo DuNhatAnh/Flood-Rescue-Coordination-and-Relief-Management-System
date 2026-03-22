@@ -42,6 +42,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi tải dữ liệu: $e')),
       );

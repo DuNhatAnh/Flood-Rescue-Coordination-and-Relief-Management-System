@@ -28,6 +28,7 @@ class _NotificationManagementScreenState extends State<NotificationManagementScr
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     }
@@ -52,7 +53,7 @@ class _NotificationManagementScreenState extends State<NotificationManagementScr
               maxLines: 3,
             ),
             DropdownButtonFormField<String>(
-              value: selectedType,
+              initialValue: selectedType,
               items: const [
                 DropdownMenuItem(value: 'URGENT', child: Text('Khẩn cấp')),
                 DropdownMenuItem(value: 'GENERAL', child: Text('Chung')),
@@ -73,9 +74,11 @@ class _NotificationManagementScreenState extends State<NotificationManagementScr
                   'content': contentController.text,
                   'type': selectedType,
                 });
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadNotifications();
               } catch (e) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
               }
             },

@@ -26,5 +26,6 @@ public interface VehiclesRepository extends MongoRepository<Vehicles, String> {
             String vehicleType, String status, Pageable pageable
     );
 
-    Page<Vehicles> findAll(Pageable pageable);
+    @org.springframework.lang.NonNull
+    Page<Vehicles> findAll(@org.springframework.lang.NonNull Pageable pageable);
 }

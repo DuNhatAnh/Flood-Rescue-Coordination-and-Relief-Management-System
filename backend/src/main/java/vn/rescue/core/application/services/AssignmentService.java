@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class AssignmentService {
 
     private final AssignmentRepository assignmentRepo;

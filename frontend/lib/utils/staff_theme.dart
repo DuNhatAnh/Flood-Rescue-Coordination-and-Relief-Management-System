@@ -70,7 +70,7 @@ class StaffTheme {
     color: textDark,
   );
 
-  static TextStyle get cardSubtitle => TextStyle(
+  static TextStyle get cardSubtitle => const TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w500,
     color: textMedium,

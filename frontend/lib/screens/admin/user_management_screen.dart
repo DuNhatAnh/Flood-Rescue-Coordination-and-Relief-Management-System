@@ -29,6 +29,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi: $e')),
@@ -53,7 +54,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
             TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Số điện thoại')),
             DropdownButtonFormField<String>(
-              value: selectedRole,
+              initialValue: selectedRole,
               items: const [
                 DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
                 DropdownMenuItem(value: 'COORDINATOR', child: Text('Coordinator')),
@@ -75,9 +76,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   'phone': phoneController.text,
                   'roleId': selectedRole,
                 });
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadUsers();
               } catch (e) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
               }
             },
@@ -141,6 +144,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     await _adminService.updateUserRole(user['id'], val);
                                     _loadUsers();
                                   } catch (e) {
+                                    if (!mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
                                   }
                                 }
