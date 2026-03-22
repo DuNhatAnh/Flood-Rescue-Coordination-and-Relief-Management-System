@@ -50,7 +50,7 @@ public class RescueRequestService {
 
     public String generateCustomId() {
         long count = rescueRequestRepository.countByCustomIdIsNotNull();
-        return String.format("RES-%04d", count + 1);
+        return String.format("%04d", count + 1);
     }
 
     public RescueRequest getById(String id) {
@@ -60,7 +60,7 @@ public class RescueRequestService {
         
         // Try to find by ID first, then by customId
         return rescueRequestRepository.findById(id)
-                .or(() -> rescueRequestRepository.findByCustomId(id))
+                .or(() -> rescueRequestRepository.findFirstByCustomId(id))
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu với ID: " + id));
     }
 

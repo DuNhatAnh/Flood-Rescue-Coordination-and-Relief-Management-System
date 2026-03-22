@@ -50,7 +50,7 @@ public class RescueCoordinationService {
     public void verifyRequest(String id, String verifiedBy) {
         Optional<RescueRequest> requestOpt = rescueRequestRepository.findById(id);
         if (requestOpt.isEmpty()) {
-            requestOpt = rescueRequestRepository.findByCustomId(id);
+            requestOpt = rescueRequestRepository.findFirstByCustomId(id);
         }
         
         if (requestOpt.isPresent()) {
@@ -76,7 +76,7 @@ public class RescueCoordinationService {
     public Assignment createAssignment(String requestId, String teamId, String vehicleId, String assignedBy) {
         Optional<RescueRequest> requestOpt = rescueRequestRepository.findById(requestId);
         if (requestOpt.isEmpty()) {
-            requestOpt = rescueRequestRepository.findByCustomId(requestId);
+            requestOpt = rescueRequestRepository.findFirstByCustomId(requestId);
         }
 
         if (requestOpt.isPresent()) {

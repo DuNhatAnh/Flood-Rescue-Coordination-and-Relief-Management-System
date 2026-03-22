@@ -15,7 +15,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@SuppressWarnings({"null", "unused"})
+@SuppressWarnings({ "null", "unused" })
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -32,11 +32,11 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Bắt đầu dọn dẹp và khởi tạo dữ liệu...");
 
         seedUsers();
-        
+
         seedRescueRequests();
         seedRescueTeamsAndVehicles();
         // seedWarehousesAndItems();
-        // backfillRescueRequestIds();
+        backfillRescueRequestIds();
 
         log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
     }
@@ -49,7 +49,7 @@ public class DataInitializer implements CommandLineRunner {
         for (RescueRequest request : requests) {
             if (request.getCustomId() == null) {
                 // Generate ID based on existing count or order
-                request.setCustomId(String.format("RES-%04d", updatedCount + 1));
+                request.setCustomId(String.format("%04d", updatedCount + 1));
                 rescueRequestRepository.save(request);
                 updatedCount++;
             }

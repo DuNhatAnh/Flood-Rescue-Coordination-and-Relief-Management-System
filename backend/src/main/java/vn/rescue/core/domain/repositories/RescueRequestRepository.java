@@ -11,7 +11,7 @@ import java.util.Collection;
 public interface RescueRequestRepository extends MongoRepository<RescueRequest, String> {
     List<RescueRequest> findByStatus(String status);
     long countByStatus(String status);
-    Optional<RescueRequest> findByCustomId(String customId);
+    Optional<RescueRequest> findFirstByCustomId(String customId);
     long countByCustomIdIsNotNull();
 
     //Them dong nay de kiem tra xem co request nao dang dinh toi team nayboolean existsByTeamIdAndStatusIn(String teamId, Collection<String> statuses);
