@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.rescue.core.application.dto.RescueRequestDto;
+import vn.rescue.core.application.dto.UpdateRescueRequestStatusDto;
 import vn.rescue.core.domain.entities.RequestStatusHistory;
 import vn.rescue.core.domain.entities.RescueRequest;
 import vn.rescue.core.domain.repositories.RequestStatusHistoryRepository;
@@ -75,5 +76,20 @@ public class RescueRequestService {
 
     public java.util.List<RescueRequest> getAll() {
         return rescueRequestRepository.findAll();
+    }
+
+    @Transactional
+    public RescueRequest updateStatus(String id, UpdateRescueRequestStatusDto dto) {
+        RescueRequest request = getById(id);
+        request.setStatus(dto.getStatus());
+        RescueRequest savedRequest = rescueRequestRepository.save(request);
+
+        RequestStatusHistory history = new RequestStatusHistory();
+        history.setRequestId(savedRequest.getId());
+        history.setStatus(dto.getStatus());
+        history.setNote(dto.getNote());
+        statusHistoryRepository.save(history);
+
+        return savedRequest;
     }
 }
