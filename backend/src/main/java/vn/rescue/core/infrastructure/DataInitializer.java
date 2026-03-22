@@ -35,7 +35,7 @@ public class DataInitializer implements CommandLineRunner {
 
         seedRescueRequests();
         seedRescueTeamsAndVehicles();
-        // seedWarehousesAndItems();
+        seedWarehousesAndItems();
         backfillRescueRequestIds();
 
         log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
@@ -89,20 +89,28 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Đã nạp 3 người dùng mẫu.");
         }
 
-        // Always ensure admin@rescue.vn exists and has correct password for testing
-        userRepository.findByEmail("admin@rescue.vn").ifPresentOrElse(admin -> {
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            userRepository.save(admin);
-            log.info("Đã ép buộc đặt lại mật khẩu của admin@rescue.vn thành admin123");
+        // Ensure all default users have correct password for testing
+        updateOrCreateUser("admin@rescue.vn", "Quản trị viên (Admin)", "ADMIN");
+        updateOrCreateUser("coordinator@rescue.vn", "Điều phối viên (Coordinator)", "COORDINATOR");
+        updateOrCreateUser("staff@rescue.vn", "Nhân viên cứu hộ (Staff)", "RESCUE_STAFF");
+    }
+
+    private void updateOrCreateUser(String email, String fullName, String roleId) {
+        userRepository.findByEmail(email).ifPresentOrElse(user -> {
+            user.setPassword(passwordEncoder.encode("admin123"));
+            user.setFullName(fullName);
+            user.setRoleId(roleId);
+            userRepository.save(user);
+            log.info("Đã cập nhật tài khoản {} với mật khẩu admin123", email);
         }, () -> {
-            User admin = new User();
-            admin.setEmail("admin@rescue.vn");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setFullName("Quản trị viên (Admin)");
-            admin.setRoleId("ADMIN");
-            admin.setCreatedAt(LocalDateTime.now());
-            userRepository.save(admin);
-            log.info("Đã tạo mới tài khoản admin@rescue.vn với mật khẩu admin123");
+            User user = new User();
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode("admin123"));
+            user.setFullName(fullName);
+            user.setRoleId(roleId);
+            user.setCreatedAt(LocalDateTime.now());
+            userRepository.save(user);
+            log.info("Đã tạo mới tài khoản {} với mật khẩu admin123", email);
         });
     }
 

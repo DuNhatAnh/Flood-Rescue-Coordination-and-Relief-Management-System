@@ -52,12 +52,25 @@ class AuthService {
         final data = jsonDecode(response.body);
         final token = data['token'];
         
-        // Backend currently hardcodes roles to ["USER"], map it or default to admin for testing
+        // Map roles from backend
+        String roleStr = (data['roles'] != null && data['roles'].isNotEmpty) 
+            ? data['roles'][0] 
+            : 'USER';
+            
+        UserRole mappedRole;
+        if (roleStr == 'ADMIN') {
+          mappedRole = UserRole.admin;
+        } else if (roleStr == 'COORDINATOR') {
+          mappedRole = UserRole.coordinator;
+        } else {
+          mappedRole = UserRole.rescueStaff;
+        }
+
         final user = UserModel(
           id: data['email'] ?? 'U1',
           email: data['email'] ?? email,
           fullName: data['fullName'] ?? 'Người dùng',
-          role: UserRole.admin, // Force admin to ensure dashboard access
+          role: mappedRole,
         );
         
         await _saveSession(user, token);

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/warehouse.dart';
 import '../../services/warehouse_service.dart';
 import 'warehouse_inventory_screen.dart';
+import 'distribution_export_screen.dart';
+import 'distribution_history_screen.dart';
 import '../../utils/staff_theme.dart';
 
 class WarehouseScreen extends StatefulWidget {
@@ -84,7 +86,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: selectedStatus,
+                value: selectedStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái ban đầu',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -167,7 +169,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: currentStatus,
+                value: currentStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -262,6 +264,33 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DistributionExportScreen())),
+                  icon: const Icon(Icons.outbox_rounded, size: 18, color: Colors.white),
+                  label: const Text('XUẤT HÀNG', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: StaffTheme.primaryBlue,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DistributionHistoryScreen())),
+                  icon: const Icon(Icons.history_rounded, size: 18),
+                  label: const Text('LỊCH SỬ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(

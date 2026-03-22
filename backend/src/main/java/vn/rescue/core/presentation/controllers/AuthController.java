@@ -42,7 +42,7 @@ public class AuthController {
                 .token(token)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .roles(Collections.singletonList("USER")) // Cần map đúng role bảng roles sau
+                .roles(Collections.singletonList(user.getRoleId())) 
                 .build());
     }
 }
