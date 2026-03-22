@@ -123,42 +123,104 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 20),
                     itemCount: _users.length,
                     itemBuilder: (context, index) {
                       final user = _users[index];
-                      return ListTile(
-                        title: Text(user['fullName'] ?? 'N/A'),
-                        subtitle: Row(
-                          children: [
-                            Text('${user['email']} - '),
-                            DropdownButton<String>(
-                              value: user['roleId'] ?? 'USER',
-                              items: const [
-                                DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
-                                DropdownMenuItem(value: 'COORDINATOR', child: Text('Coordinator')),
-                                DropdownMenuItem(value: 'USER', child: Text('User')),
-                              ],
-                              onChanged: (val) async {
-                                if (val != null) {
-                                  try {
-                                    await _adminService.updateUserRole(user['id'], val);
-                                    _loadUsers();
-                                  } catch (e) {
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-                                  }
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                        trailing: Switch(
-                          value: user['status'] == 'ACTIVE',
-                          onChanged: (val) async {
-                            final newStatus = val ? 'ACTIVE' : 'LOCKED';
-                            await _adminService.updateUserStatus(user['id'], newStatus);
-                            _loadUsers();
-                          },
+                      final isActive = user['status'] == 'ACTIVE';
+                      
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 28,
+                                backgroundColor: const Color(0xFF2555D4).withOpacity(0.1),
+                                child: Text(
+                                  (user['fullName'] ?? 'U').substring(0, 1).toUpperCase(),
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2555D4)),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      user['fullName'] ?? 'N/A',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      user['email'] ?? 'No email',
+                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: isActive ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5)),
+                                          ),
+                                          child: Text(
+                                            isActive ? 'Hoạt động' : 'Đã khóa',
+                                            style: TextStyle(
+                                              color: isActive ? Colors.green : Colors.red,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: DropdownButtonHideUnderline(
+                                            child: DropdownButton<String>(
+                                              isDense: true,
+                                              value: user['roleId'] ?? 'USER',
+                                              style: const TextStyle(color: Color(0xFF2555D4), fontWeight: FontWeight.bold, fontSize: 14),
+                                              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2555D4)),
+                                              items: const [
+                                                DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
+                                                DropdownMenuItem(value: 'COORDINATOR', child: Text('Coordinator')),
+                                                DropdownMenuItem(value: 'USER', child: Text('User')),
+                                              ],
+                                              onChanged: (val) async {
+                                                if (val != null) {
+                                                  try {
+                                                    await _adminService.updateUserRole(user['id'], val);
+                                                    _loadUsers();
+                                                  } catch (e) {
+                                                    if (!mounted) return;
+                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                                                  }
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: isActive,
+                                activeColor: Colors.green,
+                                onChanged: (val) async {
+                                  final newStatus = val ? 'ACTIVE' : 'LOCKED';
+                                  await _adminService.updateUserStatus(user['id'], newStatus);
+                                  _loadUsers();
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },

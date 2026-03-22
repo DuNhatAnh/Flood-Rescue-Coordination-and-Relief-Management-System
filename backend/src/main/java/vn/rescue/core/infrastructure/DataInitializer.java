@@ -88,6 +88,22 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.saveAll(Arrays.asList(admin, coordinator, staff));
             log.info("Đã nạp 3 người dùng mẫu.");
         }
+
+        // Always ensure admin@rescue.vn exists and has correct password for testing
+        userRepository.findByEmail("admin@rescue.vn").ifPresentOrElse(admin -> {
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            userRepository.save(admin);
+            log.info("Đã ép buộc đặt lại mật khẩu của admin@rescue.vn thành admin123");
+        }, () -> {
+            User admin = new User();
+            admin.setEmail("admin@rescue.vn");
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setFullName("Quản trị viên (Admin)");
+            admin.setRoleId("ADMIN");
+            admin.setCreatedAt(LocalDateTime.now());
+            userRepository.save(admin);
+            log.info("Đã tạo mới tài khoản admin@rescue.vn với mật khẩu admin123");
+        });
     }
 
     private void seedRescueRequests() {

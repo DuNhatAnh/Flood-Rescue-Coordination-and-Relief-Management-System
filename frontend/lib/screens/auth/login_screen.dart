@@ -87,9 +87,14 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
+      
+      // Lấy chuỗi lỗi bỏ chữ "Exception:"
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Có lỗi xảy ra, vui lòng thử lại!'),
+        SnackBar(
+            content: Text('Lỗi: $errorMessage'),
+            duration: const Duration(seconds: 4),
             backgroundColor: Colors.red),
       );
     }
