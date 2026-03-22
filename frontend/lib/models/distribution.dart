@@ -4,6 +4,9 @@ class Distribution {
   final String requestId;
   final String distributedBy;
   final DateTime distributedAt;
+  final String type;
+  final String? destinationWarehouseId;
+  final String status;
 
   Distribution({
     this.id,
@@ -11,6 +14,9 @@ class Distribution {
     required this.requestId,
     required this.distributedBy,
     required this.distributedAt,
+    this.type = 'EXPORT',
+    this.destinationWarehouseId,
+    this.status = 'COMPLETED',
   });
 
   factory Distribution.fromJson(Map<String, dynamic> json) {
@@ -22,6 +28,9 @@ class Distribution {
       distributedAt: json['distributedAt'] != null 
           ? DateTime.parse(json['distributedAt'])
           : DateTime.now(),
+      type: json['type'] ?? 'EXPORT',
+      destinationWarehouseId: json['destinationWarehouseId'],
+      status: json['status'] ?? 'COMPLETED',
     );
   }
 }

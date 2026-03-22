@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthResponse {
+    private String id;
     private String token;
     private String email;
     private String fullName;

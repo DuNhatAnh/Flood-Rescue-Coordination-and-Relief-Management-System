@@ -6,20 +6,24 @@ import 'auth_service.dart';
 class DistributionService {
   static const String baseUrl = 'http://localhost:8080/api/distributions';
 
-  Future<bool> createDistribution(String warehouseId, String requestId, List<Map<String, dynamic>> items) async {
+  Future<bool> createDistribution(String warehouseId, String? requestId, List<Map<String, dynamic>> items, {String type = "EXPORT", String? destinationWarehouseId}) async {
     try {
       final token = await AuthService.getToken();
+      final body = {
+        'warehouseId': warehouseId,
+        'requestId': requestId,
+        'type': type,
+        'destinationWarehouseId': destinationWarehouseId,
+        'items': items,
+      };
+      
       final response = await http.post(
         Uri.parse(baseUrl),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'warehouseId': warehouseId,
-          'requestId': requestId,
-          'items': items,
-        }),
+        body: jsonEncode(body),
       );
       return response.statusCode == 200;
     } catch (e) {

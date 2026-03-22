@@ -39,10 +39,11 @@ public class AuthController {
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
 
         return ResponseEntity.ok(AuthResponse.builder()
+                .id(user.getId())
                 .token(token)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .roles(Collections.singletonList(user.getRoleId())) 
+                .roles(Collections.singletonList(user.getRoleId()))
                 .build());
     }
 }

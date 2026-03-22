@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'warehouse_screen.dart';
 import 'team_tasks_screen.dart';
+import 'staff_managed_warehouse_screen.dart';
+import 'staff_report_screen.dart';
 import '../relief_item_screen.dart';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
@@ -14,9 +16,7 @@ class StaffMainScreen extends StatefulWidget {
 }
 
 class _StaffMainScreenState extends State<StaffMainScreen> {
-  int _selectedIndex = 0;
-  final GlobalKey<WarehouseScreenState> _warehouseKey = GlobalKey<WarehouseScreenState>();
-  final GlobalKey<TeamTasksScreenState> _teamTasksKey = GlobalKey<TeamTasksScreenState>();
+  int _selectedIndex = 0; // Mặc định vào tab Nhiệm vụ
 
   late List<Widget> _screens;
 
@@ -24,8 +24,9 @@ class _StaffMainScreenState extends State<StaffMainScreen> {
   void initState() {
     super.initState();
     _screens = [
-      WarehouseScreen(key: _warehouseKey),
-      TeamTasksScreen(key: _teamTasksKey),
+      const TeamTasksScreen(),
+      const StaffManagedWarehouseScreen(),
+      const StaffReportScreen(),
     ];
   }
 
@@ -61,28 +62,22 @@ class _StaffMainScreenState extends State<StaffMainScreen> {
             ),
           ),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('XIN CHÀO, ĐỘI CỨU HỘ', style: StaffTheme.subtitleSmall),
-            Text(
-              _selectedIndex == 0 ? 'Điều phối Kho hàng' : 'Quản lý Nhiệm vụ',
-              style: StaffTheme.titleLarge,
-            ),
-          ],
+        title: Container(
+          constraints: const BoxConstraints(maxWidth: 250),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('XIN CHÀO, ĐỘI CỨU HỘ', style: StaffTheme.subtitleSmall, overflow: TextOverflow.ellipsis),
+              Text(
+                _getTabTitle(),
+                style: StaffTheme.titleLarge,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.sync_rounded, color: Colors.white, size: 22),
-            onPressed: () {
-              if (_selectedIndex == 0) {
-                _warehouseKey.currentState?.loadWarehouses();
-              } else {
-                _teamTasksKey.currentState?.refreshTasks();
-              }
-            },
-            tooltip: 'Cập nhật dữ liệu',
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 16, left: 8),
             child: PopupMenuButton<String>(
@@ -116,7 +111,7 @@ class _StaffMainScreenState extends State<StaffMainScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Nhân viên cứu hộ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text('Staff Account', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      Text(AuthService.currentUser?.email ?? 'Staff Account', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                       const Divider(),
                     ],
                   ),
@@ -153,31 +148,33 @@ class _StaffMainScreenState extends State<StaffMainScreen> {
           children: _screens,
         ),
       ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: () => _warehouseKey.currentState?.showAddDialog(),
-              backgroundColor: StaffTheme.primaryBlue,
-              elevation: 4,
-              heroTag: 'add_warehouse_btn',
-              icon: const Icon(Icons.add_location_alt_rounded, color: Colors.white),
-              label: const Text('Thêm Kho mới', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            )
-          : null,
       bottomNavigationBar: Container(
         height: 75,
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: StaffTheme.softShadow,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5)),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(0, Icons.grid_view_rounded, 'Kho bãi'),
-            _buildNavItem(1, Icons.assignment_turned_in_rounded, 'Nhiệm vụ'),
+            _buildNavItem(0, Icons.assignment_rounded, 'Nhiệm vụ'),
+            _buildNavItem(1, Icons.warehouse_rounded, 'Kho bãi'),
+            _buildNavItem(2, Icons.analytics_rounded, 'Thống kê'),
           ],
         ),
       ),
     );
+  }
+
+  String _getTabTitle() {
+    switch (_selectedIndex) {
+      case 0: return 'Nhiệm vụ được giao';
+      case 1: return 'Quản lý Kho bãi';
+      case 2: return 'Thống kê & Lịch sử';
+      default: return 'Staff Dashboard';
+    }
   }
 
   Widget _buildNavItem(int index, IconData icon, String label) {

@@ -67,7 +67,7 @@ class AuthService {
         }
 
         final user = UserModel(
-          id: data['email'] ?? 'U1',
+          id: data['id'] ?? data['email'] ?? 'U1',
           email: data['email'] ?? email,
           fullName: data['fullName'] ?? 'Người dùng',
           role: mappedRole,

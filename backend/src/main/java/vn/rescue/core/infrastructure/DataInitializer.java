@@ -36,9 +36,23 @@ public class DataInitializer implements CommandLineRunner {
         seedRescueRequests();
         seedRescueTeamsAndVehicles();
         seedWarehousesAndItems();
+        backfillManagerIds();
         backfillRescueRequestIds();
 
         log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
+    }
+
+    private void backfillManagerIds() {
+        log.info("Đang gán quyền quản lý kho cho nhân viên...");
+        userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+            warehouseRepository.findByWarehouseName("Kho Hòa Xuân").ifPresent(warehouse -> {
+                if (warehouse.getManagerId() == null || !warehouse.getManagerId().equals(staff.getId())) {
+                    warehouse.setManagerId(staff.getId());
+                    warehouseRepository.save(warehouse);
+                    log.info("Đã gán staff@rescue.vn làm quản lý cho Kho Hòa Xuân (ID: {})", warehouse.getId());
+                }
+            });
+        });
     }
 
     private void backfillRescueRequestIds() {
@@ -197,6 +211,12 @@ public class DataInitializer implements CommandLineRunner {
             Warehouse w1 = new Warehouse();
             w1.setWarehouseName("Kho Hòa Xuân");
             w1.setLocation("Quận Cẩm Lệ, Đà Nẵng");
+            
+            // Assign staff@rescue.vn as manager
+            userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+                w1.setManagerId(staff.getId());
+            });
+
             w1.setStatus("ACTIVE");
             w1.setCreatedAt(LocalDateTime.now());
 

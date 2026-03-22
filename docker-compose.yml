@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: rescue_backend
     ports:
-      - "8080:8081"
+      - "8080:8080"
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb+srv://nhatanhdu_db_user:BFkndzP3xqW3x9Wu@cluster0.jmi5ufx.mongodb.net/flood_rescue_db?retryWrites=true&w=majority
     restart: always
