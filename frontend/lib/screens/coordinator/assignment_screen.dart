@@ -18,12 +18,15 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   
   RescueTeam? _selectedTeam;
   Vehicle? _selectedVehicle;
+  Map<String, dynamic>? _managedWarehouse;
   
   List<RescueTeam> _availableTeams = [];
   List<Vehicle> _availableVehicles = [];
+  List<Vehicle> _filteredVehicles = [];
   
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isLoadingWarehouse = false;
 
   @override
   void initState() {
@@ -39,6 +42,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       setState(() {
         _availableTeams = teams;
         _availableVehicles = vehicles;
+        _filteredVehicles = vehicles; // Ban đầu hiện tất cả hoặc rỗng tùy logic, ở đây hiện tất cả
         _isLoading = false;
       });
     } catch (e) {
@@ -47,6 +51,27 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
         SnackBar(content: Text('Lỗi tải dữ liệu: $e')),
       );
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _onTeamSelected(RescueTeam team) async {
+    setState(() {
+      _selectedTeam = team;
+      _selectedVehicle = null;
+      _managedWarehouse = null;
+      _isLoadingWarehouse = true;
+      // Lọc xe ngay lập tức
+      _filteredVehicles = _availableVehicles.where((v) => v.teamId == team.id).toList();
+    });
+
+    try {
+      final warehouse = await _rescueService.getWarehouseByManager(team.leaderId);
+      setState(() {
+        _managedWarehouse = warehouse;
+        _isLoadingWarehouse = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingWarehouse = false);
     }
   }
 
@@ -106,6 +131,13 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                   const SizedBox(height: 12),
                   _buildTeamSelector(),
                   const SizedBox(height: 24),
+                  if (_selectedTeam != null) ...[
+                    const Text('Kho Tiếp Tế Của Đội',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    _buildWarehouseCard(),
+                    const SizedBox(height: 24),
+                  ],
                   const Text('2. Chọn Phương Tiện',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
@@ -182,18 +214,100 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             title: Text(team.teamName, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text('Trạng thái: ${team.status == 'AVAILABLE' ? 'Sẵn sàng' : 'Đang bận'}'),
             trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.blue) : null,
-            onTap: () => setState(() => _selectedTeam = team),
+            onTap: () => _onTeamSelected(team),
           ),
         );
       }).toList(),
     );
   }
 
+  Widget _buildWarehouseCard() {
+    if (_isLoadingWarehouse) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ));
+    }
+
+    if (_managedWarehouse == null) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+            SizedBox(width: 8),
+            Text('Đội này chưa được gán quản lý kho nào', style: TextStyle(color: Colors.orange)),
+          ],
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: Color(0xFFE1F5FE),
+              child: Icon(Icons.warehouse, color: Color(0xFF0288D1)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _managedWarehouse?['warehouseName'] ?? 'Tên kho',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _managedWarehouse?['location'] ?? 'Vị trí kho',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: const Text('ĐANG QUẢN LÝ', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildVehicleSelector() {
+    if (_filteredVehicles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Text(
+            _selectedTeam == null 
+              ? 'Vui lòng chọn đội để xem phương tiện' 
+              : 'Đội này hiện không có phương tiện sẵn sàng',
+            style: TextStyle(color: Colors.grey[500], fontStyle: FontStyle.italic),
+          ),
+        ),
+      );
+    }
+
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: _availableVehicles.map((vehicle) {
+      children: _filteredVehicles.map((vehicle) {
         final isSelected = _selectedVehicle?.id == vehicle.id;
         return InkWell(
           onTap: () => setState(() => _selectedVehicle = vehicle),

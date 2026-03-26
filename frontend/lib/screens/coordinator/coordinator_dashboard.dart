@@ -6,6 +6,7 @@ import 'package:flood_rescue_app/models/rescue_request.dart';
 import 'package:flood_rescue_app/models/safety_report.dart';
 import 'package:flood_rescue_app/services/rescue_service.dart';
 import 'package:flood_rescue_app/screens/coordinator/assignment_screen.dart';
+import 'package:flood_rescue_app/screens/coordinator/request_history_screen.dart';
 import 'package:flood_rescue_app/screens/home_screen.dart';
 
 class CoordinatorDashboard extends StatefulWidget {
@@ -500,6 +501,20 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                   children: [
                     const Text('Chi tiết yêu cứu', 
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RequestHistoryScreen(request: currentRequest),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.history, size: 18),
+                      label: const Text('Lịch sử', style: TextStyle(fontSize: 14)),
+                      style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                    ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close),

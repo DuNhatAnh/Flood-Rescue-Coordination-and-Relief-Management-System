@@ -184,4 +184,37 @@ class RescueService {
       return [];
     }
   }
+
+  // Lấy lịch sử xử lý yêu cầu
+  Future<List<Map<String, dynamic>>> getRequestHistory(String requestId) async {
+    try {
+      final response = await _dio.get('/rescue-requests/$requestId/history');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData['success'] == true) {
+          return List<Map<String, dynamic>>.from(responseData['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching request history: $e');
+      return [];
+    }
+  }
+
+  // Lấy kho theo managerId (SCRUM-MỚI)
+  Future<Map<String, dynamic>?> getWarehouseByManager(String managerId) async {
+    try {
+      final response = await _dio.get('/warehouses/manager/$managerId');
+      if (response.statusCode == 200) {
+         // WarehouseController returns the object directly or wrapped?
+         // Checking WarehouseController, it returns Warehouse directly.
+         return response.data;
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching warehouse: $e');
+      return null;
+    }
+  }
 }
