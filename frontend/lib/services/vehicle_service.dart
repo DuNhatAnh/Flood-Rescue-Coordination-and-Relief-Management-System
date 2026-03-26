@@ -48,10 +48,10 @@ class VehicleService {
   }
 
   /// 3. Tạo mới một phương tiện
-  Future<Map<String, dynamic>> createVehicle(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createVehicle(Map<String, dynamic> data, {String? userId}) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/vehicles'),
+        Uri.parse('$baseUrl/vehicles?userId=${userId ?? ''}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data),
       );
@@ -68,10 +68,10 @@ class VehicleService {
   }
 
   /// 4. Cập nhật thông tin phương tiện
-  Future<Map<String, dynamic>> updateVehicle(String id, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> updateVehicle(String id, Map<String, dynamic> data, {String? userId}) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/vehicles/$id'),
+        Uri.parse('$baseUrl/vehicles/$id?userId=${userId ?? ''}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data),
       );
@@ -87,9 +87,9 @@ class VehicleService {
   }
 
   /// 5. Xóa phương tiện
-  Future<void> deleteVehicle(String id) async {
+  Future<void> deleteVehicle(String id, {String? userId}) async {
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/vehicles/$id'));
+      final response = await http.delete(Uri.parse('$baseUrl/vehicles/$id?userId=${userId ?? ''}'));
 
       // Backend trả về ResponseEntity.noContent() tương ứng 204
       if (response.statusCode != 204 && response.statusCode != 200) {

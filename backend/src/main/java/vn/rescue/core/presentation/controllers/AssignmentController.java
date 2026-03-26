@@ -2,6 +2,7 @@ package vn.rescue.core.presentation.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import vn.rescue.core.application.dto.TaskAssignmentResponse;
 import vn.rescue.core.application.services.RescueCoordinationService;
 import vn.rescue.core.domain.entities.Assignment;
 import java.util.List;
@@ -16,17 +17,18 @@ public class AssignmentController {
     private RescueCoordinationService rescueCoordinationService;
 
     @PostMapping
-    public Assignment createAssignment(@RequestParam("requestId") String requestId, 
-                                     @RequestParam("teamId") String teamId,
-                                     @RequestParam("vehicleId") String vehicleId,
-                                     @RequestParam("assignedBy") String assignedBy) {
+    public Assignment createAssignment(@RequestParam("requestId") String requestId,
+            @RequestParam("teamId") String teamId,
+            @RequestParam("vehicleId") String vehicleId,
+            @RequestParam("assignedBy") String assignedBy) {
         return rescueCoordinationService.createAssignment(requestId, teamId, vehicleId, assignedBy);
     }
 
     @GetMapping("/my-tasks")
-    public List<Assignment> getMyTasks(@RequestParam(value = "teamId", required = false) String teamId) {
+    public List<TaskAssignmentResponse> getMyTasks(@RequestParam(value = "teamId", required = false) String teamId) {
         // In a real app, teamId would come from the authenticated user
-        if (teamId == null) return new ArrayList<>();
+        if (teamId == null)
+            return new ArrayList<>();
         return rescueCoordinationService.getAssignmentsByTeam(teamId);
     }
 

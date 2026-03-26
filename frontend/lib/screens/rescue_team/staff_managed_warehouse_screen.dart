@@ -7,6 +7,8 @@ import '../../services/warehouse_service.dart';
 import '../../services/inventory_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/vehicle_service.dart';
+import '../../services/relief_item_service.dart';
+import '../../models/relief_item.dart';
 import '../../utils/staff_theme.dart';
 import '../../models/vehicle.dart';
 import 'distribution_export_screen.dart';
@@ -22,17 +24,19 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   final WarehouseService _warehouseService = WarehouseService();
   final InventoryService _inventoryService = InventoryService();
   final VehicleService _vehicleService = VehicleService();
+  final ReliefItemService _reliefItemService = ReliefItemService();
   
   late TabController _tabController;
   Warehouse? _myWarehouse;
   List<Warehouse> _allWarehouses = [];
   List<Inventory> _inventory = [];
   List<Vehicle> _vehicles = [];
+  List<ReliefItem> _reliefItems = [];
   bool _isLoading = true;
 
   // Form state cho Nhập hàng
   String? _importSource;
-  Inventory? _selectedImportItem;
+  ReliefItem? _selectedImportItem;
   final TextEditingController _importQtyController = TextEditingController();
 
   // Form state cho Thêm phương tiện
@@ -69,6 +73,13 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
         vehicles = vehicleData.map((v) => Vehicle.fromJson(v)).toList();
       } catch (e) {
         print('Error fetching vehicles: $e');
+      }
+
+      try {
+        final itemData = await _reliefItemService.getAll();
+        _reliefItems = itemData;
+      } catch (e) {
+        print('Error fetching items: $e');
       }
 
       setState(() {
@@ -918,8 +929,9 @@ Widget build(BuildContext context) {
     try {
       await _inventoryService.importStock(
         _myWarehouse!.id!,
-        _selectedImportItem!.itemId,
+        _selectedImportItem!.id!,
         qty,
+        userId: AuthService.currentUser?.id,
         source: _importSource,
       );
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nhập kho thành công!'), backgroundColor: StaffTheme.successGreen));
@@ -979,11 +991,11 @@ Widget build(BuildContext context) {
                         children: [
                           Expanded(
                             flex: 3,
-                            child: DropdownButtonFormField<Inventory>(
+                            child: DropdownButtonFormField<ReliefItem>(
                               isExpanded: true,
                               decoration: InputDecoration(filled: true, fillColor: StaffTheme.background, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), hintText: 'Tên hàng'),
                               value: _selectedImportItem,
-                              items: _inventory.map((e) => DropdownMenuItem(value: e, child: Text(e.itemName))).toList(),
+                              items: _reliefItems.map((e) => DropdownMenuItem(value: e, child: Text(e.itemName))).toList(),
                               onChanged: (val) => setDialogState(() => _selectedImportItem = val),
                             ),
                           ),

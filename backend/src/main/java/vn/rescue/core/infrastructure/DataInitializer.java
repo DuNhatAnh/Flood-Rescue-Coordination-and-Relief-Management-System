@@ -254,6 +254,7 @@ public class DataInitializer implements CommandLineRunner {
                     else
                         inv.setQuantity(200);
 
+                    inv.setMinThreshold(100); // Đặt ngưỡng mặc định để tránh NPE
                     inventoryRepository.save(inv);
                 }
             }

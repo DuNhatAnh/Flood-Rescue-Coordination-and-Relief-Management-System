@@ -23,10 +23,10 @@ class InventoryService {
     }
   }
 
-  Future<Inventory> importStock(String warehouseId, String itemId, int quantity, {String? source, String? referenceNumber, DateTime? expiryDate, String? condition}) async {
+  Future<Inventory> importStock(String warehouseId, String itemId, int quantity, {String? userId, String? source, String? referenceNumber, DateTime? expiryDate, String? condition}) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/import'),
+        Uri.parse('$baseUrl/import?userId=${userId ?? ''}'),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
         body: jsonEncode({
           'warehouseId': warehouseId,

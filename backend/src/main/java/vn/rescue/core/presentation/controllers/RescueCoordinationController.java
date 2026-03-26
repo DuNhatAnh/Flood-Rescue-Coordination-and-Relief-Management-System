@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/rescue-requests")
+@CrossOrigin(origins = "*")
 public class RescueCoordinationController {
 
     @Autowired

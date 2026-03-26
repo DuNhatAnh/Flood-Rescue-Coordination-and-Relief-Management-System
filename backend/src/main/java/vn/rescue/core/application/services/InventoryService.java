@@ -104,7 +104,7 @@ public class InventoryService {
                 .quantity(inventory.getQuantity())
                 .minThreshold(inventory.getMinThreshold())
                 // Tính toán trạng thái để Flutter hiện màu sắc
-                .status(inventory.getQuantity() <= inventory.getMinThreshold() ? "LOW_STOCK" : "NORMAL")
+                .status((inventory.getQuantity() != null && inventory.getMinThreshold() != null && inventory.getQuantity() <= inventory.getMinThreshold()) ? "LOW_STOCK" : "NORMAL")
                 .build();
     }
 }

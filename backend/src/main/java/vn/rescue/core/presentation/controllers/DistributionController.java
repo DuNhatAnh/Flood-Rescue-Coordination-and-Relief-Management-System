@@ -13,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/distributions")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class DistributionController {
 
     private final DistributionService distributionService;

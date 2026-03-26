@@ -4,6 +4,7 @@ import 'package:flood_rescue_app/models/rescue_team.dart';
 import 'package:flood_rescue_app/models/vehicle.dart';
 import 'package:flood_rescue_app/models/assignment.dart';
 import 'package:flood_rescue_app/models/safety_report.dart';
+import 'auth_service.dart';
 
 class RescueService {
   final Dio _dio = Dio(BaseOptions(
@@ -99,18 +100,38 @@ class RescueService {
     }
   }
 
-  // Lấy nhiệm vụ của tôi
+  // Lấy nhiệm vụ của tôi (SCRUM-61)
   Future<List<Assignment>> getMyTasks() async {
     try {
-      final response = await _dio.get('/assignments/my-tasks');
+      final teamId = AuthService.currentUser?.id;
+      final response = await _dio.get('/assignments/my-tasks', 
+          queryParameters: teamId != null ? {'teamId': teamId} : null);
+      
       if (response.statusCode == 200) {
         final responseData = response.data;
-        List<dynamic> data = (responseData is Map) ? responseData['data'] : responseData;
-        return data.map((json) => Assignment.fromJson(json)).toList();
+        final dynamic dataList = (responseData is Map && responseData.containsKey('data')) 
+            ? responseData['data'] 
+            : responseData;
+            
+        if (dataList is List) {
+          return dataList.map((json) => Assignment.fromJson(json)).toList();
+        }
       }
       return [];
     } catch (e) {
       return [];
+    }
+  }
+
+  // Cập nhật trạng thái nhiệm vụ (SCRUM-64 - Chuẩn bị sẵn dù chưa yêu cầu detail)
+  Future<bool> updateAssignmentStatus(String id, String status) async {
+    try {
+      final response = await _dio.put('/assignments/$id/status', data: {
+        'status': status
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 
