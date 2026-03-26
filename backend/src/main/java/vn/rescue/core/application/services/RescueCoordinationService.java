@@ -7,10 +7,13 @@ import vn.rescue.core.domain.entities.Assignment;
 import vn.rescue.core.domain.entities.RescueRequest;
 import vn.rescue.core.domain.entities.RescueTeam;
 import vn.rescue.core.domain.entities.Vehicles;
+import vn.rescue.core.domain.entities.RequestStatusHistory;
 import vn.rescue.core.domain.repositories.AssignmentRepository;
+import vn.rescue.core.domain.repositories.RequestStatusHistoryRepository;
 import vn.rescue.core.domain.repositories.RescueRequestRepository;
 import vn.rescue.core.domain.repositories.RescueTeamRepository;
 import vn.rescue.core.domain.repositories.VehiclesRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,6 +38,9 @@ public class RescueCoordinationService {
 
     @Autowired
     private VehiclesRepository vehiclesRepository;
+
+    @Autowired
+    private RequestStatusHistoryRepository requestStatusHistoryRepository;
 
     public List<RescueRequest> getPendingRequests() {
         return rescueRequestRepository.findByStatus("PENDING");
@@ -121,6 +127,57 @@ public class RescueCoordinationService {
         return assignments.stream().map(this::convertToResponse).collect(Collectors.toList());
     }
 
+    @Transactional
+    public void updateAssignmentStatus(String id, java.util.Map<String, Object> body) {
+        String status = (String) body.get("status");
+        String note = (String) body.get("note");
+
+        Optional<Assignment> assignmentOpt = assignmentRepository.findById(id);
+        if (assignmentOpt.isPresent()) {
+            Assignment assignment = assignmentOpt.get();
+            assignment.setStatus(status);
+            assignmentRepository.save(assignment);
+
+            // Sync with RescueRequest
+            Optional<RescueRequest> requestOpt = rescueRequestRepository.findById(assignment.getRequestId());
+            if (requestOpt.isPresent()) {
+                RescueRequest request = requestOpt.get();
+                request.setStatus(status);
+                rescueRequestRepository.save(request);
+
+                // Log history
+                RequestStatusHistory history = new RequestStatusHistory();
+                history.setRequestId(request.getId());
+                history.setStatus(status);
+                history.setNote(note != null ? note : "Trạng thái nhiệm vụ chuyển sang " + status);
+                history.setCreatedAt(LocalDateTime.now());
+                requestStatusHistoryRepository.save(history);
+
+                // If COMPLETED, release resources
+                if ("COMPLETED".equalsIgnoreCase(status)) {
+                    // Release Team
+                    Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(assignment.getTeamId());
+                    teamOpt.ifPresent(team -> {
+                        team.setStatus("AVAILABLE");
+                        rescueTeamRepository.save(team);
+                    });
+
+                    // Release Vehicle
+                    Optional<Vehicles> vehicleOpt = vehiclesRepository.findById(assignment.getVehicleId());
+                    vehicleOpt.ifPresent(vehicle -> {
+                        vehicle.setStatus("AVAILABLE");
+                        vehiclesRepository.save(vehicle);
+                    });
+                }
+            }
+        }
+    }
+
+    public List<RequestStatusHistory> getRequestHistory(String requestId) {
+        // Try both raw ID and custom ID if needed, but repository usually uses raw ID
+        return requestStatusHistoryRepository.findByRequestId(requestId);
+    }
+
     private TaskAssignmentResponse convertToResponse(Assignment assignment) {
         TaskAssignmentResponse response = new TaskAssignmentResponse();
         response.setId(assignment.getId());
@@ -142,6 +199,19 @@ public class RescueCoordinationService {
             response.setLocationLat(request.getLocationLat());
             response.setLocationLng(request.getLocationLng());
         });
+
+        // Join with RescueTeam
+        rescueTeamRepository.findById(assignment.getTeamId()).ifPresent(team -> {
+            response.setTeamName(team.getTeamName());
+        });
+
+        // Join with Vehicles
+        if (assignment.getVehicleId() != null) {
+            vehiclesRepository.findById(assignment.getVehicleId()).ifPresent(vehicle -> {
+                response.setVehicleType(vehicle.getVehicleType());
+                response.setLicensePlate(vehicle.getLicensePlate());
+            });
+        }
 
         return response;
     }
