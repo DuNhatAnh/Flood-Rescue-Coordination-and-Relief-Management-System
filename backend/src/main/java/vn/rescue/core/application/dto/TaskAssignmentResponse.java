@@ -13,6 +13,13 @@ public class TaskAssignmentResponse {
     private LocalDateTime assignedAt;
     private String status;
 
+    // From RescueTeam
+    private String teamName;
+
+    // From Vehicles
+    private String vehicleType;
+    private String licensePlate;
+
     // From RescueRequest
     private String citizenName;
     private String citizenPhone;

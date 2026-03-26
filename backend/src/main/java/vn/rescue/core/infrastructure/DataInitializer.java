@@ -211,7 +211,7 @@ public class DataInitializer implements CommandLineRunner {
             Warehouse w1 = new Warehouse();
             w1.setWarehouseName("Kho Hòa Xuân");
             w1.setLocation("Quận Cẩm Lệ, Đà Nẵng");
-            
+
             // Assign staff@rescue.vn as manager
             userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
                 w1.setManagerId(staff.getId());
@@ -242,6 +242,8 @@ public class DataInitializer implements CommandLineRunner {
                     Inventory inv = new Inventory();
                     inv.setWarehouseId(w.getId());
                     inv.setItemId(item.getId());
+                    inv.setItemName(item.getItemName());
+                    inv.setUnit(item.getUnit());
 
                     if (item.getItemName().equals("Gạo"))
                         inv.setQuantity(5000);

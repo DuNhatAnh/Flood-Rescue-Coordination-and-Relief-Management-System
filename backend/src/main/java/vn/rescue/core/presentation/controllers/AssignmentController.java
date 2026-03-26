@@ -34,7 +34,6 @@ public class AssignmentController {
 
     @PutMapping("/{id}/status")
     public void updateStatus(@PathVariable("id") String id, @RequestBody Map<String, Object> body) {
-        // Logic to update assignment status and handle completion
-        // For simplicity, just acknowledging for now or could implement in service
+        rescueCoordinationService.updateAssignmentStatus(id, body);
     }
 }

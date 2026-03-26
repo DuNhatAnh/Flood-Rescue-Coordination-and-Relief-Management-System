@@ -33,4 +33,9 @@ public class RescueCoordinationController {
         rescueCoordinationService.verifyRequest(id, verifiedBy);
         return ResponseEntity.ok(ApiResponse.success(null, "Request verified"));
     }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<ApiResponse<java.util.List<vn.rescue.core.domain.entities.RequestStatusHistory>>> getRequestHistory(@PathVariable String id) {
+        return ResponseEntity.ok(ApiResponse.success(rescueCoordinationService.getRequestHistory(id), "Request history retrieved"));
+    }
 }
