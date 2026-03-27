@@ -122,25 +122,32 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+<<<<<<< HEAD
                           Text('NHIỆM VỤ #${task.id.length > 4 ? task.id.substring(0, 4) : (task.id.isEmpty ? "NEW" : task.id)}', style: StaffTheme.cardTitle),
+=======
+                          Text('NHIỆM VỤ #${task.id.length > 4 ? task.id.substring(0, 4).toUpperCase() : task.id.toUpperCase()}', style: StaffTheme.cardTitle),
+>>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
                           Text(timeStr, style: const TextStyle(color: StaffTheme.textLight, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const SizedBox(height: 6),
-                      _buildIconText(Icons.location_on_rounded, '123 Hùng Vương, Đà Nẵng', StaffTheme.errorRed),
+                      _buildIconText(Icons.location_on_rounded, task.addressText ?? 'Địa chỉ không xác định', StaffTheme.errorRed),
                       const SizedBox(height: 4),
-                      _buildIconText(Icons.directions_boat_rounded, 'Xuồng Máy (DN-001)', StaffTheme.primaryBlue),
+                      _buildIconText(Icons.directions_boat_rounded, task.vehicleId != null ? 'Phương tiện: ${task.vehicleId}' : 'Chưa gán phương tiện', StaffTheme.primaryBlue),
+                      const SizedBox(height: 4),
+                      _buildIconText(Icons.priority_high_rounded, 'Mức độ: ${task.urgencyLevel ?? "BÌNH THƯỜNG"}', 
+                          task.urgencyLevel == 'HIGH' ? StaffTheme.errorRed : StaffTheme.warningOrange),
                       const SizedBox(height: 12),
                       // Status Badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: StaffTheme.warningOrange.withOpacity(0.12),
+                          color: _getStatusColor(task.status).withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          'ĐANG THỰC HIỆN',
-                          style: TextStyle(color: StaffTheme.warningOrange, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                        child: Text(
+                          _getStatusLabel(task.status),
+                          style: TextStyle(color: _getStatusColor(task.status), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                         ),
                       ),
                     ],
@@ -208,5 +215,23 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
         ),
       ],
     );
+  }
+  Color _getStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'IN_PROGRESS': return StaffTheme.warningOrange;
+      case 'COMPLETED': return StaffTheme.successGreen;
+      case 'CANCELLED': return StaffTheme.errorRed;
+      default: return StaffTheme.primaryBlue;
+    }
+  }
+
+  String _getStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'IN_PROGRESS': return 'ĐANG THỰC HIỆN';
+      case 'COMPLETED': return 'ĐÃ HOÀN THÀNH';
+      case 'CANCELLED': return 'ĐÃ HỦY';
+      case 'ASSIGNED': return 'MỚI ĐƯỢC GIAO';
+      default: return status.toUpperCase();
+    }
   }
 }

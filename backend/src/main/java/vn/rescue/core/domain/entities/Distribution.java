@@ -23,4 +23,11 @@ public class Distribution {
 
     @Field("distributed_at")
     private LocalDateTime distributedAt;
+
+    private String type = "EXPORT"; // EXPORT or TRANSFER
+
+    @Field("destination_warehouse_id")
+    private String destinationWarehouseId;
+
+    private String status = "COMPLETED"; // IN_TRANSIT, COMPLETED, CANCELLED
 }

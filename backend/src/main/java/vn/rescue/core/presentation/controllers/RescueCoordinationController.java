@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/rescue-requests")
+@CrossOrigin(origins = "*")
 public class RescueCoordinationController {
 
     @Autowired
@@ -31,5 +32,10 @@ public class RescueCoordinationController {
     public ResponseEntity<ApiResponse<Void>> verifyRequest(@PathVariable String id, @RequestParam String verifiedBy) {
         rescueCoordinationService.verifyRequest(id, verifiedBy);
         return ResponseEntity.ok(ApiResponse.success(null, "Request verified"));
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<ApiResponse<java.util.List<vn.rescue.core.domain.entities.RequestStatusHistory>>> getRequestHistory(@PathVariable String id) {
+        return ResponseEntity.ok(ApiResponse.success(rescueCoordinationService.getRequestHistory(id), "Request history retrieved"));
     }
 }

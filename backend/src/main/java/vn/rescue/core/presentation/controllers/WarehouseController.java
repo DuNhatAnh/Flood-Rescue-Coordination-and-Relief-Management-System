@@ -11,12 +11,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/warehouses")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class WarehouseController {
     private final WarehouseService warehouseService;
 
     @GetMapping
     public List<Warehouse> getAllWarehouses() {
         return warehouseService.getAllWarehouses();
+    }
+
+    @GetMapping("/manager/{managerId}")
+    public Warehouse getWarehouseByManagerId(@PathVariable("managerId") String managerId) {
+        return warehouseService.getWarehouseByManagerId(managerId);
     }
 
     @PostMapping

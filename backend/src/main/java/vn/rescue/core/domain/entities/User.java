@@ -26,6 +26,9 @@ public class User {
     @Field("role_id")
     private String roleId;
 
+    @Field("team_id")
+    private String teamId;
+
     private String status = "ACTIVE"; // ACTIVE / LOCKED
 
     @Field("created_at")

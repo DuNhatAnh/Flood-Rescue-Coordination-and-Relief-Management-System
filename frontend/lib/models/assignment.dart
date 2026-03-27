@@ -8,6 +8,15 @@ class Assignment {
   final DateTime assignedAt;
   final String status; // 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'
 
+  // Fields from RescueRequest (via TaskAssignmentResponse)
+  final String? citizenName;
+  final String? citizenPhone;
+  final String? addressText;
+  final String? description;
+  final String? urgencyLevel;
+  final double? locationLat;
+  final double? locationLng;
+
   Assignment({
     required this.id,
     required this.requestId,
@@ -16,6 +25,13 @@ class Assignment {
     this.vehicleId,
     required this.assignedAt,
     this.status = 'IN_PROGRESS',
+    this.citizenName,
+    this.citizenPhone,
+    this.addressText,
+    this.description,
+    this.urgencyLevel,
+    this.locationLat,
+    this.locationLng,
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
@@ -29,6 +45,13 @@ class Assignment {
           ? DateTime.parse(json['assignedAt']) 
           : DateTime.now(),
       status: json['status'] ?? 'IN_PROGRESS',
+      citizenName: json['citizenName'],
+      citizenPhone: json['citizenPhone'],
+      addressText: json['addressText'],
+      description: json['description'],
+      urgencyLevel: json['urgencyLevel'],
+      locationLat: json['locationLat']?.toDouble(),
+      locationLng: json['locationLng']?.toDouble(),
     );
   }
 
@@ -41,6 +64,13 @@ class Assignment {
       'vehicleId': vehicleId,
       'assignedAt': assignedAt.toIso8601String(),
       'status': status,
+      'citizenName': citizenName,
+      'citizenPhone': citizenPhone,
+      'addressText': addressText,
+      'description': description,
+      'urgencyLevel': urgencyLevel,
+      'locationLat': locationLat,
+      'locationLng': locationLng,
     };
   }
 }

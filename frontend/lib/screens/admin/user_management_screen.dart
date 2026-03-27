@@ -60,6 +60,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     showDialog(
       context: context,
+<<<<<<< HEAD
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -106,6 +107,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   },
                   child: const Text('Tạo'),
                 ),
+=======
+      builder: (context) => AlertDialog(
+        title: const Text('Tạo tài khoản mới'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Họ tên')),
+            TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
+            TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Số điện thoại')),
+            DropdownButtonFormField<String>(
+              value: selectedRole,
+              items: const [
+                DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
+                DropdownMenuItem(value: 'COORDINATOR', child: Text('Coordinator')),
+                DropdownMenuItem(value: 'USER', child: Text('User')),
+>>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
               ],
             );
           }

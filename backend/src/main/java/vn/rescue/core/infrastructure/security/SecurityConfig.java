@@ -45,6 +45,7 @@ public class SecurityConfig {
             AuthenticationProvider authenticationProvider
     ) throws Exception {
         http
+<<<<<<< HEAD
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
@@ -52,6 +53,30 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/inventory/**", "/api/upload/**", "/uploads/**", "/api/v1/rescue-requests/stats").permitAll()
                         .anyRequest().authenticated())
+=======
+                // Tắt CSRF để cho phép các method POST/PUT/PATCH/DELETE từ Postman
+                .csrf(AbstractHttpConfigurer::disable)
+                // Cấu hình CORS để Flutter/Web có thể gọi API
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> auth
+                        // 1. Cho phép các đường dẫn xác thực và tài liệu API
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // 2. SỬA LỖI TẠI ĐÂY: Thêm các endpoint nghiệp vụ vào permitAll
+                        // Chúng ta cho phép cả /api/v1/** và các đường dẫn /api/** không có v1
+                        .requestMatchers("/api/v1/**").permitAll()
+                        .requestMatchers("/api/notifications/**").permitAll() // Khớp với NotificationController
+                        .requestMatchers("/api/admin/system/**").permitAll()  // Khớp với Dashboard/Logs
+                        .requestMatchers("/api/inventory/**").permitAll()      // Khớp với Inventory
+
+                        // 3. Cho phép các tài nguyên khác
+                        .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/upload/**", "/uploads/**").permitAll()
+
+                        // 4. Tất cả các yêu cầu còn lại mới yêu cầu Token
+                        .anyRequest().authenticated())
+
+>>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

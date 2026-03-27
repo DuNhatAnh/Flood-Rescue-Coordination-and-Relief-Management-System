@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../models/warehouse.dart';
 import '../../services/warehouse_service.dart';
 import 'warehouse_inventory_screen.dart';
+import 'distribution_export_screen.dart';
+import 'distribution_history_screen.dart';
+import '../../services/auth_service.dart';
+import '../../models/user_model.dart';
 import '../../utils/staff_theme.dart';
 
 class WarehouseScreen extends StatefulWidget {
@@ -84,7 +88,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: selectedStatus,
+                value: selectedStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái ban đầu',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -167,7 +171,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: currentStatus,
+                value: currentStatus,
                 decoration: InputDecoration(
                   labelText: 'Trạng thái',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -262,6 +266,33 @@ class WarehouseScreenState extends State<WarehouseScreen> {
               ),
               contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DistributionExportScreen())),
+                  icon: const Icon(Icons.outbox_rounded, size: 18, color: Colors.white),
+                  label: const Text('XUẤT HÀNG', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: StaffTheme.primaryBlue,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DistributionHistoryScreen())),
+                  icon: const Icon(Icons.history_rounded, size: 18),
+                  label: const Text('LỊCH SỬ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
@@ -426,7 +457,6 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
                       // Professional Status Badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -442,28 +472,42 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                     ],
                   ),
                 ),
-                // Action Menu
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),
-                  onSelected: (val) {
-                    if (val == 'edit') showEditDialog(warehouse);
-                    if (val == 'delete') deleteWarehouse(warehouse);
-                  },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [Icon(Icons.edit_outlined, size: 20), SizedBox(width: 8), Text('Sửa')],
+                // Action Menu - Only for Manager or Admin
+                if (AuthService.currentUser?.role == UserRole.admin || 
+                    AuthService.currentUser?.id == warehouse.managerId)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),
+                    onSelected: (val) {
+                      if (val == 'edit') showEditDialog(warehouse);
+                      if (val == 'delete') deleteWarehouse(warehouse);
+                      if (val == 'export') {
+                         Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const DistributionExportScreen()),
+                        );
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [Icon(Icons.edit_outlined, size: 20), SizedBox(width: 8), Text('Sửa')],
+                        ),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [Icon(Icons.delete_outline, size: 20, color: StaffTheme.errorRed), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: StaffTheme.errorRed))],
+                      const PopupMenuItem(
+                        value: 'export',
+                        child: Row(
+                          children: [Icon(Icons.outbox_rounded, size: 20, color: StaffTheme.primaryBlue), SizedBox(width: 8), Text('Xuất hàng khẩn cấp')],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [Icon(Icons.delete_outline, size: 20, color: StaffTheme.errorRed), SizedBox(width: 8), Text('Xóa', style: TextStyle(color: StaffTheme.errorRed))],
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

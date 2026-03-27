@@ -52,6 +52,7 @@ class AuthService {
         final data = jsonDecode(response.body);
         final token = data['token'];
         
+<<<<<<< HEAD
         // Lấy Role từ mảng roles của Spring Boot (Kiểm tra tất cả các role)
         UserRole parsedRole = UserRole.user;
         if (data['roles'] != null && data['roles'] is List) {
@@ -65,13 +66,32 @@ class AuthService {
            } else if (roleString.contains('RESCUE')) {
              parsedRole = UserRole.rescueStaff;
            }
+=======
+        // Map roles from backend
+        String roleStr = (data['roles'] != null && data['roles'].isNotEmpty) 
+            ? data['roles'][0] 
+            : 'USER';
+            
+        UserRole mappedRole;
+        if (roleStr == 'ADMIN') {
+          mappedRole = UserRole.admin;
+        } else if (roleStr == 'COORDINATOR') {
+          mappedRole = UserRole.coordinator;
+        } else {
+          mappedRole = UserRole.rescueStaff;
+>>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
         }
 
         final user = UserModel(
-          id: data['email'] ?? 'U1',
+          id: data['id'] ?? data['email'] ?? 'U1',
           email: data['email'] ?? email,
           fullName: data['fullName'] ?? 'Người dùng',
+<<<<<<< HEAD
           role: parsedRole,
+=======
+          teamId: data['teamId'],
+          role: mappedRole,
+>>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
         );
         
         await _saveSession(user, token);

@@ -14,13 +14,8 @@ public interface RescueRequestRepository extends MongoRepository<RescueRequest, 
     Optional<RescueRequest> findFirstByCustomId(String customId);
     long countByCustomIdIsNotNull();
 
-    //Them dong nay de kiem tra xem co request nao dang dinh toi team nayboolean existsByTeamIdAndStatusIn(String teamId, Collection<String> statuses);
-    //
-    //    // Hoặc nếu bạn muốn kiểm tra đơn giản hơn cho 1 trạng thái
-    //    boolean existsByTeamIdAndStatus(String teamId, String status);
     boolean existsByTeamIdAndStatusIn(String teamId, Collection<String> statuses);
 
-    // Hoặc nếu bạn muốn kiểm tra đơn giản hơn cho 1 trạng thái
     boolean existsByTeamIdAndStatus(String teamId, String status);
 
     List<RescueRequest> findByStatusOrderByCreatedAtDesc(String status);

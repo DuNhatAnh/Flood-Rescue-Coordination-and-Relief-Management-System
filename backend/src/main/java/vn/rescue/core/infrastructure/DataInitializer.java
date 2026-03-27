@@ -25,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     private final WarehouseRepository warehouseRepository;
     private final ReliefItemRepository reliefItemRepository;
     private final InventoryRepository inventoryRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -36,8 +37,10 @@ public class DataInitializer implements CommandLineRunner {
 
         seedRescueRequests();
         seedRescueTeamsAndVehicles();
-        // seedWarehousesAndItems();
+        seedWarehousesAndItems();
+        backfillManagerIds();
         backfillRescueRequestIds();
+        backfillStaffTeamIds();
 
         log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
     }
@@ -79,7 +82,61 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private final RoleRepository roleRepository;
+    private void backfillStaffTeamIds() {
+        log.info("Đang kiểm tra và đồng bộ liên kết Staff - Đội cứu hộ...");
+        
+        // Ensure staff@rescue.vn is linked to Team 1 if not already
+        userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+            rescueTeamRepository.findAll().stream()
+                .filter(t -> "Đội Cứu Hộ 1".equals(t.getTeamName()))
+                .findFirst()
+                .ifPresent(team -> {
+                    boolean updated = false;
+                    if (team.getLeaderId() == null) {
+                        team.setLeaderId(staff.getId());
+                        rescueTeamRepository.save(team);
+                        updated = true;
+                    }
+                    if (staff.getTeamId() == null) {
+                        staff.setTeamId(team.getId());
+                        userRepository.save(staff);
+                        updated = true;
+                    }
+                    if (updated) {
+                        log.info("Đã đồng bộ kết nối cho staff@rescue.vn và Đội Cứu Hộ 1");
+                    }
+                });
+        });
+
+        // General backfill for any other leader/staff links
+        List<RescueTeam> allTeams = rescueTeamRepository.findAll();
+        for (RescueTeam team : allTeams) {
+            if (team.getLeaderId() != null) {
+                userRepository.findById(team.getLeaderId()).ifPresent(user -> {
+                    if (user.getTeamId() == null) {
+                        user.setTeamId(team.getId());
+                        userRepository.save(user);
+                        log.info("Đã cập nhật teamId cho nhân viên {} dựa trên leaderId của đội {}", 
+                            user.getEmail(), team.getTeamName());
+                    }
+                });
+            }
+        }
+    }
+
+    private void backfillManagerIds() {
+        log.info("Đang gán quyền quản lý kho cho nhân viên...");
+        userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+            warehouseRepository.findByWarehouseName("Kho Hòa Xuân").ifPresent(warehouse -> {
+                if (warehouse.getManagerId() == null || !warehouse.getManagerId().equals(staff.getId())) {
+                    warehouse.setManagerId(staff.getId());
+                    warehouseRepository.save(warehouse);
+                    log.info("Đã gán staff@rescue.vn làm quản lý cho Kho Hòa Xuân (ID: {})", warehouse.getId());
+                }
+            });
+        });
+    }
+
 
     private void backfillRescueRequestIds() {
         log.info("Kiểm tra và cập nhật mã định danh (customId) cho các yêu cầu cũ...");
@@ -129,20 +186,28 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Đã nạp 3 người dùng mẫu.");
         }
 
-        // Always ensure admin@rescue.vn exists and has correct password for testing
-        userRepository.findByEmail("admin@rescue.vn").ifPresentOrElse(admin -> {
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            userRepository.save(admin);
-            log.info("Đã ép buộc đặt lại mật khẩu của admin@rescue.vn thành admin123");
+        // Ensure all default users have correct password for testing
+        updateOrCreateUser("admin@rescue.vn", "Quản trị viên (Admin)", "ADMIN");
+        updateOrCreateUser("coordinator@rescue.vn", "Điều phối viên (Coordinator)", "COORDINATOR");
+        updateOrCreateUser("staff@rescue.vn", "Nhân viên cứu hộ (Staff)", "RESCUE_STAFF");
+    }
+
+    private void updateOrCreateUser(String email, String fullName, String roleId) {
+        userRepository.findByEmail(email).ifPresentOrElse(user -> {
+            user.setPassword(passwordEncoder.encode("admin123"));
+            user.setFullName(fullName);
+            user.setRoleId(roleId);
+            userRepository.save(user);
+            log.info("Đã cập nhật tài khoản {} với mật khẩu admin123", email);
         }, () -> {
-            User admin = new User();
-            admin.setEmail("admin@rescue.vn");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setFullName("Quản trị viên (Admin)");
-            admin.setRoleId("ADMIN");
-            admin.setCreatedAt(LocalDateTime.now());
-            userRepository.save(admin);
-            log.info("Đã tạo mới tài khoản admin@rescue.vn với mật khẩu admin123");
+            User user = new User();
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode("admin123"));
+            user.setFullName(fullName);
+            user.setRoleId(roleId);
+            user.setCreatedAt(LocalDateTime.now());
+            userRepository.save(user);
+            log.info("Đã tạo mới tài khoản {} với mật khẩu admin123", email);
         });
     }
 
@@ -192,6 +257,12 @@ public class DataInitializer implements CommandLineRunner {
             t1.setTeamName("Đội Cứu Hộ 1");
             t1.setStatus("AVAILABLE");
 
+            // Link to the seeded staff account
+            userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+                t1.setLeaderId(staff.getId());
+                log.info("Đã gán staff@rescue.vn làm trưởng Đội Cứu Hộ 1");
+            });
+
             RescueTeam t2 = new RescueTeam();
             t2.setTeamName("Đội Cứu Hộ 2");
             t2.setStatus("AVAILABLE");
@@ -229,6 +300,12 @@ public class DataInitializer implements CommandLineRunner {
             Warehouse w1 = new Warehouse();
             w1.setWarehouseName("Kho Hòa Xuân");
             w1.setLocation("Quận Cẩm Lệ, Đà Nẵng");
+
+            // Assign staff@rescue.vn as manager
+            userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+                w1.setManagerId(staff.getId());
+            });
+
             w1.setStatus("ACTIVE");
             w1.setCreatedAt(LocalDateTime.now());
 
@@ -254,6 +331,8 @@ public class DataInitializer implements CommandLineRunner {
                     Inventory inv = new Inventory();
                     inv.setWarehouseId(w.getId());
                     inv.setItemId(item.getId());
+                    inv.setItemName(item.getItemName());
+                    inv.setUnit(item.getUnit());
 
                     if (item.getItemName().equals("Gạo"))
                         inv.setQuantity(5000);
@@ -266,6 +345,7 @@ public class DataInitializer implements CommandLineRunner {
                     else
                         inv.setQuantity(200);
 
+                    inv.setMinThreshold(100); // Đặt ngưỡng mặc định để tránh NPE
                     inventoryRepository.save(inv);
                 }
             }

@@ -40,12 +40,18 @@ public class AuthController {
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
 
         return ResponseEntity.ok(AuthResponse.builder()
+                .id(user.getId())
                 .token(token)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+<<<<<<< HEAD
                 .roles(userDetails.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
+=======
+                .teamId(user.getTeamId())
+                .roles(Collections.singletonList(user.getRoleId()))
+>>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
                 .build());
     }
 }

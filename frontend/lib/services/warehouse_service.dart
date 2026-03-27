@@ -22,6 +22,19 @@ class WarehouseService {
     }
   }
 
+  Future<Warehouse?> getByManagerId(String managerId) async {
+    try {
+      final response = await _dio.get('/warehouses/manager/$managerId');
+      if (response.statusCode == 200 && response.data != null && response.data is Map<String, dynamic>) {
+        return Warehouse.fromJson(response.data);
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching warehouse by manager: $e');
+      return null;
+    }
+  }
+
   Future<Warehouse?> create(Warehouse warehouse) async {
     try {
       final response = await _dio.post(

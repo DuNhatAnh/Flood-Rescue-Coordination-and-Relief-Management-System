@@ -18,9 +18,11 @@ public class SystemLog {
     @Id
     private String id;
     private String action; // CREATE_USER, LOGIN, etc.
+    private String moudle;
     private String userId;
+    private String userName;
     private String details;
-    
+    private String module;
     @Field("created_at")
     private LocalDateTime createdAt;
 }

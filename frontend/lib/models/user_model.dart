@@ -4,12 +4,14 @@ class UserModel {
   final String id;
   final String fullName;
   final String email;
+  final String? teamId;
   final UserRole role;
 
   UserModel({
     required this.id,
     required this.fullName,
     required this.email,
+    this.teamId,
     required this.role,
   });
 
@@ -18,6 +20,7 @@ class UserModel {
       'id': id,
       'fullName': fullName,
       'email': email,
+      'teamId': teamId,
       'role': role.index,
     };
   }
@@ -27,6 +30,7 @@ class UserModel {
       id: json['id'],
       fullName: json['fullName'],
       email: json['email'],
+      teamId: json['teamId'],
       role: UserRole.values[json['role']],
     );
   }

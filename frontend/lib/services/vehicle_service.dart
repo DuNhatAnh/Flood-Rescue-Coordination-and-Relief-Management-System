@@ -2,61 +2,101 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class VehicleService {
+  // Lưu ý: Đổi 'localhost' thành '10.0.2.2' nếu bạn chạy trên Emulator Android
   final String baseUrl = 'http://localhost:8080/api/v1';
 
-  Future<Map<String, dynamic>> getAllVehicles({int page = 0, int size = 10, String? type, String? status}) async {
+  /// 1. Lấy danh sách tất cả phương tiện (Phân trang và Lọc)
+  /// Trả về đối tượng Map chứa thông tin Page (content, totalPages, totalElements...)
+  Future<Map<String, dynamic>> getAllVehicles({
+    int page = 0, 
+    int size = 10, 
+    String? type, 
+    String? status
+  }) async {
+    // Xây dựng Query Parameters
     String url = '$baseUrl/vehicles?page=$page&size=$size';
     if (type != null && type.isNotEmpty) url += '&type=$type';
     if (status != null && status.isNotEmpty) url += '&status=$status';
 
-    final response = await http.get(Uri.parse(url));
+    try {
+      final response = await http.get(Uri.parse(url));
 
-    if (response.statusCode == 200) {
-      // Backend returns a Page<VehicleResponse>, which usually has 'content' array and 'pageable' etc.
-      // Or if it's wrapped in ApiResponse, it will be body['data']['content']? 
-      // Let's assume the controller returns ResponseEntity.ok(vehiclesService.getAllVehicles)
-      // which means it returns the Page object directly.
-      return jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        // Backend Spring Boot trả về đối tượng Page trực tiếp
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Không thể tải danh sách phương tiện (Code: ${response.statusCode})');
+      }
+    } catch (e) {
+      throw Exception('Lỗi kết nối: $e');
     }
-    throw Exception('Failed to load vehicles');
   }
 
+  /// 2. Lấy danh sách phương tiện đang rảnh (Available)
   Future<List<dynamic>> getAvailableVehicles() async {
-    final response = await http.get(Uri.parse('$baseUrl/vehicles/available'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/vehicles/available'));
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as List<dynamic>;
+      } else {
+        throw Exception('Không thể tải danh sách xe sẵn sàng');
+      }
+    } catch (e) {
+      throw Exception('Lỗi kết nối: $e');
     }
-    throw Exception('Failed to load available vehicles');
   }
 
-  Future<Map<String, dynamic>> createVehicle(Map<String, dynamic> data) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/vehicles'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      return jsonDecode(response.body);
+  /// 3. Tạo mới một phương tiện
+  Future<Map<String, dynamic>> createVehicle(Map<String, dynamic> data, {String? userId}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/vehicles?userId=${userId ?? ''}'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      // Thường trả về 201 Created
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Lỗi tạo phương tiện: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Lỗi kết nối khi tạo: $e');
     }
-    throw Exception('Failed to create vehicle');
   }
 
-  Future<Map<String, dynamic>> updateVehicle(String id, Map<String, dynamic> data) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/vehicles/$id'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+  /// 4. Cập nhật thông tin phương tiện
+  Future<Map<String, dynamic>> updateVehicle(String id, Map<String, dynamic> data, {String? userId}) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/vehicles/$id?userId=${userId ?? ''}'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Lỗi cập nhật phương tiện: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Lỗi kết nối khi cập nhật: $e');
     }
-    throw Exception('Failed to update vehicle');
   }
 
-  Future<void> deleteVehicle(String id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/vehicles/$id'));
-    if (response.statusCode != 204 && response.statusCode != 200) {
-      throw Exception('Failed to delete vehicle');
+  /// 5. Xóa phương tiện
+  Future<void> deleteVehicle(String id, {String? userId}) async {
+    try {
+      final response = await http.delete(Uri.parse('$baseUrl/vehicles/$id?userId=${userId ?? ''}'));
+
+      // Backend trả về ResponseEntity.noContent() tương ứng 204
+      if (response.statusCode != 204 && response.statusCode != 200) {
+        throw Exception('Lỗi khi xóa phương tiện (Code: ${response.statusCode})');
+      }
+    } catch (e) {
+      throw Exception('Lỗi kết nối khi xóa: $e');
     }
   }
 }

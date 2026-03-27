@@ -22,10 +22,11 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
     private final ReliefItemRepository reliefItemRepository;
     private final StockTransactionRepository stockTransactionRepository;
+    private final SystemManagementService systemService; // TIÊM ĐỂ GHI LOG
 
     @Transactional
-    public InventoryResponse importStock(StockInRequest request) {
-        // Find existing inventory record or create new
+    public InventoryResponse importStock(StockInRequest request, String userId) {
+        // 1. Tìm bản ghi kho hiện có hoặc tạo mới
         Inventory inventory = inventoryRepository
                 .findByWarehouseIdAndItemId(request.getWarehouseId(), request.getItemId())
                 .orElse(new Inventory());
@@ -34,13 +35,16 @@ public class InventoryService {
             inventory.setWarehouseId(request.getWarehouseId());
             inventory.setItemId(request.getItemId());
             inventory.setQuantity(0);
+            // Thiết lập ngưỡng mặc định nếu cần (ví dụ: 100)
+            inventory.setMinThreshold(100);
         }
 
-        // Add quantity
-        inventory.setQuantity(inventory.getQuantity() + request.getQuantity());
+        // 2. Cập nhật số lượng
+        int oldQty = inventory.getQuantity();
+        inventory.setQuantity(oldQty + request.getQuantity());
         Inventory saved = inventoryRepository.save(inventory);
 
-        // LOG TRANSACTION (Import Slip)
+        // 3. LƯU GIAO DỊCH KHO (Bảng StockTransaction)
         StockTransaction transaction = StockTransaction.builder()
                 .warehouseId(request.getWarehouseId())
                 .itemId(request.getItemId())
@@ -54,9 +58,18 @@ public class InventoryService {
                 .build();
         stockTransactionRepository.save(transaction);
 
+        // 4. GHI NHẬT KÝ HỆ THỐNG (SCRUM-54)
+        String itemName = reliefItemRepository.findById(request.getItemId())
+                .map(ReliefItem::getItemName).orElse("Vật phẩm");
+
+        systemService.logAction(userId, "IMPORT_STOCK",
+                String.format("Nhập kho %s: +%d %s (Tổng: %d)", itemName, request.getQuantity(), saved.getUnit(), saved.getQuantity()),
+                "INVENTORY");
+
         return mapToResponse(saved);
     }
 
+    // Lấy danh sách hàng hóa của kho (Dùng cho SCRUM-55 Dashboard)
     public List<InventoryResponse> getWarehouseInventory(String warehouseId) {
         return inventoryRepository.findByWarehouseId(warehouseId)
                 .stream()
@@ -64,21 +77,22 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
+    // Lấy danh sách hàng sắp hết để cảnh báo trên Dashboard
+    public List<InventoryResponse> getLowStockItems(String warehouseId) {
+        return inventoryRepository.findLowStockItemsByWarehouse(warehouseId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     private InventoryResponse mapToResponse(Inventory inventory) {
-        String itemName = "Unknown Item";
-        String unit = "N/A";
-        String imageUrl = null;
-        
-        ReliefItem item = null;
-        if (inventory.getItemId() != null) {
-            item = reliefItemRepository.findById(inventory.getItemId()).orElse(null);
-        }
-        
-        if (item != null) {
-            itemName = item.getItemName();
-            unit = item.getUnit();
-            imageUrl = item.getImageUrl();
-        }
+        ReliefItem item = inventory.getItemId() != null
+                ? reliefItemRepository.findById(inventory.getItemId()).orElse(null)
+                : null;
+
+        String itemName = (item != null) ? item.getItemName() : "Unknown Item";
+        String unit = (item != null) ? item.getUnit() : "N/A";
+        String imageUrl = (item != null) ? item.getImageUrl() : null;
 
         return InventoryResponse.builder()
                 .id(inventory.getId())
@@ -86,8 +100,11 @@ public class InventoryService {
                 .itemId(inventory.getItemId())
                 .itemName(itemName)
                 .unit(unit)
-                .imageUrl(imageUrl) // Include imageUrl in the builder
+                .imageUrl(imageUrl)
                 .quantity(inventory.getQuantity())
+                .minThreshold(inventory.getMinThreshold())
+                // Tính toán trạng thái để Flutter hiện màu sắc
+                .status((inventory.getQuantity() != null && inventory.getMinThreshold() != null && inventory.getQuantity() <= inventory.getMinThreshold()) ? "LOW_STOCK" : "NORMAL")
                 .build();
     }
 }

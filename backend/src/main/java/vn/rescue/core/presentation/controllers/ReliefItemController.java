@@ -11,6 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/relief-items")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class ReliefItemController {
 
     private final ReliefItemService reliefItemService;
