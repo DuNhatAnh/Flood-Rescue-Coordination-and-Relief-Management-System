@@ -39,6 +39,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future<void> _loadUsers() async {
     try {
       final users = await _adminService.getUsers(query: _searchQuery);
+      if (!mounted) return;
       setState(() {
         _users = users;
         _isLoading = false;
@@ -60,7 +61,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     showDialog(
       context: context,
-<<<<<<< HEAD
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -107,22 +107,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   },
                   child: const Text('Tạo'),
                 ),
-=======
-      builder: (context) => AlertDialog(
-        title: const Text('Tạo tài khoản mới'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Họ tên')),
-            TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
-            TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Số điện thoại')),
-            DropdownButtonFormField<String>(
-              value: selectedRole,
-              items: const [
-                DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
-                DropdownMenuItem(value: 'COORDINATOR', child: Text('Coordinator')),
-                DropdownMenuItem(value: 'USER', child: Text('User')),
->>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
               ],
             );
           }
@@ -184,7 +168,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 28,
-                                backgroundColor: const Color(0xFF2555D4).withOpacity(0.1),
+                                backgroundColor: const Color(0xFF2555D4).withValues(alpha: 0.1),
                                 child: Text(
                                   (user['fullName'] ?? 'U').substring(0, 1).toUpperCase(),
                                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2555D4)),
@@ -210,9 +194,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                                            color: isActive ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: isActive ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5)),
+                                            border: Border.all(color: isActive ? Colors.green.withValues(alpha: 0.5) : Colors.red.withValues(alpha: 0.5)),
                                           ),
                                           child: Text(
                                             isActive ? 'Hoạt động' : 'Đã khóa',
@@ -240,6 +224,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                                 if (val != null) {
                                                   try {
                                                     await _adminService.updateUserRole(user['id'], val);
+                                                    if (!mounted) return;
                                                     _loadUsers();
                                                   } catch (e) {
                                                     if (!mounted) return;
@@ -258,11 +243,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               Switch(
                                 value: isActive,
                                 activeColor: Colors.green,
-                                onChanged: (val) async {
-                                  final newStatus = val ? 'ACTIVE' : 'LOCKED';
-                                  await _adminService.updateUserStatus(user['id'], newStatus);
-                                  _loadUsers();
-                                },
+                                  onChanged: (val) async {
+                                    final newStatus = val ? 'ACTIVE' : 'LOCKED';
+                                    try {
+                                      await _adminService.updateUserStatus(user['id'], newStatus);
+                                      if (!mounted) return;
+                                      _loadUsers();
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                                    }
+                                  },
                               ),
                             ],
                           ),

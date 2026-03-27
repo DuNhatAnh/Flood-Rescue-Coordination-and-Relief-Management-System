@@ -108,10 +108,10 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: StaffTheme.warningOrange.withOpacity(0.08),
+                    color: StaffTheme.warningOrange.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.assignment_late_rounded, color: StaffTheme.warningOrange.withOpacity(0.7), size: 32),
+                  child: Icon(Icons.assignment_late_rounded, color: StaffTheme.warningOrange.withValues(alpha: 0.7), size: 32),
                 ),
                 const SizedBox(width: 16),
                 // Task Info
@@ -122,11 +122,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-<<<<<<< HEAD
-                          Text('NHIỆM VỤ #${task.id.length > 4 ? task.id.substring(0, 4) : (task.id.isEmpty ? "NEW" : task.id)}', style: StaffTheme.cardTitle),
-=======
                           Text('NHIỆM VỤ #${task.id.length > 4 ? task.id.substring(0, 4).toUpperCase() : task.id.toUpperCase()}', style: StaffTheme.cardTitle),
->>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
                           Text(timeStr, style: const TextStyle(color: StaffTheme.textLight, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -142,7 +138,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(task.status).withOpacity(0.12),
+                          color: _getStatusColor(task.status).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -203,7 +199,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
   Widget _buildIconText(IconData icon, String text, Color color) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: color.withOpacity(0.7)),
+        Icon(icon, size: 14, color: color.withValues(alpha: 0.7)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(

@@ -16,7 +16,6 @@ import vn.rescue.core.domain.entities.User;
 import vn.rescue.core.domain.repositories.UserRepository;
 import vn.rescue.core.infrastructure.security.JwtService;
 
-import java.util.Collections;
 import java.util.stream.Collectors;
 import org.springframework.security.core.GrantedAuthority;
 @RestController
@@ -44,14 +43,10 @@ public class AuthController {
                 .token(token)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-<<<<<<< HEAD
+                .teamId(user.getTeamId())
                 .roles(userDetails.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
-=======
-                .teamId(user.getTeamId())
-                .roles(Collections.singletonList(user.getRoleId()))
->>>>>>> 0934fba440f64f23273ef2bfce6ef3a221277d4d
                 .build());
     }
 }

@@ -81,7 +81,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                 DropdownButtonFormField<ReliefItem>(
-                  value: selectedItem,
+                  initialValue: selectedItem,
                   decoration: InputDecoration(
                     labelText: 'Chọn loại hàng',
                     prefixIcon: const Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue),
@@ -104,7 +104,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                         decoration: InputDecoration(
                           labelText: 'Số lượng',
                           hintText: 'VD: 100, 500...',
-                          hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5), fontSize: 12),
+                          hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5), fontSize: 12),
                           prefixIcon: const Icon(Icons.add_shopping_cart_rounded, color: StaffTheme.primaryBlue),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
@@ -114,7 +114,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                     Expanded(
                       flex: 3,
                       child: DropdownButtonFormField<String>(
-                        value: selectedCondition,
+                        initialValue: selectedCondition,
                         decoration: InputDecoration(
                           labelText: 'Tình trạng',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -131,7 +131,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                   decoration: InputDecoration(
                     labelText: 'Nguồn hàng (Cá nhân/Tổ chức)',
                     hintText: 'VD: Hội Chữ Thập Đỏ, Mạnh thường quân...',
-                    hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5), fontSize: 12),
+                    hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5), fontSize: 12),
                     prefixIcon: const Icon(Icons.business_rounded, color: StaffTheme.primaryBlue),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -142,7 +142,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                   decoration: InputDecoration(
                     labelText: 'Số hiệu phiếu / Hóa đơn',
                     hintText: 'VD: PN-001, HĐ-123...',
-                    hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5), fontSize: 12),
+                    hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5), fontSize: 12),
                     prefixIcon: const Icon(Icons.receipt_long_rounded, color: StaffTheme.primaryBlue),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -292,7 +292,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: itemColor.withOpacity(0.08),
+                    color: itemColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ClipRRect(
@@ -302,9 +302,9 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                             'http://localhost:8080${inv.imageUrl}',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => 
-                                Icon(_getItemIcon(inv.itemName), color: itemColor.withOpacity(0.5), size: 30),
+                                Icon(_getItemIcon(inv.itemName), color: itemColor.withValues(alpha: 0.5), size: 30),
                           )
-                        : Icon(_getItemIcon(inv.itemName), color: itemColor.withOpacity(0.5), size: 30),
+                        : Icon(_getItemIcon(inv.itemName), color: itemColor.withValues(alpha: 0.5), size: 30),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -329,7 +329,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: itemColor.withOpacity(0.12),
+                    color: itemColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
@@ -348,7 +348,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                       Text(
                         inv.unit.toUpperCase(),
                         style: TextStyle(
-                          color: itemColor.withOpacity(0.8),
+                          color: itemColor.withValues(alpha: 0.8),
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
                         ),

@@ -32,6 +32,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     }
@@ -134,7 +135,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                           leading: CircleAvatar(
                             radius: 22,
-                            backgroundColor: Colors.blue.withOpacity(0.15),
+                            backgroundColor: Colors.blue.withValues(alpha: 0.15),
                             child: const Icon(Icons.bolt, color: Colors.blue, size: 24),
                           ),
                           title: Text(log['action'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -157,13 +158,13 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.white, color.withOpacity(0.05)],
+          colors: [Colors.white, color.withValues(alpha: 0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 4))],
-        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -176,7 +177,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15), 
+                  color: color.withValues(alpha: 0.15), 
                   borderRadius: BorderRadius.circular(12)
                 ),
                 child: Icon(icon, color: color, size: 32),
@@ -205,10 +206,10 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         elevation: 3,
-        shadowColor: color.withOpacity(0.4),
+        shadowColor: color.withValues(alpha: 0.4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16), 
-          side: BorderSide(color: color.withOpacity(0.3), width: 1.5)
+          side: BorderSide(color: color.withValues(alpha: 0.3), width: 1.5)
         ),
         padding: const EdgeInsets.all(16),
       ),
@@ -218,7 +219,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 40),

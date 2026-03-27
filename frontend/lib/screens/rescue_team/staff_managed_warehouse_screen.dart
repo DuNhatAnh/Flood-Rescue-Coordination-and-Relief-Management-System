@@ -667,7 +667,7 @@ Widget build(BuildContext context) {
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: StaffTheme.border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5)],
         ),
         child: Row(
           children: [
@@ -692,7 +692,7 @@ Widget build(BuildContext context) {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isAvailable ? StaffTheme.successGreen.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                          color: isAvailable ? StaffTheme.successGreen.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -767,8 +767,8 @@ Widget build(BuildContext context) {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: isLowStock ? Colors.red.withOpacity(0.3) : StaffTheme.border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5)],
+          border: Border.all(color: isLowStock ? Colors.red.withValues(alpha: 0.3) : StaffTheme.border),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5)],
         ),
         child: Row(
           children: [
@@ -934,9 +934,11 @@ Widget build(BuildContext context) {
         userId: AuthService.currentUser?.id,
         source: _importSource,
       );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nhập kho thành công!'), backgroundColor: StaffTheme.successGreen));
       _loadData(); 
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed));
     } finally {
       setState(() => _isLoading = false);
@@ -980,7 +982,7 @@ Widget build(BuildContext context) {
                         isExpanded: true,
                         decoration: InputDecoration(filled: true, fillColor: StaffTheme.background, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
                         hint: const Text('Chọn nguồn cung cấp'),
-                        value: _importSource,
+                        initialValue: _importSource,
                         items: ['Cứu trợ Trung ương', 'Mạnh thường quân', 'Điều chuyển từ kho khác', 'Nhập khẩu hỗ trợ'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                         onChanged: (val) => setDialogState(() => _importSource = val),
                       ),
@@ -994,7 +996,7 @@ Widget build(BuildContext context) {
                             child: DropdownButtonFormField<ReliefItem>(
                               isExpanded: true,
                               decoration: InputDecoration(filled: true, fillColor: StaffTheme.background, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), hintText: 'Tên hàng'),
-                              value: _selectedImportItem,
+                              initialValue: _selectedImportItem,
                               items: _reliefItems.map((e) => DropdownMenuItem(value: e, child: Text(e.itemName))).toList(),
                               onChanged: (val) => setDialogState(() => _selectedImportItem = val),
                             ),

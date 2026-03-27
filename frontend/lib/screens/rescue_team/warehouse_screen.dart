@@ -430,10 +430,10 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: StaffTheme.primaryBlue.withOpacity(0.05),
+                    color: StaffTheme.primaryBlue.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.store_rounded, color: StaffTheme.primaryBlue.withOpacity(0.7), size: 32),
+                  child: Icon(Icons.store_rounded, color: StaffTheme.primaryBlue.withValues(alpha: 0.7), size: 32),
                 ),
                 const SizedBox(width: 16),
                 // Warehouse Info
@@ -461,7 +461,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
+                          color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

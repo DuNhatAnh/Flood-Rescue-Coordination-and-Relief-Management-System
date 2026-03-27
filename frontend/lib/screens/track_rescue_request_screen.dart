@@ -73,7 +73,7 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
               // Xóa session và quay về màn hình chính
               final prefs = await SharedPreferences.getInstance();
               await prefs.clear();
-              if (mounted) {
+              if (context.mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const HomeScreen()),
                   (route) => false,
@@ -178,7 +178,7 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -249,9 +249,9 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         text,

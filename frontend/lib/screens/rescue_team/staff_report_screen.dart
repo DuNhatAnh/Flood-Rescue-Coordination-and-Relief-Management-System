@@ -133,12 +133,12 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10)],
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor: (isExport ? StaffTheme.primaryBlue : Colors.indigo).withOpacity(0.1),
+              backgroundColor: (isExport ? StaffTheme.primaryBlue : Colors.indigo).withValues(alpha: 0.1),
               child: Icon(
                 isExport ? Icons.outbox_rounded : Icons.local_shipping_rounded,
                 color: isExport ? StaffTheme.primaryBlue : Colors.indigo,
@@ -158,7 +158,7 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(dist.status).withOpacity(0.1),
+                    color: _getStatusColor(dist.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

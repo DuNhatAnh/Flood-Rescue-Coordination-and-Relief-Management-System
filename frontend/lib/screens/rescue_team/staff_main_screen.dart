@@ -153,7 +153,7 @@ class _StaffMainScreenState extends State<StaffMainScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5)),
           ],
         ),
         child: Row(
@@ -191,7 +191,7 @@ class _StaffMainScreenState extends State<StaffMainScreen> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: isSelected ? StaffTheme.primaryBlue.withOpacity(0.1) : Colors.transparent,
+              color: isSelected ? StaffTheme.primaryBlue.withValues(alpha: 0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 28),

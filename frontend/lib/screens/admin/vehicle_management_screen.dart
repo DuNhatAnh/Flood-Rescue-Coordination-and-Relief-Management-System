@@ -124,13 +124,16 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
                 try {
                   if (isEdit) {
                     await _vehicleService.updateVehicle(vehicle['id'], data);
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật thành công')));
                   } else {
                     await _vehicleService.createVehicle(data);
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thêm phương tiện thành công')));
                   }
                   _loadVehicles(page: _currentPage);
                 } catch (e) {
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
                   setState(() => _isLoading = false);
                 }
@@ -158,9 +161,11 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
               setState(() => _isLoading = true);
               try {
                 await _vehicleService.deleteVehicle(id);
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xóa thành công')));
                 _loadVehicles(page: _currentPage);
               } catch (e) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
                 setState(() => _isLoading = false);
               }
@@ -268,7 +273,7 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(
-                              color: iconColor.withOpacity(0.1),
+                              color: iconColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(vehicleIcon, color: iconColor, size: 32),
@@ -286,9 +291,9 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: statusColor.withOpacity(0.1),
+                                        color: statusColor.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: statusColor.withOpacity(0.5)),
+                                        border: Border.all(color: statusColor.withValues(alpha: 0.5)),
                                       ),
                                       child: Text(
                                         v['status'] ?? 'N/A',

@@ -77,7 +77,7 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                   boxShadow: [
-                    BoxShadow(color: _getStatusColor(status).withOpacity(0.4), blurRadius: 4)
+                    BoxShadow(color: _getStatusColor(status).withValues(alpha: 0.4), blurRadius: 4)
                   ],
                 ),
               ),

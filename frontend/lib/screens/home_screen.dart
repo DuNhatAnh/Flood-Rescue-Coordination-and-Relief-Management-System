@@ -62,7 +62,7 @@ class _TopBarState extends State<TopBar> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -152,7 +152,7 @@ class _TopBarState extends State<TopBar> {
               backgroundColor: const Color(0xFFFF5252),
               foregroundColor: Colors.white,
               elevation: 2,
-              shadowColor: Colors.red.withOpacity(0.3),
+              shadowColor: Colors.red.withValues(alpha: 0.3),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
@@ -362,10 +362,10 @@ class StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.withOpacity(0.05)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.03),
+            color: Colors.blue.withValues(alpha: 0.03),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -376,7 +376,7 @@ class StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.08),
+              color: color.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 28),
@@ -469,7 +469,7 @@ class _MainContentState extends State<MainContent> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.symmetric(
-          horizontal: BorderSide(color: Colors.blue.withOpacity(0.1)),
+          horizontal: BorderSide(color: Colors.blue.withValues(alpha: 0.1)),
         ),
       ),
       child: Material(
@@ -489,7 +489,7 @@ class BottomBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.blue.withOpacity(0.1))),
+        border: Border(top: BorderSide(color: Colors.blue.withValues(alpha: 0.1))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
