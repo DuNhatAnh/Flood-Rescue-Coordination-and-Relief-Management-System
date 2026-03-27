@@ -52,12 +52,26 @@ class AuthService {
         final data = jsonDecode(response.body);
         final token = data['token'];
         
-        // Backend currently hardcodes roles to ["USER"], map it or default to admin for testing
+        // Lấy Role từ mảng roles của Spring Boot (Kiểm tra tất cả các role)
+        UserRole parsedRole = UserRole.user;
+        if (data['roles'] != null && data['roles'] is List) {
+           final List<dynamic> roleList = data['roles'];
+           final String roleString = roleList.join(',').toUpperCase();
+           
+           if (roleString.contains('ADMIN')) {
+             parsedRole = UserRole.admin;
+           } else if (roleString.contains('COORDINATOR')) {
+             parsedRole = UserRole.coordinator;
+           } else if (roleString.contains('RESCUE')) {
+             parsedRole = UserRole.rescueStaff;
+           }
+        }
+
         final user = UserModel(
           id: data['email'] ?? 'U1',
           email: data['email'] ?? email,
           fullName: data['fullName'] ?? 'Người dùng',
-          role: UserRole.admin, // Force admin to ensure dashboard access
+          role: parsedRole,
         );
         
         await _saveSession(user, token);

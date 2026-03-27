@@ -50,7 +50,7 @@ Hệ thống cung cấp các tài khoản mặc định để kiểm thử các 
 
 | Vai trò | Email | Mật khẩu |
 | :--- | :--- | :--- |
-| **Quản trị viên (Admin)** | `admin@rescue.vn` | `admin123` |
+| **Quản trị viên (Admin)** | ` admin@rescue.vn` | `admin123` |
 | **Điều phối viên (Coordinator)** | `coordinator@rescue.vn` | `admin123` |
 | **Nhân viên cứu hộ (Rescue Staff)** | `staff@rescue.vn` | `admin123` |
 

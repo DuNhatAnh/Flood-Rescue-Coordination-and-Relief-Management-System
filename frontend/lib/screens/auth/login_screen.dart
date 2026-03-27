@@ -4,6 +4,7 @@ import '../../models/user_model.dart';
 import '../coordinator/coordinator_dashboard.dart';
 import '../rescue_team/staff_main_screen.dart';
 import '../admin/system_dashboard_screen.dart';
+import '../home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -38,6 +39,10 @@ class _LoginScreenState extends State<LoginScreen> {
         break;
       case UserRole.rescueStaff:
         nextScreen = const StaffMainScreen();
+        break;
+      case UserRole.user:
+      default:
+        nextScreen = const HomeScreen();
         break;
     }
 
@@ -74,6 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user != null) {
         // Lưu trạng thái đăng nhập
         AuthService.currentUser = user;
+        
+        // Chẩn đoán: Hiển thị role thực tế
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đăng nhập thành công! Vai trò hệ thống: ${user.role}'), backgroundColor: Colors.green),
+        );
 
         // Logic chuyển hướng quan trọng dựa trên Vai trò (Role)
         _navigateToDashboard(user);

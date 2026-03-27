@@ -93,10 +93,14 @@
   </style>
 
   <script>
-    function initLeafletMap() {
+    function initLeafletMap(container) {
+      if (typeof L === 'undefined') {
+        console.error("Leaflet (L) is not defined yet.");
+        return;
+      }
       console.log("Initializing Multi-layer Rescue Map...");
       
-      const map = L.map('map', {
+      const map = L.map(container || 'map', {
         zoomControl: true,
         maxBounds: [
           [8.0, 102.0], // Southwest

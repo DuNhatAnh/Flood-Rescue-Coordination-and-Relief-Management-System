@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:ui_web' as ui;
+import 'dart:ui_web' as ui_web;
 // ignore: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 // ignore: deprecated_member_use, avoid_web_libraries_in_flutter
@@ -12,6 +12,9 @@ import 'package:flood_rescue_app/screens/auth/login_screen.dart';
 import 'package:flood_rescue_app/screens/citizen/safety_report_screen.dart';
 import 'package:flood_rescue_app/services/auth_service.dart';
 import 'package:flood_rescue_app/models/user_model.dart';
+import 'package:flood_rescue_app/screens/coordinator/coordinator_dashboard.dart';
+import 'package:flood_rescue_app/screens/rescue_team/staff_main_screen.dart';
+import 'package:flood_rescue_app/screens/admin/system_dashboard_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -73,7 +76,7 @@ class _TopBarState extends State<TopBar> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Flood Rescue System',
+                'Flood Rescue System v2.0',
                 style: TextStyle(
                   color: Color(0xFF01579B),
                   fontSize: 20,
@@ -134,6 +137,9 @@ class _TopBarState extends State<TopBar> {
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Chuyển đến trang báo cần hỗ trợ...'), duration: Duration(milliseconds: 1000)),
+              );
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -174,16 +180,39 @@ class _TopBarState extends State<TopBar> {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const LoginScreen()),
+                        final role = user.role;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Đang vào hệ thống với vai trò: $role'), duration: const Duration(milliseconds: 1500)),
                         );
+
+                        // Explicitly handle each role for maximum reliability
+                        if (role == UserRole.coordinator) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => CoordinatorDashboard()),
+                          );
+                        } else if (role == UserRole.admin) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => SystemDashboardScreen()),
+                          );
+                        } else if (role == UserRole.rescueStaff) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => StaffMainScreen()),
+                          );
+                        } else {
+                          // For regular users, maybe take them to their request history?
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => TrackRescueRequestScreen()),
+                          );
+                        }
                       },
                       icon: const Icon(Icons.dashboard_outlined, size: 20),
                       label: Text(user.role == UserRole.coordinator 
                           ? 'Trang Điều phối' 
-                          : 'Trang Cứu hộ'),
+                          : (user.role == UserRole.admin ? 'Dashboard Cứu hộ' : 'Trang Cứu hộ')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF01579B),
                         foregroundColor: Colors.white,
@@ -392,37 +421,61 @@ class MainContent extends StatefulWidget {
 }
 
 class _MainContentState extends State<MainContent> {
+  late String _mapViewId;
+
   @override
   void initState() {
     super.initState();
+    _mapViewId = 'leaflet-map-${DateTime.now().millisecondsSinceEpoch}';
+
     // Register the div element for Leaflet
-    ui.platformViewRegistry.registerViewFactory(
-      'leaflet-map',
-      (int viewId) => html.DivElement()
-        ..id = 'map'
-        ..style.width = '100%'
-        ..style.height = '100%'
-        ..style.borderRadius = '24px',
+    final html.DivElement mapElement = html.DivElement()
+      ..id = _mapViewId
+      ..style.width = '100%'
+      ..style.height = '100%'
+      ..style.borderRadius = '24px';
+
+    ui_web.platformViewRegistry.registerViewFactory(
+      _mapViewId,
+      (int viewId) => mapElement,
     );
 
-    // Call JS init script after rendering
-    Future.delayed(const Duration(milliseconds: 500), () {
-      js.context.callMethod('initLeafletMap');
+    // Call JS init script after rendering with multiple attempts
+    _initMapWithRetry(mapElement, 0);
+  }
+
+  void _initMapWithRetry(html.DivElement element, int attempt) {
+    if (attempt > 5) return; // Stop after 5 attempts
+    
+    Future.delayed(Duration(milliseconds: 300 * (attempt + 1)), () {
+      try {
+        if (js.context.hasProperty('initLeafletMap')) {
+          js.context.callMethod('initLeafletMap', [element]);
+        } else {
+          _initMapWithRetry(element, attempt + 1);
+        }
+      } catch (e) {
+        _initMapWithRetry(element, attempt + 1);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 650, // Increased from 520
-      margin: const EdgeInsets.symmetric(vertical: 10), // Removed horizontal margin
+      height: 650,
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.symmetric(
           horizontal: BorderSide(color: Colors.blue.withOpacity(0.1)),
         ),
       ),
-      child: const HtmlElementView(viewType: 'leaflet-map'),
+      child: Material(
+        color: Colors.transparent,
+        child: HtmlElementView(viewType: _mapViewId),
+      ),
     );
   }
 }

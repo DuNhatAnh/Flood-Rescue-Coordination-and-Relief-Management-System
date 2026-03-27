@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'home_screen.dart';
+
 
 class TrackRescueRequestScreen extends StatefulWidget {
   const TrackRescueRequestScreen({super.key});
@@ -64,6 +67,24 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            onPressed: () async {
+              // Xóa session và quay về màn hình chính
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            icon: const Icon(Icons.logout, color: Colors.red),
+            tooltip: "Đăng xuất",
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),

@@ -8,11 +8,13 @@ import vn.rescue.core.application.services.ReportService;
 import vn.rescue.core.domain.entities.SystemLog;
 import vn.rescue.core.domain.entities.SystemConfig;
 import vn.rescue.core.presentation.common.ApiResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/system")
+@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class AdminSystemController {
     private final SystemManagementService systemManagementService;

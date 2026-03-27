@@ -11,17 +11,32 @@ class UserManagementScreen extends StatefulWidget {
 class _UserManagementScreenState extends State<UserManagementScreen> {
   final AdminService _adminService = AdminService();
   List<dynamic> _users = [];
+  List<dynamic> _roles = [];
   bool _isLoading = true;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    try {
+      final roles = await _adminService.getRoles();
+      setState(() => _roles = roles);
+      await _loadUsers();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải dữ liệu: $e')),
+      );
+    }
   }
 
   Future<void> _loadUsers() async {
-    setState(() => _isLoading = true);
     try {
       final users = await _adminService.getUsers(query: _searchQuery);
       setState(() {
@@ -32,7 +47,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e')),
+        SnackBar(content: Text('Lỗi tải Users: $e')),
       );
     }
   }
@@ -41,53 +56,61 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
-    String selectedRole = 'USER';
+    String? selectedRole = _roles.isNotEmpty ? _roles.first['id'] : null;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tạo tài khoản mới'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Họ tên')),
-            TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
-            TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Số điện thoại')),
-            DropdownButtonFormField<String>(
-              initialValue: selectedRole,
-              items: const [
-                DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
-                DropdownMenuItem(value: 'COORDINATOR', child: Text('Coordinator')),
-                DropdownMenuItem(value: 'USER', child: Text('User')),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Tạo tài khoản mới'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Họ tên')),
+                  TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
+                  TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Số điện thoại')),
+                  DropdownButtonFormField<String>(
+                    value: selectedRole,
+                    items: _roles.map((role) => DropdownMenuItem<String>(
+                      value: role['id'],
+                      child: Text(role['name'] ?? ''),
+                    )).toList(),
+                    onChanged: (val) {
+                      setDialogState(() => selectedRole = val);
+                    },
+                    decoration: const InputDecoration(labelText: 'Vai trò'),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (selectedRole == null) return;
+                    try {
+                      await _adminService.createUser({
+                        'fullName': nameController.text,
+                        'email': emailController.text,
+                        'phone': phoneController.text,
+                        'roleId': selectedRole,
+                      });
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                      _loadUsers();
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                    }
+                  },
+                  child: const Text('Tạo'),
+                ),
               ],
-              onChanged: (val) => selectedRole = val!,
-              decoration: const InputDecoration(labelText: 'Vai trò'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await _adminService.createUser({
-                  'fullName': nameController.text,
-                  'email': emailController.text,
-                  'phone': phoneController.text,
-                  'roleId': selectedRole,
-                });
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                _loadUsers();
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-              }
-            },
-            child: const Text('Tạo'),
-          ),
-        ],
-      ),
+            );
+          }
+        );
+      },
     );
   }
 
@@ -129,6 +152,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       final user = _users[index];
                       final isActive = user['status'] == 'ACTIVE';
                       
+                      String? currentRole = user['roleId'];
+                      if (!_roles.any((r) => r['id'] == currentRole)) {
+                        currentRole = null;
+                      }
+
                       return Card(
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         elevation: 3,
@@ -183,14 +211,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                           child: DropdownButtonHideUnderline(
                                             child: DropdownButton<String>(
                                               isDense: true,
-                                              value: user['roleId'] ?? 'USER',
+                                              value: currentRole,
+                                              hint: const Text('Chọn Role', style: TextStyle(fontSize: 12)),
                                               style: const TextStyle(color: Color(0xFF2555D4), fontWeight: FontWeight.bold, fontSize: 14),
                                               icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2555D4)),
-                                              items: const [
-                                                DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
-                                                DropdownMenuItem(value: 'COORDINATOR', child: Text('Coordinator')),
-                                                DropdownMenuItem(value: 'USER', child: Text('User')),
-                                              ],
+                                              items: _roles.map((role) => DropdownMenuItem<String>(
+                                                value: role['id'],
+                                                child: Text(role['name'] ?? ''),
+                                              )).toList(),
                                               onChanged: (val) async {
                                                 if (val != null) {
                                                   try {
@@ -198,7 +226,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                                     _loadUsers();
                                                   } catch (e) {
                                                     if (!mounted) return;
-                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi cập nhật quyền: $e')));
                                                   }
                                                 }
                                               },

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/vehicle_service.dart';
+import 'package:latlong2/latlong.dart';
+import 'location_picker_screen.dart';
 
 class VehicleManagementScreen extends StatefulWidget {
   const VehicleManagementScreen({super.key});
@@ -64,7 +66,34 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
                 ),
                 TextField(
                   controller: locationController,
-                  decoration: const InputDecoration(labelText: 'Vị trí hiện tại'),
+                  decoration: InputDecoration(
+                    labelText: 'Vị trí hiện tại (Tọa độ GPS)',
+                    hintText: 'VD: 16.0544, 108.2022',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.map, color: Colors.blue),
+                      tooltip: 'Chọn trên bản đồ',
+                      onPressed: () async {
+                        LatLng? initialLoc;
+                        if (locationController.text.isNotEmpty) {
+                          try {
+                            final parts = locationController.text.split(',');
+                            if (parts.length >= 2) {
+                              initialLoc = LatLng(double.parse(parts[0].trim()), double.parse(parts[1].trim()));
+                            }
+                          } catch (_) {}
+                        }
+                        final LatLng? picked = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LocationPickerScreen(initialLocation: initialLoc),
+                          ),
+                        );
+                        if (picked != null) {
+                          locationController.text = '${picked.latitude.toStringAsFixed(6)}, ${picked.longitude.toStringAsFixed(6)}';
+                        }
+                      },
+                    ),
+                  ),
                 ),
                 TextField(
                   controller: teamController,
@@ -268,23 +297,50 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
-                                      child: Text(
-                                        'Đội: ${v['teamId'] ?? "Trống"}',
-                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                                        overflow: TextOverflow.ellipsis,
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.security, 
+                                            size: 14, 
+                                            color: (v['teamId'] == null || v['teamId'].toString().isEmpty) ? Colors.grey.shade400 : Colors.grey.shade600,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              (v['teamId'] == null || v['teamId'].toString().isEmpty) ? 'Chưa gán đội' : 'Đội: ${v['teamId']}',
+                                              style: TextStyle(
+                                                color: (v['teamId'] == null || v['teamId'].toString().isEmpty) ? Colors.grey.shade400 : Colors.grey.shade600, 
+                                                fontSize: 13,
+                                                fontStyle: (v['teamId'] == null || v['teamId'].toString().isEmpty) ? FontStyle.italic : FontStyle.normal,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 6),
                                 Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.location_on, size: 14, color: Colors.redAccent),
+                                    Icon(
+                                      Icons.location_on, 
+                                      size: 14, 
+                                      color: (v['currentLocation'] == null || v['currentLocation'].toString().trim().isEmpty) ? Colors.grey.shade400 : Colors.redAccent
+                                    ),
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        v['currentLocation'] ?? 'Chưa rõ vị trí',
-                                        style: const TextStyle(fontSize: 13, color: Colors.blueGrey),
+                                        (v['currentLocation'] != null && v['currentLocation'].toString().trim().isNotEmpty) ? v['currentLocation'] : 'Chưa rõ vị trí',
+                                        style: TextStyle(
+                                          fontSize: 13, 
+                                          color: (v['currentLocation'] == null || v['currentLocation'].toString().trim().isEmpty) ? Colors.grey.shade500 : Colors.blueGrey.shade800,
+                                          fontStyle: (v['currentLocation'] == null || v['currentLocation'].toString().trim().isEmpty) ? FontStyle.italic : FontStyle.normal,
+                                          fontWeight: (v['currentLocation'] == null || v['currentLocation'].toString().trim().isEmpty) ? FontWeight.normal : FontWeight.w500,
+                                        ),
+                                        maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),

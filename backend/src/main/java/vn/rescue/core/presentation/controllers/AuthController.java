@@ -17,7 +17,8 @@ import vn.rescue.core.domain.repositories.UserRepository;
 import vn.rescue.core.infrastructure.security.JwtService;
 
 import java.util.Collections;
-
+import java.util.stream.Collectors;
+import org.springframework.security.core.GrantedAuthority;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -42,7 +43,9 @@ public class AuthController {
                 .token(token)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .roles(Collections.singletonList("USER")) // Cần map đúng role bảng roles sau
+                .roles(userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList()))
                 .build());
     }
 }

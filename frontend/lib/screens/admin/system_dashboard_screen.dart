@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/admin_service.dart';
+import '../home_screen.dart';
 
 class SystemDashboardScreen extends StatefulWidget {
   const SystemDashboardScreen({Key? key}) : super(key: key);
@@ -50,6 +51,20 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
         backgroundColor: const Color(0xFF2555D4),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => HomeScreen()),
+                (route) => false,
+              );
+            },
+            icon: const Icon(Icons.map, color: Colors.white),
+            label: const Text('Bản đồ cứu hộ', style: TextStyle(color: Colors.white)),
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -87,6 +102,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                     crossAxisSpacing: 16,
                     children: [
                       _buildNavBtn(context, 'Người dùng', Icons.manage_accounts, '/admin/users', Colors.indigo),
+                      _buildNavBtn(context, 'Phân quyền', Icons.admin_panel_settings, '/admin/roles', Colors.deepPurple),
                       _buildNavBtn(context, 'Thông báo', Icons.notifications_active, '/admin/notifications', Colors.teal),
                       _buildNavBtn(context, 'Phương tiện', Icons.directions_car, '/admin/vehicles', Colors.blueGrey),
                       _buildNavBtn(context, 'Bản đồ xe', Icons.map, '/admin/vehicle_locations', Colors.green),

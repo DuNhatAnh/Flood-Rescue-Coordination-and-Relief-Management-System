@@ -122,7 +122,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('NHIỆM VỤ #${task.id.toString().substring(0, 4) ?? "NEW"}', style: StaffTheme.cardTitle),
+                          Text('NHIỆM VỤ #${task.id.length > 4 ? task.id.substring(0, 4) : (task.id.isEmpty ? "NEW" : task.id)}', style: StaffTheme.cardTitle),
                           Text(timeStr, style: const TextStyle(color: StaffTheme.textLight, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),

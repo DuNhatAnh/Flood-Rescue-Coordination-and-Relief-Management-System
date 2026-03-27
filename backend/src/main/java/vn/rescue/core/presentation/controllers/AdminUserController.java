@@ -8,10 +8,12 @@ import vn.rescue.core.application.services.UserService;
 import vn.rescue.core.application.services.SystemManagementService;
 import vn.rescue.core.domain.entities.Role;
 import vn.rescue.core.presentation.common.ApiResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
+@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class AdminUserController {
     private final UserService userService;

@@ -6,6 +6,7 @@ import 'screens/admin/notification_management_screen.dart';
 import 'screens/admin/system_dashboard_screen.dart';
 import 'screens/admin/vehicle_management_screen.dart';
 import 'screens/admin/vehicle_location_screen.dart';
+import 'screens/admin/role_management_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,7 @@ class FloodRescueApp extends StatelessWidget {
       home: const HomeScreen(),
       routes: {
         '/admin/users': (context) => const UserManagementScreen(),
+        '/admin/roles': (context) => const RoleManagementScreen(),
         '/admin/notifications': (context) => const NotificationManagementScreen(),
         '/admin/dashboard': (context) => const SystemDashboardScreen(),
         '/admin/vehicles': (context) => const VehicleManagementScreen(),

@@ -14,7 +14,7 @@ class AdminService {
   }
 
   Future<List<dynamic>> getUsers({String? query}) async {
-    final url = Uri.parse('$baseUrl/admin/users${query != null ? '?query=$query' : ''}');
+    final url = Uri.parse('$baseUrl/v1/admin/users${query != null ? '?query=$query' : ''}');
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {
@@ -25,7 +25,7 @@ class AdminService {
   }
 
   Future<Map<String, dynamic>> createUser(Map<String, dynamic> userData) async {
-    final url = Uri.parse('$baseUrl/admin/users');
+    final url = Uri.parse('$baseUrl/v1/admin/users');
     final headers = await _getAuthHeaders();
     final response = await http.post(
       url,
@@ -40,7 +40,7 @@ class AdminService {
   }
 
   Future<void> updateUserStatus(String userId, String status) async {
-    final url = Uri.parse('$baseUrl/admin/users/$userId/status?status=$status');
+    final url = Uri.parse('$baseUrl/v1/admin/users/$userId/status?status=$status');
     final headers = await _getAuthHeaders();
     final response = await http.put(url, headers: headers);
     if (response.statusCode != 200) {
@@ -49,7 +49,7 @@ class AdminService {
   }
 
   Future<void> updateUserRole(String userId, String roleId) async {
-    final url = Uri.parse('$baseUrl/admin/users/$userId/role?roleId=$roleId');
+    final url = Uri.parse('$baseUrl/v1/admin/users/$userId/role?roleId=$roleId');
     final headers = await _getAuthHeaders();
     final response = await http.put(url, headers: headers);
     if (response.statusCode != 200) {
@@ -101,6 +101,56 @@ class AdminService {
       return body['data'];
     }
     throw Exception('Failed to load system statistics');
+  }
+
+  Future<List<dynamic>> getRoles() async {
+    final url = Uri.parse('$baseUrl/v1/admin/roles');
+    final headers = await _getAuthHeaders();
+    final response = await http.get(url, headers: headers);
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      return body['data'];
+    }
+    throw Exception('Failed to load roles');
+  }
+
+  Future<Map<String, dynamic>> createRole(Map<String, dynamic> roleData) async {
+    final url = Uri.parse('$baseUrl/v1/admin/roles');
+    final headers = await _getAuthHeaders();
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: jsonEncode(roleData),
+    );
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      return body['data'];
+    }
+    throw Exception('Failed to create role');
+  }
+
+  Future<Map<String, dynamic>> updateRole(String id, Map<String, dynamic> roleData) async {
+    final url = Uri.parse('$baseUrl/v1/admin/roles/$id');
+    final headers = await _getAuthHeaders();
+    final response = await http.put(
+      url,
+      headers: headers,
+      body: jsonEncode(roleData),
+    );
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      return body['data'];
+    }
+    throw Exception('Failed to update role');
+  }
+
+  Future<void> deleteRole(String id) async {
+    final url = Uri.parse('$baseUrl/v1/admin/roles/$id');
+    final headers = await _getAuthHeaders();
+    final response = await http.delete(url, headers: headers);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete role');
+    }
   }
 }
 

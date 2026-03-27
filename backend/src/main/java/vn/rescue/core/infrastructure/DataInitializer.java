@@ -31,6 +31,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         log.info("Bắt đầu dọn dẹp và khởi tạo dữ liệu...");
 
+        seedRoles();
         seedUsers();
 
         seedRescueRequests();
@@ -40,6 +41,45 @@ public class DataInitializer implements CommandLineRunner {
 
         log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
     }
+
+    private void seedRoles() {
+        if (roleRepository.count() == 0) {
+            log.info("Nạp dữ liệu vai trò mẫu...");
+            
+            Role admin = Role.builder()
+                    .id("ADMIN")
+                    .name("ADMIN")
+                    .description("Administrator with full access")
+                    .permissions(Arrays.asList("ALL"))
+                    .build();
+            
+            Role coordinator = Role.builder()
+                    .id("COORDINATOR")
+                    .name("COORDINATOR")
+                    .description("Coordinator for rescue operations")
+                    .permissions(Arrays.asList("COORDINATE"))
+                    .build();
+            
+            Role staff = Role.builder()
+                    .id("RESCUE_STAFF")
+                    .name("RESCUE_STAFF")
+                    .description("Rescue staff member")
+                    .permissions(Arrays.asList("RESCUE"))
+                    .build();
+            
+            Role user = Role.builder()
+                    .id("USER")
+                    .name("USER")
+                    .description("Regular user")
+                    .permissions(Arrays.asList("REPORT"))
+                    .build();
+            
+            roleRepository.saveAll(Arrays.asList(admin, coordinator, staff, user));
+            log.info("Đã nạp 4 vai trò mẫu.");
+        }
+    }
+
+    private final RoleRepository roleRepository;
 
     private void backfillRescueRequestIds() {
         log.info("Kiểm tra và cập nhật mã định danh (customId) cho các yêu cầu cũ...");

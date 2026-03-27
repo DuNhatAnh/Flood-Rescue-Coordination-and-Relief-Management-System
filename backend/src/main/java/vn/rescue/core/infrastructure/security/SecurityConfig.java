@@ -20,48 +20,41 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import vn.rescue.core.domain.repositories.RoleRepository;
 import vn.rescue.core.domain.repositories.UserRepository;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final UserRepository userRepository;
-
     @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> userRepository
-                .findByEmail(username)
-                .map(user -> User.builder()
-                        .username(user.getEmail())
-                        .password(user.getPassword())
-                        .roles(user.getRoleId()) // Sử dụng RoleId thực tế từ DB
-                        .build())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-    }
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http, 
+            JwtAuthenticationFilter jwtAuthFilter,
+            AuthenticationProvider authenticationProvider
+    ) throws Exception {
         http
-                // Tắt CSRF vì chúng ta dùng REST API và JWT/Stateless
                 .csrf(AbstractHttpConfigurer::disable)
-                // Cấu hình CORS cho phép Postman và Frontend truy cập
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép truy cập công khai để Test Postman
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/v1/**").permitAll() // Permit all versioned APIs for now
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                                .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/inventory/**", "/api/upload/**", "/uploads/**").permitAll()
-                        // Các yêu cầu khác mới cần đăng nhập
+                        .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/inventory/**", "/api/upload/**", "/uploads/**", "/api/v1/rescue-requests/stats").permitAll()
                         .anyRequest().authenticated())
-                // Thiết lập cơ chế không lưu Session (Stateless)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider());
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -69,7 +62,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*")); // Cho phép tất cả các nguồn
+        configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "x-auth-token"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -79,9 +72,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
+    public AuthenticationProvider authenticationProvider(org.springframework.security.core.userdetails.UserDetailsService userDetailsService) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService());
+        authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
