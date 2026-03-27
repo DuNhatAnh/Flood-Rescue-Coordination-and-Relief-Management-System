@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface RescueTeamRepository extends MongoRepository<RescueTeam, String> {
     List<RescueTeam> findByStatusIgnoreCase(String status);
+    java.util.Optional<RescueTeam> findByLeaderId(String leaderId);
 }

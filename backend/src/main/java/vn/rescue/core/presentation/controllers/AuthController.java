@@ -43,6 +43,7 @@ public class AuthController {
                 .token(token)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .teamId(user.getTeamId())
                 .roles(Collections.singletonList(user.getRoleId()))
                 .build());
     }

@@ -3,7 +3,9 @@ package vn.rescue.core.application.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import vn.rescue.core.domain.entities.User;
+import vn.rescue.core.domain.entities.RescueTeam;
 import vn.rescue.core.domain.repositories.UserRepository;
+import vn.rescue.core.domain.repositories.RescueTeamRepository;
 import vn.rescue.core.application.dto.UserDto;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final RescueTeamRepository rescueTeamRepository;
     private final PasswordEncoder passwordEncoder;
 
     public List<UserDto> getAllUsers(String query) {
@@ -56,7 +59,21 @@ public class UserService {
         user.setPassword(passwordEncoder.encode("123456")); // Default password
         user.setStatus("ACTIVE");
         user.setCreatedAt(LocalDateTime.now());
-        return mapToDto(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+
+        // SCRUM-61: Auto-create team for Rescue Staff
+        if ("RESCUE_STAFF".equals(savedUser.getRoleId())) {
+            RescueTeam team = new RescueTeam();
+            team.setTeamName("Đội " + savedUser.getFullName());
+            team.setLeaderId(savedUser.getId());
+            team.setStatus("AVAILABLE");
+            RescueTeam savedTeam = rescueTeamRepository.save(team);
+            
+            savedUser.setTeamId(savedTeam.getId());
+            userRepository.save(savedUser);
+        }
+
+        return mapToDto(savedUser);
     }
 
     public UserDto updateUserRole(String id, String roleId) {

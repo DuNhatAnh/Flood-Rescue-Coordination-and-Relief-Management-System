@@ -103,7 +103,7 @@ class RescueService {
   // Lấy nhiệm vụ của tôi (SCRUM-61)
   Future<List<Assignment>> getMyTasks() async {
     try {
-      final teamId = AuthService.currentUser?.id;
+      final teamId = AuthService.currentUser?.teamId;
       final response = await _dio.get('/assignments/my-tasks', 
           queryParameters: teamId != null ? {'teamId': teamId} : null);
       

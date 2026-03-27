@@ -38,8 +38,51 @@ public class DataInitializer implements CommandLineRunner {
         seedWarehousesAndItems();
         backfillManagerIds();
         backfillRescueRequestIds();
+        backfillStaffTeamIds();
 
         log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
+    }
+
+    private void backfillStaffTeamIds() {
+        log.info("Đang kiểm tra và đồng bộ liên kết Staff - Đội cứu hộ...");
+        
+        // Ensure staff@rescue.vn is linked to Team 1 if not already
+        userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+            rescueTeamRepository.findAll().stream()
+                .filter(t -> "Đội Cứu Hộ 1".equals(t.getTeamName()))
+                .findFirst()
+                .ifPresent(team -> {
+                    boolean updated = false;
+                    if (team.getLeaderId() == null) {
+                        team.setLeaderId(staff.getId());
+                        rescueTeamRepository.save(team);
+                        updated = true;
+                    }
+                    if (staff.getTeamId() == null) {
+                        staff.setTeamId(team.getId());
+                        userRepository.save(staff);
+                        updated = true;
+                    }
+                    if (updated) {
+                        log.info("Đã đồng bộ kết nối cho staff@rescue.vn và Đội Cứu Hộ 1");
+                    }
+                });
+        });
+
+        // General backfill for any other leader/staff links
+        List<RescueTeam> allTeams = rescueTeamRepository.findAll();
+        for (RescueTeam team : allTeams) {
+            if (team.getLeaderId() != null) {
+                userRepository.findById(team.getLeaderId()).ifPresent(user -> {
+                    if (user.getTeamId() == null) {
+                        user.setTeamId(team.getId());
+                        userRepository.save(user);
+                        log.info("Đã cập nhật teamId cho nhân viên {} dựa trên leaderId của đội {}", 
+                            user.getEmail(), team.getTeamName());
+                    }
+                });
+            }
+        }
     }
 
     private void backfillManagerIds() {
@@ -173,6 +216,12 @@ public class DataInitializer implements CommandLineRunner {
             RescueTeam t1 = new RescueTeam();
             t1.setTeamName("Đội Cứu Hộ 1");
             t1.setStatus("AVAILABLE");
+
+            // Link to the seeded staff account
+            userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+                t1.setLeaderId(staff.getId());
+                log.info("Đã gán staff@rescue.vn làm trưởng Đội Cứu Hộ 1");
+            });
 
             RescueTeam t2 = new RescueTeam();
             t2.setTeamName("Đội Cứu Hộ 2");
