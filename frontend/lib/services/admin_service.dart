@@ -152,5 +152,63 @@ class AdminService {
       throw Exception('Failed to delete role');
     }
   }
+
+  // --- Warehouse Management ---
+  Future<List<dynamic>> getWarehouses() async {
+    final url = Uri.parse('$baseUrl/warehouses');
+    final headers = await _getAuthHeaders();
+    final response = await http.get(url, headers: headers);
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      return body; // The backend returns List directly or inside data
+    }
+    throw Exception('Failed to load warehouses');
+  }
+
+  Future<Map<String, dynamic>> createWarehouse(Map<String, dynamic> data) async {
+    final url = Uri.parse('$baseUrl/warehouses');
+    final headers = await _getAuthHeaders();
+    final response = await http.post(url, headers: headers, body: jsonEncode(data));
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to create warehouse');
+  }
+
+  Future<Map<String, dynamic>> updateWarehouse(String id, Map<String, dynamic> data) async {
+    final url = Uri.parse('$baseUrl/warehouses/$id');
+    final headers = await _getAuthHeaders();
+    final response = await http.put(url, headers: headers, body: jsonEncode(data));
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to update warehouse');
+  }
+
+  Future<void> deleteWarehouse(String id) async {
+    final url = Uri.parse('$baseUrl/warehouses/$id');
+    final headers = await _getAuthHeaders();
+    final response = await http.delete(url, headers: headers);
+    if (response.statusCode != 200) throw Exception('Failed to delete warehouse');
+  }
+
+  // --- Team Management ---
+  Future<List<dynamic>> getTeams() async {
+    final headers = await _getAuthHeaders();
+    
+    // First try the standard team endpoint
+    final teamUrl = Uri.parse('$baseUrl/v1/teams');
+    final response = await http.get(teamUrl, headers: headers);
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      return body['data'];
+    }
+    
+    // Fallback to available-teams if needed
+    final fallbackUrl = Uri.parse('$baseUrl/v1/rescue-coordination/available-teams');
+    final fallbackRes = await http.get(fallbackUrl, headers: headers);
+    if (fallbackRes.statusCode == 200) {
+      final body = jsonDecode(fallbackRes.body);
+      return body['data'];
+    }
+    
+    throw Exception('Failed to load teams');
+  }
 }
 

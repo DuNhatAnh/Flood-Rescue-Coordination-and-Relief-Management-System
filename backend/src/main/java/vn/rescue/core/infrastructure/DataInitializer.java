@@ -86,27 +86,9 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Đang kiểm tra và đồng bộ liên kết Staff - Đội cứu hộ...");
         
         // Ensure staff@rescue.vn is linked to Team 1 if not already
-        userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
-            rescueTeamRepository.findAll().stream()
-                .filter(t -> "Đội Cứu Hộ 1".equals(t.getTeamName()))
-                .findFirst()
-                .ifPresent(team -> {
-                    boolean updated = false;
-                    if (team.getLeaderId() == null) {
-                        team.setLeaderId(staff.getId());
-                        rescueTeamRepository.save(team);
-                        updated = true;
-                    }
-                    if (staff.getTeamId() == null) {
-                        staff.setTeamId(team.getId());
-                        userRepository.save(staff);
-                        updated = true;
-                    }
-                    if (updated) {
-                        log.info("Đã đồng bộ kết nối cho staff@rescue.vn và Đội Cứu Hộ 1");
-                    }
-                });
-        });
+        syncStaffWithTeam("staff@rescue.vn", "Đội Cứu Hộ 1");
+        syncStaffWithTeam("staff2@rescue.vn", "Đội Cứu Hộ 2");
+        syncStaffWithTeam("staff3@rescue.vn", "Đội Cứu Hộ 3");
 
         // General backfill for any other leader/staff links
         List<RescueTeam> allTeams = rescueTeamRepository.findAll();
@@ -124,14 +106,44 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    private void syncStaffWithTeam(String email, String teamName) {
+        userRepository.findByEmail(email).ifPresent(staff -> {
+            rescueTeamRepository.findAll().stream()
+                .filter(t -> teamName.equals(t.getTeamName()))
+                .findFirst()
+                .ifPresent(team -> {
+                    boolean updated = false;
+                    if (team.getLeaderId() == null) {
+                        team.setLeaderId(staff.getId());
+                        rescueTeamRepository.save(team);
+                        updated = true;
+                    }
+                    if (staff.getTeamId() == null || !staff.getTeamId().equals(team.getId())) {
+                        staff.setTeamId(team.getId());
+                        userRepository.save(staff);
+                        updated = true;
+                    }
+                    if (updated) {
+                        log.info("Đã đồng bộ kết nối cho {} và {}", email, teamName);
+                    }
+                });
+        });
+    }
+
     private void backfillManagerIds() {
         log.info("Đang gán quyền quản lý kho cho nhân viên...");
-        userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
-            warehouseRepository.findByWarehouseName("Kho Hòa Xuân").ifPresent(warehouse -> {
+        syncWarehouseManager("staff@rescue.vn", "Kho Hòa Xuân");
+        syncWarehouseManager("staff2@rescue.vn", "Kho Liên Chiểu");
+        syncWarehouseManager("staff3@rescue.vn", "Kho Cẩm Lệ");
+    }
+
+    private void syncWarehouseManager(String email, String warehouseName) {
+        userRepository.findByEmail(email).ifPresent(staff -> {
+            warehouseRepository.findByWarehouseName(warehouseName).ifPresent(warehouse -> {
                 if (warehouse.getManagerId() == null || !warehouse.getManagerId().equals(staff.getId())) {
                     warehouse.setManagerId(staff.getId());
                     warehouseRepository.save(warehouse);
-                    log.info("Đã gán staff@rescue.vn làm quản lý cho Kho Hòa Xuân (ID: {})", warehouse.getId());
+                    log.info("Đã gán {} làm quản lý cho {} (ID: {})", email, warehouseName, warehouse.getId());
                 }
             });
         });
@@ -182,14 +194,30 @@ public class DataInitializer implements CommandLineRunner {
             staff.setRoleId("RESCUE_STAFF");
             staff.setCreatedAt(LocalDateTime.now());
 
-            userRepository.saveAll(Arrays.asList(admin, coordinator, staff));
-            log.info("Đã nạp 3 người dùng mẫu.");
+            User staff2 = new User();
+            staff2.setEmail("staff2@rescue.vn");
+            staff2.setPassword(passwordEncoder.encode("admin123"));
+            staff2.setFullName("Nhân viên cứu hộ 2 (Staff 2)");
+            staff2.setRoleId("RESCUE_STAFF");
+            staff2.setCreatedAt(LocalDateTime.now());
+
+            User staff3 = new User();
+            staff3.setEmail("staff3@rescue.vn");
+            staff3.setPassword(passwordEncoder.encode("admin123"));
+            staff3.setFullName("Nhân viên cứu hộ 3 (Staff 3)");
+            staff3.setRoleId("RESCUE_STAFF");
+            staff3.setCreatedAt(LocalDateTime.now());
+
+            userRepository.saveAll(Arrays.asList(admin, coordinator, staff, staff2, staff3));
+            log.info("Đã nạp 5 người dùng mẫu.");
         }
 
         // Ensure all default users have correct password for testing
         updateOrCreateUser("admin@rescue.vn", "Quản trị viên (Admin)", "ADMIN");
         updateOrCreateUser("coordinator@rescue.vn", "Điều phối viên (Coordinator)", "COORDINATOR");
         updateOrCreateUser("staff@rescue.vn", "Nhân viên cứu hộ (Staff)", "RESCUE_STAFF");
+        updateOrCreateUser("staff2@rescue.vn", "Nhân viên cứu hộ 2 (Staff 2)", "RESCUE_STAFF");
+        updateOrCreateUser("staff3@rescue.vn", "Nhân viên cứu hộ 3 (Staff 3)", "RESCUE_STAFF");
     }
 
     private void updateOrCreateUser(String email, String fullName, String roleId) {
@@ -266,10 +294,18 @@ public class DataInitializer implements CommandLineRunner {
             RescueTeam t2 = new RescueTeam();
             t2.setTeamName("Đội Cứu Hộ 2");
             t2.setStatus("AVAILABLE");
+            userRepository.findByEmail("staff2@rescue.vn").ifPresent(staff -> {
+                t2.setLeaderId(staff.getId());
+                log.info("Đã gán staff2@rescue.vn làm trưởng Đội Cứu Hộ 2");
+            });
 
             RescueTeam t3 = new RescueTeam();
             t3.setTeamName("Đội Cứu Hộ 3");
             t3.setStatus("AVAILABLE");
+            userRepository.findByEmail("staff3@rescue.vn").ifPresent(staff -> {
+                t3.setLeaderId(staff.getId());
+                log.info("Đã gán staff3@rescue.vn làm trưởng Đội Cứu Hộ 3");
+            });
 
             List<RescueTeam> teams = rescueTeamRepository.saveAll(Arrays.asList(t1, t2, t3));
 
@@ -312,10 +348,28 @@ public class DataInitializer implements CommandLineRunner {
             Warehouse w2 = new Warehouse();
             w2.setWarehouseName("Kho Liên Chiểu");
             w2.setLocation("Quận Liên Chiểu, Đà Nẵng");
+
+            // Assign staff2@rescue.vn as manager
+            userRepository.findByEmail("staff2@rescue.vn").ifPresent(staff -> {
+                w2.setManagerId(staff.getId());
+            });
+
             w2.setStatus("ACTIVE");
             w2.setCreatedAt(LocalDateTime.now());
 
-            List<Warehouse> warehouses = warehouseRepository.saveAll(Arrays.asList(w1, w2));
+            Warehouse w3 = new Warehouse();
+            w3.setWarehouseName("Kho Cẩm Lệ");
+            w3.setLocation("Quận Cẩm Lệ, Đà Nẵng");
+
+            // Assign staff3@rescue.vn as manager
+            userRepository.findByEmail("staff3@rescue.vn").ifPresent(staff -> {
+                w3.setManagerId(staff.getId());
+            });
+
+            w3.setStatus("ACTIVE");
+            w3.setCreatedAt(LocalDateTime.now());
+
+            List<Warehouse> warehouses = warehouseRepository.saveAll(Arrays.asList(w1, w2, w3));
 
             ReliefItem i1 = createItem("Gạo", "kg", "Gạo tẻ trắng");
             ReliefItem i2 = createItem("Nước uống", "thùng", "Nước tinh khiết 500ml");

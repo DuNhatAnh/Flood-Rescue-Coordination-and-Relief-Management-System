@@ -12,6 +12,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   final AdminService _adminService = AdminService();
   List<dynamic> _users = [];
   List<dynamic> _roles = [];
+  List<dynamic> _teams = [];
   bool _isLoading = true;
   String _searchQuery = '';
 
@@ -25,7 +26,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setState(() => _isLoading = true);
     try {
       final roles = await _adminService.getRoles();
-      setState(() => _roles = roles);
+      final teams = await _adminService.getTeams();
+      setState(() {
+        _roles = roles;
+        _teams = teams;
+      });
       await _loadUsers();
     } catch (e) {
       if (!mounted) return;
@@ -58,6 +63,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
     String? selectedRole = _roles.isNotEmpty ? _roles.first['id'] : null;
+    String? selectedTeam;
 
     showDialog(
       context: context,
@@ -83,6 +89,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     },
                     decoration: const InputDecoration(labelText: 'Vai trò'),
                   ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedTeam,
+                    items: [
+                      const DropdownMenuItem<String>(value: null, child: Text('Không thuộc đội nào')),
+                      ..._teams.map((team) => DropdownMenuItem<String>(
+                        value: team['id'],
+                        child: Text(team['teamName'] ?? ''),
+                      )).toList(),
+                    ],
+                    onChanged: (val) {
+                      setDialogState(() => selectedTeam = val);
+                    },
+                    decoration: const InputDecoration(labelText: 'Đội cứu hộ (Tùy chọn)'),
+                  ),
                 ],
               ),
               actions: [
@@ -96,6 +117,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         'email': emailController.text,
                         'phone': phoneController.text,
                         'roleId': selectedRole,
+                        'teamId': selectedTeam,
                       });
                       if (!context.mounted) return;
                       Navigator.pop(context);

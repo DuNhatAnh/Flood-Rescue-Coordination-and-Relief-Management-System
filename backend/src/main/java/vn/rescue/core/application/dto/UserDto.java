@@ -16,4 +16,5 @@ public class UserDto {
     private String phone;
     private String roleId;
     private String status;
+    private String teamId;
 }

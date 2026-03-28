@@ -115,7 +115,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
         'vehicleType': _selectedVehicleType,
         'licensePlate': _plateController.text.trim(),
         'status': 'AVAILABLE',
-        'warehouseId': _myWarehouse?.id // Nếu backend cần gán xe vào kho
+        'warehouseId': _myWarehouse?.id
       });
       
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thêm phương tiện thành công!'), backgroundColor: StaffTheme.successGreen));

@@ -44,6 +44,7 @@ public class UserService {
         user.setFullName(dto.getFullName());
         user.setPhone(dto.getPhone());
         user.setRoleId(dto.getRoleId());
+        user.setTeamId(dto.getTeamId());
         return mapToDto(userRepository.save(user));
     }
 
@@ -59,10 +60,11 @@ public class UserService {
         user.setPassword(passwordEncoder.encode("123456")); // Default password
         user.setStatus("ACTIVE");
         user.setCreatedAt(LocalDateTime.now());
+        user.setTeamId(dto.getTeamId()); // Set team if provided
         User savedUser = userRepository.save(user);
 
-        // SCRUM-61: Auto-create team for Rescue Staff
-        if ("RESCUE_STAFF".equals(savedUser.getRoleId())) {
+        // SCRUM-61: Auto-create team for Rescue Staff only if no teamId provided
+        if ("RESCUE_STAFF".equals(savedUser.getRoleId()) && savedUser.getTeamId() == null) {
             RescueTeam team = new RescueTeam();
             team.setTeamName("Đội " + savedUser.getFullName());
             team.setLeaderId(savedUser.getId());
@@ -98,6 +100,7 @@ public class UserService {
                 .phone(user.getPhone())
                 .roleId(user.getRoleId())
                 .status(user.getStatus())
+                .teamId(user.getTeamId())
                 .build();
     }
 }
