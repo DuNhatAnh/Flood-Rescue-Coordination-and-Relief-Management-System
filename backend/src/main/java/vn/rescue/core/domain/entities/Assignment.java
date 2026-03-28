@@ -19,8 +19,8 @@ public class Assignment {
     @Field("team_id")
     private String teamId;
 
-    @Field("vehicle_id")
-    private String vehicleId;
+    @Field("vehicle_ids")
+    private java.util.List<String> vehicleIds;
 
     @Field("assigned_by")
     private String assignedBy;
@@ -41,4 +41,10 @@ public class Assignment {
 
     @Field("completed_at")
     private LocalDateTime completedAt;
+
+    @Field("rescued_count")
+    private Integer rescuedCount;
+
+    @Field("report_note")
+    private String reportNote;
 }

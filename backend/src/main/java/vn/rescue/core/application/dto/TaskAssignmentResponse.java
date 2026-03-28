@@ -8,7 +8,7 @@ public class TaskAssignmentResponse {
     private String id;
     private String requestId;
     private String teamId;
-    private String vehicleId;
+    private java.util.List<String> vehicleIds;
     private String assignedBy;
     private LocalDateTime assignedAt;
     private String status;
@@ -16,7 +16,7 @@ public class TaskAssignmentResponse {
     // From RescueTeam
     private String teamName;
 
-    // From Vehicles
+    // From Vehicles (Gộp nhiều xe)
     private String vehicleType;
     private String licensePlate;
 
@@ -33,4 +33,7 @@ public class TaskAssignmentResponse {
     private java.util.List<vn.rescue.core.domain.entities.MissionItem> missionItems;
     private java.util.List<vn.rescue.core.domain.entities.MissionItem> assignedItems;
     private boolean itemsExported;
+
+    private Integer rescuedCount;
+    private String reportNote;
 }

@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface AssignmentRepository extends MongoRepository<Assignment, String> {
     List<Assignment> findByTeamId(String teamId);
-    Optional<Assignment> findByVehicleIdAndStatus(String vehicleId, String status);
+    java.util.Optional<Assignment> findByVehicleIdsContainsAndStatus(String vehicleId, String status);
     Optional<Assignment> findByRequestId(String requestId);
 
 }

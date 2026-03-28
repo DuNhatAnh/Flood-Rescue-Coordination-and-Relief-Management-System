@@ -24,4 +24,7 @@ public class RescueTeam {
 
     @Field("leader_id")
     private String leaderId;
+
+    @Field("warehouse_id")
+    private String warehouseId;
 }
