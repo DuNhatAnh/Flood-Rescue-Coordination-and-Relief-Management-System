@@ -37,8 +37,8 @@ public class DataInitializer implements CommandLineRunner {
         seedUsers();
 
         seedRescueRequests();
-        seedRescueTeamsAndVehicles();
         seedWarehousesAndItems();
+        seedRescueTeamsAndVehicles();
         backfillManagerIds();
         backfillRescueRequestIds();
         backfillStaffTeamIds();
@@ -282,9 +282,20 @@ public class DataInitializer implements CommandLineRunner {
         if (rescueTeamRepository.count() == 0) {
             log.info("Nạp dữ liệu đội cứu hộ và phương tiện mẫu...");
 
+            List<Warehouse> warehouses = warehouseRepository.findAll();
+            if (warehouses.isEmpty()) {
+                log.warn("Không tìm thấy kho hàng để gán cho đội cứu hộ!");
+                return;
+            }
+
+            Warehouse w1 = warehouses.get(0);
+            Warehouse w2 = warehouses.size() > 1 ? warehouses.get(1) : w1;
+            Warehouse w3 = warehouses.size() > 2 ? warehouses.get(2) : w2;
+
             RescueTeam t1 = new RescueTeam();
             t1.setTeamName("Đội Cứu Hộ 1");
             t1.setStatus("AVAILABLE");
+            t1.setWarehouseId(w1.getId());
 
             // Link to the seeded staff account
             userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
@@ -295,6 +306,7 @@ public class DataInitializer implements CommandLineRunner {
             RescueTeam t2 = new RescueTeam();
             t2.setTeamName("Đội Cứu Hộ 2");
             t2.setStatus("AVAILABLE");
+            t2.setWarehouseId(w2.getId());
             userRepository.findByEmail("staff2@rescue.vn").ifPresent(staff -> {
                 t2.setLeaderId(staff.getId());
                 log.info("Đã gán staff2@rescue.vn làm trưởng Đội Cứu Hộ 2");
@@ -303,6 +315,7 @@ public class DataInitializer implements CommandLineRunner {
             RescueTeam t3 = new RescueTeam();
             t3.setTeamName("Đội Cứu Hộ 3");
             t3.setStatus("AVAILABLE");
+            t3.setWarehouseId(w3.getId());
             userRepository.findByEmail("staff3@rescue.vn").ifPresent(staff -> {
                 t3.setLeaderId(staff.getId());
                 log.info("Đã gán staff3@rescue.vn làm trưởng Đội Cứu Hộ 3");
@@ -310,23 +323,24 @@ public class DataInitializer implements CommandLineRunner {
 
             List<RescueTeam> teams = rescueTeamRepository.saveAll(Arrays.asList(t1, t2, t3));
 
-            Vehicles v1 = createVehicle("Xuồng máy", "43A-001.23", teams.get(0).getId());
-            Vehicles v2 = createVehicle("Xuồng máy", "43A-001.24", teams.get(1).getId());
-            Vehicles v3 = createVehicle("Xe tải cứu trợ", "43B-005.67", teams.get(2).getId());
-            Vehicles v4 = createVehicle("Xe bán tải", "43C-009.81", null);
-            Vehicles v5 = createVehicle("Xe bán tải", "43C-009.82", null);
+            Vehicles v1 = createVehicle("Xuồng máy", "43A-001.23", teams.get(0).getId(), w1.getId());
+            Vehicles v2 = createVehicle("Xuồng máy", "43A-001.24", teams.get(1).getId(), w2.getId());
+            Vehicles v3 = createVehicle("Xe tải cứu trợ", "43B-005.67", teams.get(2).getId(), w3.getId());
+            Vehicles v4 = createVehicle("Xe bán tải", "43C-009.81", null, w1.getId());
+            Vehicles v5 = createVehicle("Xe bán tải", "43C-009.82", null, w2.getId());
 
             vehiclesRepository.saveAll(Arrays.asList(v1, v2, v3, v4, v5));
-            log.info("Đã nạp 3 đội và 5 phương tiện mẫu.");
+            log.info("Đã nạp 3 đội và 5 phương tiện mẫu với liên kết kho.");
         }
     }
 
-    private Vehicles createVehicle(String type, String plate, String teamId) {
+    private Vehicles createVehicle(String type, String plate, String teamId, String warehouseId) {
         Vehicles v = new Vehicles();
         v.setVehicleType(type);
         v.setLicensePlate(plate);
         v.setStatus("AVAILABLE");
         v.setTeamId(teamId);
+        v.setWarehouseId(warehouseId);
         return v;
     }
 
@@ -429,7 +443,7 @@ public class DataInitializer implements CommandLineRunner {
                             
                             // Gán xe mẫu (lấy xe đầu tiên của đội)
                             vehiclesRepository.findByTeamId(teamId).stream().findFirst().ifPresent(v -> {
-                                assignment.setVehicleId(v.getId());
+                                assignment.setVehicleIds(Arrays.asList(v.getId()));
                                 v.setStatus("BUSY");
                                 vehiclesRepository.save(v);
                             });

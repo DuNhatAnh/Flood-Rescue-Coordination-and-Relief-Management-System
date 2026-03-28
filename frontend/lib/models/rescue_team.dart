@@ -3,12 +3,14 @@ class RescueTeam {
   final String teamName;
   final String status; // 'AVAILABLE', 'BUSY'
   final String leaderId;
+  final String? warehouseId;
 
   RescueTeam({
     required this.id,
     required this.teamName,
     required this.status,
     required this.leaderId,
+    this.warehouseId,
   });
 
   factory RescueTeam.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class RescueTeam {
       teamName: json['teamName'] ?? '',
       status: json['status'] ?? 'AVAILABLE',
       leaderId: json['leaderId']?.toString() ?? '',
+      warehouseId: json['warehouseId']?.toString(),
     );
   }
 
@@ -26,6 +29,7 @@ class RescueTeam {
       'teamName': teamName,
       'status': status,
       'leaderId': leaderId,
+      'warehouseId': warehouseId,
     };
   }
 }

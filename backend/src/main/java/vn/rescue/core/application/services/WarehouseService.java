@@ -45,6 +45,10 @@ public class WarehouseService {
         return warehouseRepository.findByManagerId(managerId).orElse(null);
     }
 
+    public Warehouse getWarehouseById(String id) {
+        return warehouseRepository.findById(id).orElse(null);
+    }
+
     public void deleteWarehouse(String id) {
         warehouseRepository.deleteById(id);
     }

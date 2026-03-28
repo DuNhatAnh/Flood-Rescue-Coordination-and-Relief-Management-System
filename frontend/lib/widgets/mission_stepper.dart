@@ -19,7 +19,9 @@ class MissionStepper extends StatelessWidget {
 
     int currentIndex = steps.indexWhere((s) => s['id'] == currentStatus.toUpperCase());
     if (currentIndex == -1) {
-      if (currentStatus.toUpperCase() == 'IN_PROGRESS') currentIndex = 1; // Backward compatibility
+      String status = currentStatus.toUpperCase();
+      if (status == 'IN_PROGRESS') currentIndex = 1;
+      else if (status == 'REPORTED') currentIndex = 5; // Hoàn thành bước 'Đang về', đang chờ 'Xong'
       else currentIndex = 0;
     }
 

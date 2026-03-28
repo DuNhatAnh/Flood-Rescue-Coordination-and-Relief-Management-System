@@ -19,7 +19,8 @@ public class DistributionController {
     private final DistributionService distributionService;
 
     @PostMapping
-    public ResponseEntity<Distribution> create(@RequestBody DistributionRequest request, Authentication authentication) {
+    public ResponseEntity<Distribution> create(@RequestBody DistributionRequest request,
+            Authentication authentication) {
         String userId = authentication.getName();
         return ResponseEntity.ok(distributionService.createDistribution(request, userId));
     }

@@ -213,8 +213,11 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
 
     setState(() => _isLoading = true);
     
-    // Nếu có đổi xe
-    if (widget.mission != null && _selectedVehicle != null && _selectedVehicle!.id != widget.mission!.vehicleId) {
+    // Nếu có đổi xe (kiểm tra xem xe đã chọn có nằm trong danh sách xe được gán không)
+    bool isDifferentVehicle = _selectedVehicle != null && 
+        !(widget.mission?.vehicleIds?.contains(_selectedVehicle!.id) ?? false);
+        
+    if (widget.mission != null && isDifferentVehicle) {
        await _rescueService.updateAssignmentVehicle(
          widget.mission!.id, 
          _selectedVehicle!.id!, 
@@ -346,7 +349,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                       )).toList(),
                       onChanged: (val) => setState(() => _selectedVehicle = val),
                    ),
-                   if (_selectedVehicle != null && _selectedVehicle!.id != widget.mission!.vehicleId)
+                   if (_selectedVehicle != null && !(widget.mission?.vehicleIds?.contains(_selectedVehicle?.id) ?? false))
                      Padding(
                        padding: const EdgeInsets.only(top: 8.0),
                        child: TextField(

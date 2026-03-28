@@ -3,9 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
 import '../../models/assignment.dart';
-import '../../models/inventory.dart';
 import '../../services/rescue_service.dart';
-import '../../services/inventory_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/staff_theme.dart';
 import '../../widgets/mission_stepper.dart';
@@ -20,15 +18,10 @@ class TeamTasksScreen extends StatefulWidget {
 
 class TeamTasksScreenState extends State<TeamTasksScreen> {
   final RescueService _rescueService = RescueService();
-  final InventoryService _inventoryService = InventoryService();
   late Future<List<Assignment>> _tasksFuture;
   List<LatLng> _routePoints = [];
   
   // Logistics - Phàn 2
-  List<Inventory> _warehouseStock = [];
-  Map<String, int> _selectedQuantities = {};
-  // bool _isQuickMode = true; // No longer needed as separate state
-  bool _isLogisticsLoading = false;
 
   @override
   void initState() {
@@ -451,7 +444,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const RescueReportScreen()),
+            MaterialPageRoute(builder: (context) => RescueReportScreen(assignmentId: task.id)),
           ).then((_) => refreshTasks());
         },
         style: ElevatedButton.styleFrom(
@@ -668,7 +661,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       const SizedBox(height: 6),
                       _buildIconText(Icons.location_on_rounded, task.addressText ?? 'Địa chỉ không xác định', StaffTheme.errorRed),
                       const SizedBox(height: 4),
-                      _buildIconText(Icons.directions_boat_rounded, task.vehicleId != null ? 'Phương tiện: ${task.vehicleId}' : 'Chưa gán phương tiện', StaffTheme.primaryBlue),
+                      _buildIconText(Icons.directions_boat_rounded, task.licensePlate != null ? 'Phương tiện: ${task.licensePlate}' : 'Chưa gán phương tiện', StaffTheme.primaryBlue),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -710,7 +703,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const RescueReportScreen()),
+                        MaterialPageRoute(builder: (context) => RescueReportScreen(assignmentId: task.id)),
                       );
                     },
                     style: ElevatedButton.styleFrom(

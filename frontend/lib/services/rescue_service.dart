@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flood_rescue_app/models/rescue_request.dart';
 import 'package:flood_rescue_app/models/rescue_team.dart';
 import 'package:flood_rescue_app/models/vehicle.dart';
@@ -8,6 +10,7 @@ import 'package:flood_rescue_app/models/safety_report.dart';
 import 'auth_service.dart';
 
 class RescueService {
+  final String baseUrl = 'http://localhost:8080/api/v1';
   final Dio _dio = Dio(BaseOptions(
     baseUrl: 'http://localhost:8080/api/v1',
     connectTimeout: const Duration(seconds: 5),
@@ -87,14 +90,19 @@ class RescueService {
   }
 
   // TẠO PHÂN CÔNG
-  Future<bool> createAssignment(String requestId, String teamId, String vehicleId) async {
+  Future<bool> createAssignment(String requestId, String teamId, List<String> vehicleIds, List<Map<String, dynamic>> items) async {
     try {
-      final response = await _dio.post('/assignments', queryParameters: {
-        'requestId': requestId,
-        'teamId': teamId,
-        'vehicleId': vehicleId,
-        'assignedBy': 'Coordinator' // Should get from Auth
-      });
+      final response = await http.post(
+        Uri.parse('$baseUrl/assignments'),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: jsonEncode({
+          'requestId': requestId,
+          'teamId': teamId,
+          'vehicleIds': vehicleIds,
+          'missionItems': items,
+          'assignedBy': 'Coordinator', // In a real app, this would be the current user
+        }),
+      );
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       return false;
@@ -109,17 +117,33 @@ class RescueService {
           queryParameters: teamId != null ? {'teamId': teamId} : null);
       
       if (response.statusCode == 200) {
-        final responseData = response.data;
-        final dynamic dataList = (responseData is Map && responseData.containsKey('data')) 
-            ? responseData['data'] 
-            : responseData;
-            
-        if (dataList is List) {
-          return dataList.map((json) => Assignment.fromJson(json)).toList();
+        final Map<String, dynamic> responseData = response.data;
+        if (responseData['success'] == true) {
+          final List<dynamic> data = responseData['data'] ?? [];
+          return data.map((json) => Assignment.fromJson(json)).toList();
         }
       }
       return [];
     } catch (e) {
+      return [];
+    }
+  }
+
+  // Lấy toàn bộ nhiệm vụ (Cho điều phối viên)
+  Future<List<Assignment>> getAllAssignments() async {
+    try {
+      final response = await _dio.get('/assignments/all');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = response.data;
+        print('DEBUG: getAllAssignments raw data: $responseData');
+        if (responseData['success'] == true) {
+          final List<dynamic> data = responseData['data'] ?? [];
+          return data.map((json) => Assignment.fromJson(json)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching all assignments: $e');
       return [];
     }
   }
@@ -162,7 +186,7 @@ class RescueService {
       final response = await _dio.put('/assignments/$assignmentId/status', data: {
         'rescuedCount': rescuedCount,
         'note': note,
-        'status': 'COMPLETED'
+        'status': 'REPORTED'
       });
       return response.statusCode == 200;
     } catch (e) {
@@ -224,13 +248,25 @@ class RescueService {
     try {
       final response = await _dio.get('/warehouses/manager/$managerId');
       if (response.statusCode == 200) {
-         // WarehouseController returns the object directly or wrapped?
-         // Checking WarehouseController, it returns Warehouse directly.
          return response.data;
       }
       return null;
     } catch (e) {
       print('Error fetching warehouse: $e');
+      return null;
+    }
+  }
+
+  // Lấy kho theo ID
+  Future<Map<String, dynamic>?> getWarehouseById(String id) async {
+    try {
+      final response = await _dio.get('/warehouses/$id');
+      if (response.statusCode == 200) {
+         return response.data;
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching warehouse by id: $e');
       return null;
     }
   }

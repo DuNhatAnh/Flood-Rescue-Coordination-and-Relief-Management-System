@@ -9,6 +9,7 @@ import 'package:flood_rescue_app/screens/coordinator/assignment_screen.dart';
 import 'package:flood_rescue_app/screens/coordinator/request_history_screen.dart';
 import 'package:flood_rescue_app/screens/home_screen.dart';
 import 'package:flood_rescue_app/screens/coordinator/notification_screen.dart'; 
+import 'package:flood_rescue_app/screens/coordinator/tracking_screen.dart';
 class CoordinatorDashboard extends StatefulWidget {
   const CoordinatorDashboard({Key? key}) : super(key: key);
 
@@ -104,6 +105,16 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
             },
             icon: const Icon(Icons.home),
             tooltip: 'Về trang chủ',
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TrackingScreen()),
+              );
+            },
+            icon: const Icon(Icons.history),
+            tooltip: 'Theo dõi & Lịch sử',
           ),
           IconButton(onPressed: _refreshData, icon: const Icon(Icons.refresh)),
           IconButton(onPressed: () {}, icon: const Icon(Icons.filter_list)),
