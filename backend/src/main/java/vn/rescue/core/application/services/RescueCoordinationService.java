@@ -13,6 +13,8 @@ import vn.rescue.core.domain.repositories.RequestStatusHistoryRepository;
 import vn.rescue.core.domain.repositories.RescueRequestRepository;
 import vn.rescue.core.domain.repositories.RescueTeamRepository;
 import vn.rescue.core.domain.repositories.VehiclesRepository;
+import vn.rescue.core.domain.repositories.WarehouseRepository;
+import vn.rescue.core.domain.entities.MissionItem;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -41,6 +43,12 @@ public class RescueCoordinationService {
 
     @Autowired
     private RequestStatusHistoryRepository requestStatusHistoryRepository;
+
+    @Autowired
+    private InventoryService inventoryService;
+
+    @Autowired
+    private WarehouseRepository warehouseRepository;
 
     public List<RescueRequest> getPendingRequests() {
         return rescueRequestRepository.findByStatus("PENDING");
@@ -128,16 +136,41 @@ public class RescueCoordinationService {
     }
 
     @Transactional
+    @SuppressWarnings("unchecked")
     public void updateAssignmentStatus(String id, java.util.Map<String, Object> body) {
         String status = (String) body.get("status");
         String note = (String) body.get("note");
+        String userId = (String) body.get("userId"); // Extra field from App
+        List<java.util.Map<String, Object>> itemsRaw = (List<java.util.Map<String, Object>>) body.get("items");
 
         Optional<Assignment> assignmentOpt = assignmentRepository.findById(id);
         if (assignmentOpt.isPresent()) {
             Assignment assignment = assignmentOpt.get();
+            String oldStatus = assignment.getStatus();
             assignment.setStatus(status);
-            assignmentRepository.save(assignment);
 
+            // LOGIC PHẦN 2: Xử lý xuất hàng khi bắt đầu di chuyển (PREPARING -> MOVING)
+            if ("MOVING".equalsIgnoreCase(status) && "PREPARING".equalsIgnoreCase(oldStatus) && itemsRaw != null) {
+                List<MissionItem> missionItems = itemsRaw.stream().map(m -> {
+                    MissionItem item = new MissionItem();
+                    item.setItemId((String) m.get("itemId"));
+                    item.setItemName((String) m.get("itemName"));
+                    item.setUnit((String) m.get("unit"));
+                    item.setQuantity((Integer) m.get("quantity"));
+                    return item;
+                }).collect(Collectors.toList());
+
+                // Tìm kho của Team Leader để trừ hàng
+                warehouseRepository.findByManagerId(userId).ifPresent(warehouse -> {
+                    inventoryService.batchExport(warehouse.getId(), id, missionItems, userId);
+                    // Cập nhật lại danh sách hàng sau khi đã bị "Auto-Cap" bởi InventoryService
+                    assignment.setMissionItems(missionItems);
+                    assignment.setItemsExported(true); // Đánh dấu đã xuất hàng
+                });
+            }
+
+            assignmentRepository.save(assignment);
+            
             // Sync with RescueRequest
             Optional<RescueRequest> requestOpt = rescueRequestRepository.findById(assignment.getRequestId());
             if (requestOpt.isPresent()) {
@@ -171,11 +204,11 @@ public class RescueCoordinationService {
                 });
 
                 // Release Vehicle
-                    Optional<Vehicles> vehicleOpt = vehiclesRepository.findById(assignment.getVehicleId());
-                    vehicleOpt.ifPresent(vehicle -> {
-                        vehicle.setStatus("AVAILABLE");
-                        vehiclesRepository.save(vehicle);
-                    });
+                Optional<Vehicles> vehicleOpt = vehiclesRepository.findById(assignment.getVehicleId());
+                vehicleOpt.ifPresent(vehicle -> {
+                    vehicle.setStatus("AVAILABLE");
+                    vehiclesRepository.save(vehicle);
+                });
             }
         }
     }
@@ -208,6 +241,10 @@ public class RescueCoordinationService {
             response.setLocationLng(request.getLocationLng());
         });
 
+        response.setMissionItems(assignment.getMissionItems());
+        response.setAssignedItems(assignment.getAssignedItems());
+        response.setItemsExported(assignment.isItemsExported());
+
         // Join with RescueTeam
         rescueTeamRepository.findById(assignment.getTeamId()).ifPresent(team -> {
             response.setTeamName(team.getTeamName());
@@ -222,5 +259,34 @@ public class RescueCoordinationService {
         }
 
         return response;
+    }
+
+    @Transactional
+    public void updateAssignmentVehicle(String assignmentId, String newVehicleId, String reason) {
+        Optional<Assignment> assignmentOpt = assignmentRepository.findById(assignmentId);
+        if (assignmentOpt.isPresent()) {
+            Assignment assignment = assignmentOpt.get();
+            String oldVehicleId = assignment.getVehicleId();
+            
+            if (oldVehicleId != null && !oldVehicleId.equals(newVehicleId)) {
+                // Giải phóng xe cũ
+                vehiclesRepository.findById(oldVehicleId).ifPresent(v -> {
+                    v.setStatus("AVAILABLE");
+                    vehiclesRepository.save(v);
+                });
+                
+                // Thuê xe mới
+                vehiclesRepository.findById(newVehicleId).ifPresent(v -> {
+                    v.setStatus("BUSY");
+                    vehiclesRepository.save(v);
+                });
+                
+                assignment.setVehicleId(newVehicleId);
+                assignmentRepository.save(assignment);
+                
+                logger.info("Vehicle changed for assignment {}: {} -> {} (Reason: {})", 
+                    assignmentId, oldVehicleId, newVehicleId, reason);
+            }
+        }
     }
 }

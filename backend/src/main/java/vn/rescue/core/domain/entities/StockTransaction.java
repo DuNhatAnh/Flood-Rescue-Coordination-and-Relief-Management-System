@@ -42,5 +42,10 @@ public class StockTransaction {
     @Field("staff_id")
     private String staffId;
 
+    private String reason; // e.g., "RESCUE_MISSION"
+
+    @Field("assignment_id")
+    private String assignmentId;
+
     private LocalDateTime timestamp;
 }

@@ -81,7 +81,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                 DropdownButtonFormField<ReliefItem>(
-                  initialValue: selectedItem,
+                  value: selectedItem,
                   decoration: InputDecoration(
                     labelText: 'Chọn loại hàng',
                     prefixIcon: const Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue),
@@ -114,7 +114,7 @@ class _WarehouseInventoryScreenState extends State<WarehouseInventoryScreen> {
                     Expanded(
                       flex: 3,
                       child: DropdownButtonFormField<String>(
-                        initialValue: selectedCondition,
+                        value: selectedCondition,
                         decoration: InputDecoration(
                           labelText: 'Tình trạng',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

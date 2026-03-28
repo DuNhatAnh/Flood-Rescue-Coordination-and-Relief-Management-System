@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../models/warehouse.dart';
+import '../../models/assignment.dart';
 import '../../models/inventory.dart';
 import '../../services/warehouse_service.dart';
 import '../../services/inventory_service.dart';
@@ -48,6 +49,17 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadData();
+    
+    // Kiểm tra xem có được mở từ màn hình Nhiệm vụ không
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args.containsKey('missionContext')) {
+        _showExportDialog(
+          mission: args['missionContext'] as Assignment,
+          mode: args['mode'] as String
+        );
+      }
+    });
   }
 
   @override
@@ -982,7 +994,7 @@ Widget build(BuildContext context) {
                         isExpanded: true,
                         decoration: InputDecoration(filled: true, fillColor: StaffTheme.background, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
                         hint: const Text('Chọn nguồn cung cấp'),
-                        initialValue: _importSource,
+                        value: _importSource,
                         items: ['Cứu trợ Trung ương', 'Mạnh thường quân', 'Điều chuyển từ kho khác', 'Nhập khẩu hỗ trợ'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                         onChanged: (val) => setDialogState(() => _importSource = val),
                       ),
@@ -996,7 +1008,7 @@ Widget build(BuildContext context) {
                             child: DropdownButtonFormField<ReliefItem>(
                               isExpanded: true,
                               decoration: InputDecoration(filled: true, fillColor: StaffTheme.background, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), hintText: 'Tên hàng'),
-                              initialValue: _selectedImportItem,
+                              value: _selectedImportItem,
                               items: _reliefItems.map((e) => DropdownMenuItem(value: e, child: Text(e.itemName))).toList(),
                               onChanged: (val) => setDialogState(() => _selectedImportItem = val),
                             ),
@@ -1021,13 +1033,13 @@ Widget build(BuildContext context) {
     );
   }
 
-  void _showExportDialog() {
+  void _showExportDialog({Assignment? mission, String? mode}) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+          constraints: const BoxConstraints(maxWidth: 800, maxHeight: 900), // Rộng hơn để chứa bảng đối chiếu
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1037,12 +1049,20 @@ Widget build(BuildContext context) {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('BIỂU MẪU XUẤT HÀNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    Text(mission != null ? 'XUẤT KHO THEO NHIỆM VỤ' : 'BIỂU MẪU XUẤT HÀNG', 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
                     IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close, color: Colors.white)),
                   ],
                 ),
               ),
-              Flexible(child: DistributionExportForm(onSuccess: () { Navigator.pop(ctx); _loadData(); })),
+              Flexible(child: DistributionExportForm(
+                mission: mission,
+                mode: mode,
+                onSuccess: () { 
+                  Navigator.pop(ctx); 
+                  _loadData(); 
+                }
+              )),
             ],
           ),
         ),

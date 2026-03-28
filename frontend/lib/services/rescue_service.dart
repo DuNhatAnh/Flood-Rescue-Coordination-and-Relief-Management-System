@@ -125,11 +125,26 @@ class RescueService {
   }
 
   // Cập nhật trạng thái nhiệm vụ (SCRUM-64 - Chuẩn bị sẵn dù chưa yêu cầu detail)
-  Future<bool> updateAssignmentStatus(String id, String status, {String? note}) async {
+  Future<bool> updateAssignmentStatus(String id, String status, {String? note, String? userId, List<Map<String, dynamic>>? items}) async {
     try {
       final response = await _dio.put('/assignments/$id/status', data: {
         'status': status,
-        'note': note
+        'note': note,
+        'userId': userId,
+        'items': items
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Cập nhật phương tiện nhiệm vụ (Linh hoạt đổi xe tại kho)
+  Future<bool> updateAssignmentVehicle(String id, String newVehicleId, String reason) async {
+    try {
+      final response = await _dio.put('/assignments/$id/vehicle', data: {
+        'newVehicleId': newVehicleId,
+        'reason': reason
       });
       return response.statusCode == 200;
     } catch (e) {

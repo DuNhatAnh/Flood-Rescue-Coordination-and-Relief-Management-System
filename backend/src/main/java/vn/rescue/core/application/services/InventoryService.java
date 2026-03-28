@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.rescue.core.application.dto.InventoryResponse;
 import vn.rescue.core.application.dto.StockInRequest;
+import vn.rescue.core.application.dto.StockOutRequest;
 import vn.rescue.core.domain.entities.Inventory;
+import vn.rescue.core.domain.entities.MissionItem;
 import vn.rescue.core.domain.entities.ReliefItem;
 import vn.rescue.core.domain.entities.StockTransaction;
 import vn.rescue.core.domain.repositories.InventoryRepository;
@@ -89,6 +91,65 @@ public class InventoryService {
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public int exportStock(StockOutRequest request, String userId) {
+        // 1. Tìm bản ghi kho
+        Inventory inventory = inventoryRepository
+                .findByWarehouseIdAndItemId(request.getWarehouseId(), request.getItemId())
+                .orElse(null);
+
+        if (inventory == null) {
+            return 0; // Không có hàng này trong kho
+        }
+
+        // 2. Kiểm tra tồn kho và trừ số lượng (Auto-cap tại mức tồn kho hiện có)
+        int available = inventory.getQuantity() != null ? inventory.getQuantity() : 0;
+        int toExport = Math.min(available, request.getQuantity());
+
+        if (toExport > 0) {
+            inventory.setQuantity(available - toExport);
+            inventoryRepository.save(inventory);
+
+            // 3. LƯU GIAO DỊCH KHO
+            StockTransaction transaction = StockTransaction.builder()
+                    .warehouseId(request.getWarehouseId())
+                    .itemId(request.getItemId())
+                    .quantity(toExport)
+                    .transactionType("EXPORT")
+                    .reason(request.getReason())
+                    .assignmentId(request.getAssignmentId())
+                    .staffId(userId)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            stockTransactionRepository.save(transaction);
+
+            // 4. GHI NHẬT KÝ HỆ THỐNG
+            systemService.logAction(userId, "EXPORT_STOCK",
+                    String.format("Xuất kho %s: -%d %s cho nhiệm vụ #%s",
+                            inventory.getItemName(), toExport, inventory.getUnit(), 
+                            request.getAssignmentId() != null ? request.getAssignmentId().substring(0, 8) : "N/A"),
+                    "INVENTORY");
+        }
+        return toExport;
+    }
+
+    @Transactional
+    public void batchExport(String warehouseId, String assignmentId, List<MissionItem> items, String userId) {
+        if (items == null) return;
+        for (MissionItem item : items) {
+            StockOutRequest request = StockOutRequest.builder()
+                    .warehouseId(warehouseId)
+                    .itemId(item.getItemId())
+                    .quantity(item.getQuantity())
+                    .reason("RESCUE_MISSION")
+                    .assignmentId(assignmentId)
+                    .build();
+            int actualExported = exportStock(request, userId);
+            // Cập nhật lại số lượng thực tế đã mang đi nếu bị hụt kho (Auto-cap)
+            item.setQuantity(actualExported);
+        }
     }
 
     private InventoryResponse mapToResponse(Inventory inventory) {

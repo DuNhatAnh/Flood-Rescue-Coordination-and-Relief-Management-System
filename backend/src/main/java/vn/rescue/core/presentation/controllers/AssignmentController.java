@@ -36,4 +36,11 @@ public class AssignmentController {
     public void updateStatus(@PathVariable("id") String id, @RequestBody Map<String, Object> body) {
         rescueCoordinationService.updateAssignmentStatus(id, body);
     }
+
+    @PutMapping("/{id}/vehicle")
+    public void updateVehicle(@PathVariable("id") String id, @RequestBody Map<String, String> body) {
+        String newVehicleId = body.get("newVehicleId");
+        String reason = body.get("reason");
+        rescueCoordinationService.updateAssignmentVehicle(id, newVehicleId, reason);
+    }
 }
