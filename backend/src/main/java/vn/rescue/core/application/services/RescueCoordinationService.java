@@ -115,7 +115,7 @@ public class RescueCoordinationService {
             assignment.setVehicleId(vehicleId);
             assignment.setAssignedBy(assignedBy);
             assignment.setAssignedAt(LocalDateTime.now());
-            assignment.setStatus("IN_PROGRESS");
+            assignment.setStatus("ASSIGNED");
 
             return assignmentRepository.save(assignment);
         }
@@ -142,8 +142,15 @@ public class RescueCoordinationService {
             Optional<RescueRequest> requestOpt = rescueRequestRepository.findById(assignment.getRequestId());
             if (requestOpt.isPresent()) {
                 RescueRequest request = requestOpt.get();
-                request.setStatus(status);
-                rescueRequestRepository.save(request);
+                
+                // If REJECTED, move request back to VERIFIED
+                if ("REJECTED".equalsIgnoreCase(status)) {
+                    request.setStatus("VERIFIED");
+                    rescueRequestRepository.save(request);
+                } else {
+                    request.setStatus(status);
+                    rescueRequestRepository.save(request);
+                }
 
                 // Log history
                 RequestStatusHistory history = new RequestStatusHistory();
@@ -152,23 +159,23 @@ public class RescueCoordinationService {
                 history.setNote(note != null ? note : "Trạng thái nhiệm vụ chuyển sang " + status);
                 history.setCreatedAt(LocalDateTime.now());
                 requestStatusHistoryRepository.save(history);
+            }
 
-                // If COMPLETED, release resources
-                if ("COMPLETED".equalsIgnoreCase(status)) {
-                    // Release Team
-                    Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(assignment.getTeamId());
-                    teamOpt.ifPresent(team -> {
-                        team.setStatus("AVAILABLE");
-                        rescueTeamRepository.save(team);
-                    });
+            // If COMPLETED or REJECTED or CANCELLED, release resources
+            if ("COMPLETED".equalsIgnoreCase(status) || "REJECTED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
+                // Release Team
+                Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(assignment.getTeamId());
+                teamOpt.ifPresent(team -> {
+                    team.setStatus("AVAILABLE");
+                    rescueTeamRepository.save(team);
+                });
 
-                    // Release Vehicle
+                // Release Vehicle
                     Optional<Vehicles> vehicleOpt = vehiclesRepository.findById(assignment.getVehicleId());
                     vehicleOpt.ifPresent(vehicle -> {
                         vehicle.setStatus("AVAILABLE");
                         vehiclesRepository.save(vehicle);
                     });
-                }
             }
         }
     }
@@ -194,6 +201,7 @@ public class RescueCoordinationService {
             response.setCitizenName(request.getCitizenName());
             response.setCitizenPhone(request.getCitizenPhone());
             response.setAddressText(request.getAddressText());
+            response.setNumberOfPeople(request.getNumberOfPeople());
             response.setDescription(request.getDescription());
             response.setUrgencyLevel(request.getUrgencyLevel());
             response.setLocationLat(request.getLocationLat());

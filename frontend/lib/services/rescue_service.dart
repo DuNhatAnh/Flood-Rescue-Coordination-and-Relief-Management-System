@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:flood_rescue_app/models/rescue_request.dart';
 import 'package:flood_rescue_app/models/rescue_team.dart';
 import 'package:flood_rescue_app/models/vehicle.dart';
@@ -124,10 +125,11 @@ class RescueService {
   }
 
   // Cập nhật trạng thái nhiệm vụ (SCRUM-64 - Chuẩn bị sẵn dù chưa yêu cầu detail)
-  Future<bool> updateAssignmentStatus(String id, String status) async {
+  Future<bool> updateAssignmentStatus(String id, String status, {String? note}) async {
     try {
       final response = await _dio.put('/assignments/$id/status', data: {
-        'status': status
+        'status': status,
+        'note': note
       });
       return response.statusCode == 200;
     } catch (e) {
@@ -215,6 +217,28 @@ class RescueService {
     } catch (e) {
       print('Error fetching warehouse: $e');
       return null;
+    }
+  }
+
+  // Lấy đường đi từ OSRM (SCRUM-61)
+  Future<List<LatLng>> getRoutePoints(LatLng start, LatLng end) async {
+    try {
+      final url = 'http://router.project-osrm.org/route/v1/driving/'
+          '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
+          '?overview=full&geometries=geojson';
+          
+      final response = await _dio.get(url);
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['routes'] != null && data['routes'].isNotEmpty) {
+          final coordinates = data['routes'][0]['geometry']['coordinates'] as List;
+          return coordinates.map((c) => LatLng(c[1].toDouble(), c[0].toDouble())).toList();
+        }
+      }
+      return [start, end]; // Mặc định trả về đường thẳng nếu lỗi
+    } catch (e) {
+      print('Error fetching route: $e');
+      return [start, end];
     }
   }
 }

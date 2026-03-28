@@ -26,6 +26,7 @@ public class TaskAssignmentResponse {
     private String addressText;
     private String description;
     private String urgencyLevel;
+    private Integer numberOfPeople;
     private Double locationLat;
     private Double locationLng;
 }

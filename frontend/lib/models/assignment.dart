@@ -14,6 +14,7 @@ class Assignment {
   final String? addressText;
   final String? description;
   final String? urgencyLevel;
+  final int? numberOfPeople;
   final double? locationLat;
   final double? locationLng;
 
@@ -30,6 +31,7 @@ class Assignment {
     this.addressText,
     this.description,
     this.urgencyLevel,
+    this.numberOfPeople,
     this.locationLat,
     this.locationLng,
   });
@@ -44,12 +46,13 @@ class Assignment {
       assignedAt: json['assignedAt'] != null 
           ? DateTime.parse(json['assignedAt']) 
           : DateTime.now(),
-      status: json['status'] ?? 'IN_PROGRESS',
+      status: json['status'] ?? 'ASSIGNED',
       citizenName: json['citizenName'],
       citizenPhone: json['citizenPhone'],
       addressText: json['addressText'],
       description: json['description'],
       urgencyLevel: json['urgencyLevel'],
+      numberOfPeople: json['numberOfPeople']?.toInt(),
       locationLat: json['locationLat']?.toDouble(),
       locationLng: json['locationLng']?.toDouble(),
     );
@@ -69,6 +72,7 @@ class Assignment {
       'addressText': addressText,
       'description': description,
       'urgencyLevel': urgencyLevel,
+      'numberOfPeople': numberOfPeople,
       'locationLat': locationLat,
       'locationLng': locationLng,
     };

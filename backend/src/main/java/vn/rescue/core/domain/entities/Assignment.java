@@ -28,7 +28,7 @@ public class Assignment {
     @Field("assigned_at")
     private LocalDateTime assignedAt;
 
-    private String status = "IN_PROGRESS"; // IN_PROGRESS / COMPLETED / CANCELLED
+    private String status = "ASSIGNED"; // ASSIGNED / PREPARING / MOVING / RESCUING / RETURNING / COMPLETED / CANCELLED / REJECTED
 
     @Field("completed_at")
     private LocalDateTime completedAt;
