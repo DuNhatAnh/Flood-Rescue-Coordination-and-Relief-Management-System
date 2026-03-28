@@ -8,7 +8,7 @@ import 'package:flood_rescue_app/services/rescue_service.dart';
 import 'package:flood_rescue_app/screens/coordinator/assignment_screen.dart';
 import 'package:flood_rescue_app/screens/coordinator/request_history_screen.dart';
 import 'package:flood_rescue_app/screens/home_screen.dart';
-
+import 'package:flood_rescue_app/screens/coordinator/notification_screen.dart'; 
 class CoordinatorDashboard extends StatefulWidget {
   const CoordinatorDashboard({Key? key}) : super(key: key);
 
@@ -84,6 +84,16 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
         actions: [
+          IconButton(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const NotificationScreen()),
+      );
+    },
+    icon: const Icon(Icons.notifications),
+    tooltip: 'Thông báo',
+  ),
           IconButton(
             onPressed: () {
               Navigator.pushAndRemoveUntil(

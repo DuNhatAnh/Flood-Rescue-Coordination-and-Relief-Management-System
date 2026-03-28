@@ -40,4 +40,8 @@ public class Notification {
     @Field("created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now(); // Tự động lấy thời gian hiện tại
+
+    public void markAsRead() {
+        this.isRead = true;
+    }
 }

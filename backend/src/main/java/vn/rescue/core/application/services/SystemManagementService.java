@@ -22,8 +22,14 @@ public class SystemManagementService {
     private final VehiclesRepository vehiclesRepository;
 
     // --- SCRUM-54: NHẬT KÝ HỆ THỐNG ---
+    /**
+     * Ghi log hành động và tự động tạo thông báo nếu thuộc module quan trọng
+     */
     public void logAction(String userId, String action, String details, String module) {
+        // Ghi log vào console để debug
         log.info("USER [{}]: MODULE [{}] - ACTION [{}] - DETAIL: {}", userId, module, action, details);
+
+        // 1. Lưu Log hệ thống vào Database
         SystemLog logEntry = SystemLog.builder()
                 .userId(userId)
                 .action(action)
@@ -32,6 +38,20 @@ public class SystemManagementService {
                 .createdAt(LocalDateTime.now())
                 .build();
         systemLogRepository.save(logEntry);
+
+        // 2. Tự động tạo thông báo nếu đây là hành động quan trọng (RESCUE hoặc INVENTORY)
+        if (module != null && (module.equals("RESCUE") || module.equals("INVENTORY"))) {
+            Notification autoNotice = Notification.builder()
+                    .title("Hệ thống: " + action)
+                    .content(details)
+                    .type(module.equals("RESCUE") ? "SOS" : "WARNING") // SOS cho cứu hộ, WARNING cho kho
+                    .priority("HIGH")
+                    .isRead(false)
+                    .userId(null) // Thông báo chung cho các điều phối viên
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            notificationRepository.save(autoNotice);
+        }
     }
 
     // Overload cho các trường hợp log đơn giản hơn
@@ -45,11 +65,9 @@ public class SystemManagementService {
 
     // --- SCRUM-55: THỐNG KÊ DASHBOARD ---
     public DashboardStatsResponse getDashboardStats(String warehouseId) {
-        // 1. Thống kê phương tiện
         long totalV = vehiclesRepository.countByWarehouseId(warehouseId);
         long availableV = vehiclesRepository.countByWarehouseIdAndStatusIgnoreCase(warehouseId, "AVAILABLE");
 
-        // 2. Thống kê hàng hóa và cảnh báo hàng sắp hết
         List<Inventory> lowStockEntities = inventoryRepository.findLowStockItemsByWarehouse(warehouseId);
         List<InventoryResponse> lowStockDtos = lowStockEntities.stream()
                 .map(i -> InventoryResponse.builder()
@@ -71,11 +89,16 @@ public class SystemManagementService {
 
     // --- SCRUM-56 & 57: THÔNG BÁO ---
 
-    // MỚI: Sửa lỗi "cannot find symbol" trong Controller
+    /**
+     * Lấy toàn bộ danh sách thông báo (Dùng cho Admin)
+     */
     public List<Notification> getAllNotifications() {
         return notificationRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    /**
+     * Gửi thông báo thủ công từ DTO
+     */
     public Notification sendNotification(NotificationDto dto) {
         Notification notification = Notification.builder()
                 .title(dto.getTitle())
@@ -89,13 +112,21 @@ public class SystemManagementService {
         return notificationRepository.save(notification);
     }
 
+    /**
+     * Đánh dấu đã đọc dựa trên ID thông báo
+     * Cập nhật: Sử dụng method markAsRead() từ Entity
+     */
     public void markNotificationAsRead(String notificationId) {
         notificationRepository.findById(notificationId).ifPresent(n -> {
-            n.setRead(true); // Đảm bảo field trong Entity là isRead hoặc read tương ứng với setter
+            n.markAsRead(); // Gọi hàm xử lý logic bên trong Entity Notification
             notificationRepository.save(n);
+            log.info("Notification {} marked as read", notificationId);
         });
     }
 
+    /**
+     * Lấy thông báo riêng cho từng User hoặc thông báo chung (UserId is Null)
+     */
     public List<Notification> getUserNotifications(String userId) {
         return notificationRepository.findByUserIdOrUserIdIsNullOrderByCreatedAtDesc(userId);
     }
