@@ -29,4 +29,8 @@ public class TaskAssignmentResponse {
     private Integer numberOfPeople;
     private Double locationLat;
     private Double locationLng;
+
+    private java.util.List<vn.rescue.core.domain.entities.MissionItem> missionItems;
+    private java.util.List<vn.rescue.core.domain.entities.MissionItem> assignedItems;
+    private boolean itemsExported;
 }

@@ -30,6 +30,15 @@ public class Assignment {
 
     private String status = "ASSIGNED"; // ASSIGNED / PREPARING / MOVING / RESCUING / RETURNING / COMPLETED / CANCELLED / REJECTED
 
+    @Field("mission_items")
+    private java.util.List<MissionItem> missionItems;
+
+    @Field("assigned_items")
+    private java.util.List<MissionItem> assignedItems;
+
+    @Field("items_exported")
+    private boolean itemsExported = false;
+
     @Field("completed_at")
     private LocalDateTime completedAt;
 }

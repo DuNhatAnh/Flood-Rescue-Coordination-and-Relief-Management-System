@@ -25,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     private final WarehouseRepository warehouseRepository;
     private final ReliefItemRepository reliefItemRepository;
     private final InventoryRepository inventoryRepository;
+    private final AssignmentRepository assignmentRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -41,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
         backfillManagerIds();
         backfillRescueRequestIds();
         backfillStaffTeamIds();
+        seedAssignments();
 
         log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
     }
@@ -48,35 +50,35 @@ public class DataInitializer implements CommandLineRunner {
     private void seedRoles() {
         if (roleRepository.count() == 0) {
             log.info("Nạp dữ liệu vai trò mẫu...");
-            
+
             Role admin = Role.builder()
                     .id("ADMIN")
                     .name("ADMIN")
                     .description("Administrator with full access")
                     .permissions(Arrays.asList("ALL"))
                     .build();
-            
+
             Role coordinator = Role.builder()
                     .id("COORDINATOR")
                     .name("COORDINATOR")
                     .description("Coordinator for rescue operations")
                     .permissions(Arrays.asList("COORDINATE"))
                     .build();
-            
+
             Role staff = Role.builder()
                     .id("RESCUE_STAFF")
                     .name("RESCUE_STAFF")
                     .description("Rescue staff member")
                     .permissions(Arrays.asList("RESCUE"))
                     .build();
-            
+
             Role user = Role.builder()
                     .id("USER")
                     .name("USER")
                     .description("Regular user")
                     .permissions(Arrays.asList("REPORT"))
                     .build();
-            
+
             roleRepository.saveAll(Arrays.asList(admin, coordinator, staff, user));
             log.info("Đã nạp 4 vai trò mẫu.");
         }
@@ -84,7 +86,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private void backfillStaffTeamIds() {
         log.info("Đang kiểm tra và đồng bộ liên kết Staff - Đội cứu hộ...");
-        
+
         // Ensure staff@rescue.vn is linked to Team 1 if not already
         syncStaffWithTeam("staff@rescue.vn", "Đội Cứu Hộ 1");
         syncStaffWithTeam("staff2@rescue.vn", "Đội Cứu Hộ 2");
@@ -98,8 +100,8 @@ public class DataInitializer implements CommandLineRunner {
                     if (user.getTeamId() == null) {
                         user.setTeamId(team.getId());
                         userRepository.save(user);
-                        log.info("Đã cập nhật teamId cho nhân viên {} dựa trên leaderId của đội {}", 
-                            user.getEmail(), team.getTeamName());
+                        log.info("Đã cập nhật teamId cho nhân viên {} dựa trên leaderId của đội {}",
+                                user.getEmail(), team.getTeamName());
                     }
                 });
             }
@@ -109,24 +111,24 @@ public class DataInitializer implements CommandLineRunner {
     private void syncStaffWithTeam(String email, String teamName) {
         userRepository.findByEmail(email).ifPresent(staff -> {
             rescueTeamRepository.findAll().stream()
-                .filter(t -> teamName.equals(t.getTeamName()))
-                .findFirst()
-                .ifPresent(team -> {
-                    boolean updated = false;
-                    if (team.getLeaderId() == null) {
-                        team.setLeaderId(staff.getId());
-                        rescueTeamRepository.save(team);
-                        updated = true;
-                    }
-                    if (staff.getTeamId() == null || !staff.getTeamId().equals(team.getId())) {
-                        staff.setTeamId(team.getId());
-                        userRepository.save(staff);
-                        updated = true;
-                    }
-                    if (updated) {
-                        log.info("Đã đồng bộ kết nối cho {} và {}", email, teamName);
-                    }
-                });
+                    .filter(t -> teamName.equals(t.getTeamName()))
+                    .findFirst()
+                    .ifPresent(team -> {
+                        boolean updated = false;
+                        if (team.getLeaderId() == null) {
+                            team.setLeaderId(staff.getId());
+                            rescueTeamRepository.save(team);
+                            updated = true;
+                        }
+                        if (staff.getTeamId() == null || !staff.getTeamId().equals(team.getId())) {
+                            staff.setTeamId(team.getId());
+                            userRepository.save(staff);
+                            updated = true;
+                        }
+                        if (updated) {
+                            log.info("Đã đồng bộ kết nối cho {} và {}", email, teamName);
+                        }
+                    });
         });
     }
 
@@ -148,7 +150,6 @@ public class DataInitializer implements CommandLineRunner {
             });
         });
     }
-
 
     private void backfillRescueRequestIds() {
         log.info("Kiểm tra và cập nhật mã định danh (customId) cho các yêu cầu cũ...");
@@ -404,6 +405,61 @@ public class DataInitializer implements CommandLineRunner {
                 }
             }
             log.info("Đã nạp 2 kho, 5 loại hàng và nạp tồn kho mẫu.");
+        }
+    }
+
+    private void seedAssignments() {
+        if (assignmentRepository.count() == 0) {
+            log.info("Nạp dữ liệu Nhiệm vụ mẫu cho staff@rescue.vn...");
+            
+            userRepository.findByEmail("staff@rescue.vn").ifPresent(staff -> {
+                String teamId = staff.getTeamId();
+                if (teamId != null) {
+                    // Tìm 1 request đã VERIFIED để gán
+                    rescueRequestRepository.findAll().stream()
+                        .filter(r -> "VERIFIED".equalsIgnoreCase(r.getStatus()) || "PENDING".equalsIgnoreCase(r.getStatus()))
+                        .findFirst()
+                        .ifPresent(request -> {
+                            Assignment assignment = new Assignment();
+                            assignment.setRequestId(request.getId());
+                            assignment.setTeamId(teamId);
+                            assignment.setStatus("PREPARING");
+                            assignment.setAssignedAt(LocalDateTime.now());
+                            assignment.setAssignedBy("Coordinator Admin");
+                            
+                            // Gán xe mẫu (lấy xe đầu tiên của đội)
+                            vehiclesRepository.findByTeamId(teamId).stream().findFirst().ifPresent(v -> {
+                                assignment.setVehicleId(v.getId());
+                                v.setStatus("BUSY");
+                                vehiclesRepository.save(v);
+                            });
+
+                            // Gán hàng hóa yêu cầu (Assigned Items)
+                            List<MissionItem> assigned = new java.util.ArrayList<>();
+                            
+                            reliefItemRepository.findAll().forEach(item -> {
+                                if (item.getItemName().contains("Gạo")) {
+                                    assigned.add(new MissionItem(item.getId(), item.getItemName(), item.getUnit(), 20));
+                                }
+                                if (item.getItemName().contains("Nước")) {
+                                    assigned.add(new MissionItem(item.getId(), item.getItemName(), item.getUnit(), 10));
+                                }
+                                if (item.getItemName().contains("Mì")) {
+                                    assigned.add(new MissionItem(item.getId(), item.getItemName(), item.getUnit(), 5));
+                                }
+                            });
+                            
+                            assignment.setAssignedItems(assigned);
+                            assignmentRepository.save(assignment);
+                            
+                            request.setStatus("ASSIGNED");
+                            request.setTeamId(teamId);
+                            rescueRequestRepository.save(request);
+                            
+                            log.info("Đã tạo nhiệm vụ mẫu trạng thái PREPARING cho staff@rescue.vn");
+                        });
+                }
+            });
         }
     }
 

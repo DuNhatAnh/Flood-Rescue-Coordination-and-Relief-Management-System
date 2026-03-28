@@ -3,7 +3,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
 import '../../models/assignment.dart';
+import '../../models/inventory.dart';
 import '../../services/rescue_service.dart';
+import '../../services/inventory_service.dart';
+import '../../services/auth_service.dart';
 import '../../utils/staff_theme.dart';
 import '../../widgets/mission_stepper.dart';
 import 'rescue_report_screen.dart';
@@ -17,8 +20,15 @@ class TeamTasksScreen extends StatefulWidget {
 
 class TeamTasksScreenState extends State<TeamTasksScreen> {
   final RescueService _rescueService = RescueService();
+  final InventoryService _inventoryService = InventoryService();
   late Future<List<Assignment>> _tasksFuture;
   List<LatLng> _routePoints = [];
+  
+  // Logistics - Phàn 2
+  List<Inventory> _warehouseStock = [];
+  Map<String, int> _selectedQuantities = {};
+  // bool _isQuickMode = true; // No longer needed as separate state
+  bool _isLogisticsLoading = false;
 
   @override
   void initState() {
@@ -62,7 +72,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
           Assignment? activeTask;
           try {
             activeTask = tasks.firstWhere(
-              (t) => ['ASSIGNED', 'PREPARING', 'IN_PROGRESS', 'MOVING'].contains(t.status.toUpperCase()),
+              (t) => ['ASSIGNED', 'PREPARING', 'IN_PROGRESS', 'MOVING', 'RESCUING', 'RETURNING'].contains(t.status.toUpperCase()),
             );
           } catch (_) {
             activeTask = null;
@@ -129,7 +139,13 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                 const SizedBox(height: 16),
                 MissionStepper(currentStatus: task.status),
                 const SizedBox(height: 16),
-                _buildDetailsCard(task),
+                
+                // NẾU ĐANG CHUẨN BỊ - HIỆN FORM LOGISTICS (PHẦN 2 NÂNG CẤP)
+                if (task.status.toUpperCase() == 'PREPARING')
+                  _buildPreparationOptions(task)
+                else
+                  _buildDetailsCard(task),
+                  
                 const SizedBox(height: 24),
                 _buildActionButtons(task),
               ],
@@ -138,6 +154,122 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
         ),
       ],
     );
+  }
+
+  // --- MÀN HÌNH CHUẨN BỊ MỚI (THEO YÊU CẦU) ---
+  Widget _buildPreparationOptions(Assignment task) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Danh sách hàng được giao
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: StaffTheme.border),
+            boxShadow: StaffTheme.softShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('VẬT PHẨM ĐƯỢC GIAO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: StaffTheme.primaryBlue)),
+              const SizedBox(height: 12),
+              if (task.assignedItems.isEmpty)
+                const Text('Chưa có danh sách vật phẩm cụ thể.', style: TextStyle(fontSize: 12, color: Colors.grey))
+              else
+                ...task.assignedItems.map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(item.itemName, style: const TextStyle(fontSize: 13)),
+                      Text('${item.quantity} ${item.unit}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
+                  ),
+                )).toList(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Trạng thái xuất kho
+        if (!task.itemsExported) ...[
+          const Text('BƯỚC 1: XUẤT KHO HÀNG HÓA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _prepButton(
+                  'XUẤT KHO THỦ CÔNG', 
+                  Icons.edit_note_rounded, 
+                  Colors.white, 
+                  StaffTheme.primaryBlue,
+                  () => _navigateToWarehouse(task, manual: true),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _prepButton(
+                  'XUẤT KHO NHANH', 
+                  Icons.flash_on_rounded, 
+                  StaffTheme.primaryBlue, 
+                  Colors.white,
+                  () => _navigateToWarehouse(task, manual: false),
+                ),
+              ),
+            ],
+          ),
+        ] else ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: StaffTheme.successGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: StaffTheme.successGreen.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle, color: StaffTheme.successGreen),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text('Đã hoàn thành xuất kho hàng hóa và phương tiện.', 
+                    style: TextStyle(color: StaffTheme.successGreen, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        _buildDetailsCard(task),
+      ],
+    );
+  }
+
+  Widget _prepButton(String label, IconData icon, Color bg, Color text, VoidCallback onTap) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18, color: text),
+      label: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: text)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: bg,
+        foregroundColor: text,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: StaffTheme.primaryBlue)),
+        elevation: 0,
+      ),
+    );
+  }
+
+  void _navigateToWarehouse(Assignment task, {required bool manual}) {
+    // Nav tới màn hình kho bãi
+    // Trong thực tế, chúng ta sẽ mở Tab Kho bãi hoặc Navigate.
+    // Ở đây tôi giả sử màn hình Kho bãi có thể nhận context mission.
+    Navigator.pushNamed(context, '/warehouse', arguments: {
+      'missionContext': task,
+      'mode': manual ? 'MANUAL' : 'QUICK'
+    }).then((_) => refreshTasks());
   }
 
   Widget _buildHeader(Assignment task) {
@@ -205,6 +337,21 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
               style: const TextStyle(fontSize: 14, height: 1.5, color: StaffTheme.textMedium),
             ),
           ),
+          if (task.missionItems.isNotEmpty) ...[
+            const Divider(height: 30),
+            const Text('VẬT PHẨM MANG THEO', style: TextStyle(fontSize: 11, color: StaffTheme.textLight, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            ...task.missionItems.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(item.itemName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                  Text('${item.quantity} ${item.unit}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
+                ],
+              ),
+            )).toList(),
+          ],
         ],
       ),
     );
@@ -262,8 +409,28 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
     }
 
     if (status == 'PREPARING') {
-      return _buildSingleActionButton(
-        task, 'MOVING', 'BẮT ĐẦU DI CHUYỂN', StaffTheme.primaryBlue, 'Đang di chuyển tới hiện trường!'
+      return Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: task.itemsExported ? () {
+                _handleStatusUpdate(
+                  task, 
+                  'MOVING', 
+                  'Đã chuẩn bị xong và bắt đầu di chuyển!',
+                );
+              } : null, // Chỉ cho nhấn khi đã xuất hàng
+              icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+              label: const Text('XÁC NHẬN CHUẨN BỊ XONG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: task.itemsExported ? StaffTheme.successGreen : Colors.grey,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -315,8 +482,13 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
     );
   }
 
-  Future<void> _handleStatusUpdate(Assignment task, String nextStatus, String snackMessage) async {
-    final success = await _rescueService.updateAssignmentStatus(task.id, nextStatus);
+  Future<void> _handleStatusUpdate(Assignment task, String nextStatus, String snackMessage, {List<Map<String, dynamic>>? items}) async {
+    final success = await _rescueService.updateAssignmentStatus(
+      task.id, 
+      nextStatus,
+      userId: AuthService.currentUser?.id,
+      items: items,
+    );
     if (success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(snackMessage)));
