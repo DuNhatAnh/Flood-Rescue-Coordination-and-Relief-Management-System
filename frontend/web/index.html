@@ -90,6 +90,41 @@
       font-size: 18px;
       filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
     }
+
+    /* Pulsing SOS Marker */
+    .sos-pulse-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sos-pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #ff0000;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.8), 0 0 15px rgba(255, 0, 0, 0.4);
+      position: relative;
+      z-index: 2;
+    }
+    .sos-pulse-ring {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border: 3px solid #ff4444;
+      border-radius: 50%;
+      animation: pulse-ring 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+      z-index: 1;
+    }
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+      80%, 100% {
+        transform: scale(3.5);
+        opacity: 0;
+      }
+    }
   </style>
 
   <script>
@@ -123,10 +158,10 @@
       const rescueRequestLayer = L.layerGroup().addTo(map);
 
       const sosIcon = L.divIcon({
-        className: 'text-icon',
-        html: '🆘',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        className: 'sos-pulse-container',
+        html: '<div class="sos-pulse-ring"></div><div class="sos-pulse-dot"></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
       });
 
       function loadRescueRequests() {
@@ -166,7 +201,7 @@
           <div class="legend-item"><span class="legend-dot" style="background: #ff0000"></span> Nguy hiểm cao – Ngập sâu</div>
           <div class="legend-item"><span class="legend-dot" style="background: #ff9800"></span> Nguy hiểm trung bình – Ngập vừa</div>
           <div class="legend-item"><span class="legend-dot" style="background: #ffeb3b"></span> Ngập nhẹ – Nguy cơ thấp</div>
-          <div class="legend-item"><span class="legend-icon">🆘</span> Yêu cầu cứu hộ</div>
+          <div class="legend-item"><span class="legend-icon">🔴</span> Yêu cầu cứu hộ khẩn cấp</div>
           <div class="legend-item"><span class="legend-icon">🚑</span> Đội cứu hộ</div>
         `;
         return div;

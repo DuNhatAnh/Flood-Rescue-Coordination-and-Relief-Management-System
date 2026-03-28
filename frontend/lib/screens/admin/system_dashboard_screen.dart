@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/admin_service.dart';
+import '../../services/auth_service.dart';
 import '../home_screen.dart';
 
 class SystemDashboardScreen extends StatefulWidget {
@@ -48,6 +49,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false, // Loại bỏ nút mũi tên quay lại
         title: const Text('Dashboard Hệ thống'),
         backgroundColor: const Color(0xFF2555D4),
         foregroundColor: Colors.white,
@@ -57,12 +59,27 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
             onPressed: () {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => HomeScreen()),
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
                 (route) => false,
               );
             },
             icon: const Icon(Icons.map, color: Colors.white),
             label: const Text('Bản đồ cứu hộ', style: TextStyle(color: Colors.white)),
+          ),
+          const VerticalDivider(color: Colors.white24, indent: 12, endIndent: 12),
+          TextButton.icon(
+            onPressed: () async {
+              await AuthService.logout();
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            icon: const Icon(Icons.logout, color: Colors.white),
+            label: const Text('Đăng xuất', style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(width: 10),
         ],
@@ -105,8 +122,6 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                       _buildNavBtn(context, 'Người dùng', Icons.manage_accounts, '/admin/users', Colors.indigo),
                       _buildNavBtn(context, 'Phân quyền', Icons.admin_panel_settings, '/admin/roles', Colors.deepPurple),
                       _buildNavBtn(context, 'Thông báo', Icons.notifications_active, '/admin/notifications', Colors.teal),
-                      _buildNavBtn(context, 'Phương tiện', Icons.directions_car, '/admin/vehicles', Colors.blueGrey),
-                      _buildNavBtn(context, 'Bản đồ xe', Icons.map, '/admin/vehicle_locations', Colors.green),
                     ],
                   ),
                   const SizedBox(height: 36),

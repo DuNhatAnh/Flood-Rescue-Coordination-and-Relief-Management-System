@@ -93,7 +93,7 @@ class AdminService {
   }
 
   Future<Map<String, dynamic>> fetchSystemStats() async {
-    final url = Uri.parse('$baseUrl/admin/system/reports');
+    final url = Uri.parse('$baseUrl/admin/system/reports/general');
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {

@@ -26,6 +26,11 @@ public class InventoryService {
 
     @Transactional
     public InventoryResponse importStock(StockInRequest request, String userId) {
+        // 0. Lấy thông tin Item từ danh mục để đồng bộ dữ liệu (tránh bị null/Vật phẩm)
+        ReliefItem item = reliefItemRepository.findById(request.getItemId()).orElse(null);
+        String itemName = (item != null) ? item.getItemName() : "Vật phẩm";
+        String unit = (item != null) ? item.getUnit() : "N/A";
+
         // 1. Tìm bản ghi kho hiện có hoặc tạo mới
         Inventory inventory = inventoryRepository
                 .findByWarehouseIdAndItemId(request.getWarehouseId(), request.getItemId())
@@ -39,8 +44,12 @@ public class InventoryService {
             inventory.setMinThreshold(100);
         }
 
+        // Đồng bộ lại tên và đơn vị để đảm bảo dữ liệu trong bảng Inventory luôn đầy đủ
+        inventory.setItemName(itemName);
+        inventory.setUnit(unit);
+
         // 2. Cập nhật số lượng
-        int oldQty = inventory.getQuantity();
+        int oldQty = inventory.getQuantity() != null ? inventory.getQuantity() : 0;
         inventory.setQuantity(oldQty + request.getQuantity());
         Inventory saved = inventoryRepository.save(inventory);
 
@@ -58,12 +67,9 @@ public class InventoryService {
                 .build();
         stockTransactionRepository.save(transaction);
 
-        // 4. GHI NHẬT KÝ HỆ THỐNG (SCRUM-54)
-        String itemName = reliefItemRepository.findById(request.getItemId())
-                .map(ReliefItem::getItemName).orElse("Vật phẩm");
-
+        // 4. GHI NHẬT KÝ HỆ THỐNG (SCRUM-54) - Sử dụng biến đã lấy ở bước 0
         systemService.logAction(userId, "IMPORT_STOCK",
-                String.format("Nhập kho %s: +%d %s (Tổng: %d)", itemName, request.getQuantity(), saved.getUnit(), saved.getQuantity()),
+                String.format("Nhập kho %s: +%d %s (Tổng: %d)", itemName, request.getQuantity(), unit, saved.getQuantity()),
                 "INVENTORY");
 
         return mapToResponse(saved);

@@ -52,6 +52,22 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
     }
   }
 
+  // Helper tìm báo cáo an toàn trùng khớp số điện thoại
+  SafetyReport? _findSafeReport(String phone) {
+    if (phone.isEmpty) return null;
+    final normalizedPhone = phone.replaceAll(RegExp(r'\D'), '');
+    if (normalizedPhone.isEmpty) return null;
+    
+    try {
+      return _safetyReports.firstWhere((s) {
+        final sPhone = s.phone.replaceAll(RegExp(r'\D'), '');
+        return sPhone == normalizedPhone;
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -295,6 +311,33 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                           ),
                         ),
                       ),
+                      // HIỂN THỊ CẢNH BÁO BÁO AN TOÀN TRÙNG KHỚP
+                      if (_findSafeReport(request.phone) != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.shield, color: Colors.green, size: 10),
+                              SizedBox(width: 4),
+                              Text(
+                                'Đã báo an toàn',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (request.isVerified) ...[
                         const SizedBox(width: 8),
                         const Icon(Icons.verified, color: Colors.blue, size: 16),
@@ -547,6 +590,39 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                         style: const TextStyle(fontSize: 15, height: 1.4),
                       ),
                     ),
+                    
+                    // HIỂN THỊ THÔNG TIN BÁO AN TOÀN ĐỐI SOÁT
+                    if (_findSafeReport(currentRequest.phone) != null) ...[
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green[200]!),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.verified_user, color: Colors.green),
+                                const SizedBox(width: 10),
+                                Text('Thông tin Báo An Toàn đối ứng'.toUpperCase(), 
+                                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                              ],
+                            ),
+                            const Divider(color: Colors.green),
+                            _buildSafeInfoRow('Địa chỉ báo:', _findSafeReport(currentRequest.phone)!.address),
+                            _buildSafeInfoRow('Ghi chú:', _findSafeReport(currentRequest.phone)!.note ?? 'Không có'),
+                            _buildSafeInfoRow('Thời điểm:', DateFormat('HH:mm dd/MM').format(_findSafeReport(currentRequest.phone)!.reportedAt ?? DateTime.now())),
+                            const SizedBox(height: 10),
+                            const Text('(*) Vui lòng đối soát địa chỉ trước khi xác minh/đóng yêu cầu.', 
+                              style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.green)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -636,6 +712,19 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSafeInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 80, child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 12))),
         ],
       ),
     );
