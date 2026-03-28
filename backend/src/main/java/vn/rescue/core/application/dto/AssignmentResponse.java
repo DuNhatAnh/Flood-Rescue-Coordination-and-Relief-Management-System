@@ -20,10 +20,10 @@ public class AssignmentResponse {
     private String customId; // Mã hiển thị (ví dụ: REQ-001)
     private String citizenName;
 
-    // Thông tin phương tiện
-    private String vehicleId;
-    private String licensePlate;
-    private String vehicleType;
+    // Thông tin phương tiện (Danh sách)
+    private java.util.List<String> vehicleIds;
+    private String licensePlate; // Biển số (gộp các xe)
+    private String vehicleType;  // Loại xe (gộp các loại)
 
     // Thông tin đội cứu hộ đảm nhận
     private String teamId;

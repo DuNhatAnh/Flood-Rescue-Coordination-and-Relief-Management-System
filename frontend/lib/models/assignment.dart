@@ -4,7 +4,7 @@ class Assignment {
   final String requestId;
   final String teamId;
   final String teamName;
-  final String? vehicleId;
+  final List<String>? vehicleIds;
   final DateTime assignedAt;
   final String status; // 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'
 
@@ -20,13 +20,17 @@ class Assignment {
   final bool itemsExported;
   final double? locationLat;
   final double? locationLng;
+  final String? vehicleType;
+  final String? licensePlate;
+  final int? rescuedCount;
+  final String? reportNote;
 
   Assignment({
     required this.id,
     required this.requestId,
     required this.teamId,
     required this.teamName,
-    this.vehicleId,
+    this.vehicleIds,
     required this.assignedAt,
     this.status = 'ASSIGNED',
     this.citizenName,
@@ -40,6 +44,10 @@ class Assignment {
     this.missionItems = const [],
     this.assignedItems = const [],
     this.itemsExported = false,
+    this.vehicleType,
+    this.licensePlate,
+    this.rescuedCount,
+    this.reportNote,
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
@@ -58,10 +66,8 @@ class Assignment {
       requestId: json['requestId'] ?? '',
       teamId: json['teamId'] ?? '',
       teamName: json['teamName'] ?? '',
-      vehicleId: json['vehicleId'],
-      assignedAt: json['assignedAt'] != null 
-          ? DateTime.parse(json['assignedAt']) 
-          : DateTime.now(),
+      vehicleIds: json['vehicleIds'] != null ? List<String>.from(json['vehicleIds']) : null,
+      assignedAt: _parseDateTime(json['assignedAt']),
       status: json['status'] ?? 'ASSIGNED',
       citizenName: json['citizenName'],
       citizenPhone: json['citizenPhone'],
@@ -74,6 +80,10 @@ class Assignment {
       missionItems: items,
       assignedItems: assigned,
       itemsExported: json['itemsExported'] ?? false,
+      vehicleType: json['vehicleType'],
+      licensePlate: json['licensePlate'],
+      rescuedCount: json['rescuedCount'],
+      reportNote: json['reportNote'],
     );
   }
 
@@ -83,7 +93,7 @@ class Assignment {
       'requestId': requestId,
       'teamId': teamId,
       'teamName': teamName,
-      'vehicleId': vehicleId,
+      'vehicleIds': vehicleIds,
       'assignedAt': assignedAt.toIso8601String(),
       'status': status,
       'citizenName': citizenName,
@@ -97,7 +107,32 @@ class Assignment {
       'missionItems': missionItems.map((i) => i.toJson()).toList(),
       'assignedItems': assignedItems.map((i) => i.toJson()).toList(),
       'itemsExported': itemsExported,
+      'vehicleType': vehicleType,
+      'licensePlate': licensePlate,
     };
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    try {
+      if (value is String) {
+        return DateTime.parse(value);
+      } else if (value is List) {
+        if (value.length >= 3) {
+          return DateTime(
+            value[0] is int ? value[0] : int.parse(value[0].toString()),
+            value[1] is int ? value[1] : int.parse(value[1].toString()),
+            value[2] is int ? value[2] : int.parse(value[2].toString()),
+            value.length > 3 ? (value[3] is int ? value[3] : int.parse(value[3].toString())) : 0,
+            value.length > 4 ? (value[4] is int ? value[4] : int.parse(value[4].toString())) : 0,
+            value.length > 5 ? (value[5] is int ? value[5] : int.parse(value[5].toString())) : 0,
+          );
+        }
+      }
+    } catch (e) {
+      print('Error parsing date: $value - $e');
+    }
+    return DateTime.now();
   }
 }
 

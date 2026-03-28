@@ -3,7 +3,8 @@ import '../../services/rescue_service.dart';
 import '../../utils/staff_theme.dart';
 
 class RescueReportScreen extends StatefulWidget {
-  const RescueReportScreen({Key? key}) : super(key: key);
+  final String assignmentId;
+  const RescueReportScreen({Key? key, required this.assignmentId}) : super(key: key);
 
   @override
   State<RescueReportScreen> createState() => _RescueReportScreenState();
@@ -23,7 +24,7 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
     setState(() => _isSubmitting = true);
     
     final success = await _rescueService.submitRescueReport(
-      assignmentId: 'A1', // Mock ID
+      assignmentId: widget.assignmentId,
       rescuedCount: _rescuedCount,
       note: _noteController.text,
     );
