@@ -189,23 +189,23 @@ class _TopBarState extends State<TopBar> {
                         if (role == UserRole.coordinator) {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => CoordinatorDashboard()),
+                            MaterialPageRoute(builder: (context) => const CoordinatorDashboard()),
                           );
                         } else if (role == UserRole.admin) {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => SystemDashboardScreen()),
+                            MaterialPageRoute(builder: (context) => const SystemDashboardScreen()),
                           );
                         } else if (role == UserRole.rescueStaff) {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => StaffMainScreen()),
+                            MaterialPageRoute(builder: (context) => const StaffMainScreen()),
                           );
                         } else {
                           // For regular users, maybe take them to their request history?
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => TrackRescueRequestScreen()),
+                            MaterialPageRoute(builder: (context) => const TrackRescueRequestScreen()),
                           );
                         }
                       },

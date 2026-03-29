@@ -126,8 +126,8 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                     ],
                   ),
                   const SizedBox(height: 36),
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.history, color: Color(0xFF2555D4)),
                       SizedBox(width: 8),
                       Text('Nhật ký hệ thống', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
@@ -138,7 +138,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
                     ),
                     child: ListView.separated(
                       shrinkWrap: true,

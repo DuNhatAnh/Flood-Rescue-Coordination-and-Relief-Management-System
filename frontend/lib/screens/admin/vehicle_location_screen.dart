@@ -108,7 +108,7 @@ class _VehicleLocationScreenState extends State<VehicleLocationScreen> {
         children: [
           FlutterMap(
             mapController: _mapController,
-            options: MapOptions(
+            options: const MapOptions(
               initialCenter: _defaultCenter,
               initialZoom: 5.5,
             ),
@@ -137,7 +137,7 @@ class _VehicleLocationScreenState extends State<VehicleLocationScreen> {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
               ),
               child: Text(
                 'Tổng xe trên bản đồ: ${markers.length} / ${_vehicles.length}',
