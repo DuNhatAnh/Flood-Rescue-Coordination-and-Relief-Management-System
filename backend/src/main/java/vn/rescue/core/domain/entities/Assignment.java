@@ -47,4 +47,10 @@ public class Assignment {
 
     @Field("report_note")
     private String reportNote;
+
+    @Field("actual_distributed_items")
+    private java.util.List<MissionItem> actualDistributedItems;
+
+    @Field("image_urls")
+    private java.util.List<String> imageUrls;
 }

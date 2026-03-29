@@ -22,8 +22,14 @@ public class RescueReport {
     @Field("actual_condition")
     private String actualCondition;
 
-    @Field("image_url")
-    private String imageUrl;
+    @Field("detailed_note")
+    private String detailedNote;
+
+    @Field("image_urls")
+    private java.util.List<String> imageUrls;
+
+    @Field("actual_distributed_items")
+    private java.util.List<MissionItem> actualDistributedItems;
 
     @Field("created_at")
     private LocalDateTime createdAt;

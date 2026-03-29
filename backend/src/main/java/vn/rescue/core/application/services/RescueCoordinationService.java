@@ -15,11 +15,14 @@ import vn.rescue.core.domain.repositories.RescueRequestRepository;
 import vn.rescue.core.domain.repositories.RescueTeamRepository;
 import vn.rescue.core.domain.repositories.VehiclesRepository;
 import vn.rescue.core.domain.repositories.WarehouseRepository;
+import vn.rescue.core.domain.repositories.RescueReportRepository;
+import vn.rescue.core.domain.entities.RescueReport;
 import vn.rescue.core.domain.entities.MissionItem;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -46,10 +49,13 @@ public class RescueCoordinationService {
     private RequestStatusHistoryRepository requestStatusHistoryRepository;
 
     @Autowired
+    private WarehouseRepository warehouseRepository;
+
+    @Autowired
     private InventoryService inventoryService;
 
     @Autowired
-    private WarehouseRepository warehouseRepository;
+    private RescueReportRepository rescueReportRepository;
 
     public List<RescueRequest> getPendingRequests() {
         return rescueRequestRepository.findByStatus("PENDING");
@@ -188,16 +194,23 @@ public class RescueCoordinationService {
                 });
             }
 
-            // Lưu thông tin báo cáo nếu có
-            if (body.containsKey("rescuedCount")) {
-                assignment.setRescuedCount((Integer) body.get("rescuedCount"));
+            // Lưu hồ sơ ảnh và hàng phân phối thực tế (REPORTING)
+            if (body.containsKey("imageUrls")) {
+                assignment.setImageUrls((java.util.List<String>) body.get("imageUrls"));
             }
-            if (body.containsKey("note")) {
-                assignment.setReportNote((String) body.get("note"));
+            if (body.containsKey("actualItems")) {
+                List<Map<String, Object>> itemsRawActual = (List<Map<String, Object>>) body.get("actualItems");
+                List<MissionItem> actualItems = itemsRawActual.stream().map(m -> {
+                    MissionItem item = new MissionItem();
+                    item.setItemId((String) m.get("itemId"));
+                    item.setItemName((String) m.get("itemName"));
+                    item.setUnit((String) m.get("unit"));
+                    item.setQuantity((Integer) m.get("quantity"));
+                    return item;
+                }).collect(Collectors.toList());
+                assignment.setActualDistributedItems(actualItems);
             }
 
-            assignmentRepository.save(assignment);
-            
             // Sync with RescueRequest
             Optional<RescueRequest> requestOpt = rescueRequestRepository.findById(assignment.getRequestId());
             if (requestOpt.isPresent()) {
@@ -220,6 +233,22 @@ public class RescueCoordinationService {
                 history.setCreatedAt(LocalDateTime.now());
                 requestStatusHistoryRepository.save(history);
             }
+
+            // If COMPLETED, persist full RescueReport object
+            if ("COMPLETED".equalsIgnoreCase(status)) {
+                assignment.setCompletedAt(LocalDateTime.now());
+                
+                RescueReport report = new RescueReport();
+                report.setAssignmentId(assignment.getId());
+                report.setRescuedPeopleCount(assignment.getRescuedCount());
+                report.setDetailedNote(assignment.getReportNote());
+                report.setImageUrls(assignment.getImageUrls());
+                report.setActualDistributedItems(assignment.getActualDistributedItems());
+                report.setCreatedAt(LocalDateTime.now());
+                rescueReportRepository.save(report);
+            }
+
+            assignmentRepository.save(assignment);
 
             // If COMPLETED or REJECTED or CANCELLED, release resources
             // REPORTED status does NOT release resources yet - Coordinator must confirm (COMPLETED)
@@ -282,6 +311,8 @@ public class RescueCoordinationService {
         response.setItemsExported(assignment.isItemsExported());
         response.setRescuedCount(assignment.getRescuedCount());
         response.setReportNote(assignment.getReportNote());
+        response.setImageUrls(assignment.getImageUrls());
+        response.setActualDistributedItems(assignment.getActualDistributedItems());
 
         // Join with RescueTeam
         rescueTeamRepository.findById(assignment.getTeamId()).ifPresent(team -> {

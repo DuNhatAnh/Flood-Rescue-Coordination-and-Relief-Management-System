@@ -36,4 +36,6 @@ public class TaskAssignmentResponse {
 
     private Integer rescuedCount;
     private String reportNote;
+    private java.util.List<String> imageUrls;
+    private java.util.List<vn.rescue.core.domain.entities.MissionItem> actualDistributedItems;
 }

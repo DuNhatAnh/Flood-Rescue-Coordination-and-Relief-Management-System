@@ -388,7 +388,8 @@ Widget build(BuildContext context) {
     backgroundColor: StaffTheme.background,
 
     appBar: AppBar(
-      automaticallyImplyLeading: false,
+      automaticallyImplyLeading: true,
+      iconTheme: const IconThemeData(color: Colors.white),
       title: Text(
         _myWarehouse!.warehouseName,
         style: const TextStyle(

@@ -24,6 +24,8 @@ class Assignment {
   final String? licensePlate;
   final int? rescuedCount;
   final String? reportNote;
+  final List<String>? imageUrls;
+  final List<MissionItem> actualDistributedItems;
 
   Assignment({
     required this.id,
@@ -48,6 +50,8 @@ class Assignment {
     this.licensePlate,
     this.rescuedCount,
     this.reportNote,
+    this.imageUrls,
+    this.actualDistributedItems = const [],
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
@@ -84,6 +88,10 @@ class Assignment {
       licensePlate: json['licensePlate'],
       rescuedCount: json['rescuedCount'],
       reportNote: json['reportNote'],
+      imageUrls: json['imageUrls'] != null ? List<String>.from(json['imageUrls']) : null,
+      actualDistributedItems: json['actualDistributedItems'] != null 
+          ? (json['actualDistributedItems'] as List).map((i) => MissionItem.fromJson(i)).toList() 
+          : [],
     );
   }
 

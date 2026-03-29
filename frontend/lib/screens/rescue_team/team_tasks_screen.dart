@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../utils/staff_theme.dart';
 import '../../widgets/mission_stepper.dart';
 import 'rescue_report_screen.dart';
+import 'staff_managed_warehouse_screen.dart';
 
 class TeamTasksScreen extends StatefulWidget {
   const TeamTasksScreen({Key? key}) : super(key: key);
@@ -256,13 +257,19 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
   }
 
   void _navigateToWarehouse(Assignment task, {required bool manual}) {
-    // Nav tới màn hình kho bãi
-    // Trong thực tế, chúng ta sẽ mở Tab Kho bãi hoặc Navigate.
-    // Ở đây tôi giả sử màn hình Kho bãi có thể nhận context mission.
-    Navigator.pushNamed(context, '/warehouse', arguments: {
-      'missionContext': task,
-      'mode': manual ? 'MANUAL' : 'QUICK'
-    }).then((_) => refreshTasks());
+    // Chuyển hướng trực tiếp đến màn hình kho quản lý
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(
+          arguments: {
+            'missionContext': task,
+            'mode': manual ? 'MANUAL' : 'QUICK'
+          },
+        ),
+        builder: (context) => const StaffManagedWarehouseScreen(),
+      ),
+    ).then((_) => refreshTasks());
   }
 
   Widget _buildHeader(Assignment task) {
@@ -704,7 +711,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => RescueReportScreen(assignmentId: task.id)),
-                      );
+                      ).then((_) => refreshTasks());
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: StaffTheme.successGreen,

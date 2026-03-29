@@ -176,20 +176,51 @@ class RescueService {
     }
   }
 
-  // Cập nhật trạng thái (Báo cáo)
+  // Tải lên hình ảnh (Mới cho Phần 3)
+  Future<String?> uploadFile(dynamic file) async {
+    try {
+      final String fileName = file.name;
+      final FormData formData = FormData.fromMap({
+        "file": await MultipartFile.fromBytes(
+          await file.readAsBytes(),
+          filename: fileName,
+        ),
+      });
+
+      final response = await _dio.post('/files/upload', data: formData);
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData['success'] == true) {
+          return responseData['data']; // Trả về URL ảnh
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error uploading file: $e');
+      return null;
+    }
+  }
+
+  // Cập nhật trạng thái (Báo cáo đầy đủ - Phần 3)
   Future<bool> submitRescueReport({
     required String assignmentId,
     required int rescuedCount,
     required String note,
+    List<String>? imageUrls,
+    List<Map<String, dynamic>>? actualItems,
+    bool complete = true,
   }) async {
     try {
       final response = await _dio.put('/assignments/$assignmentId/status', data: {
         'rescuedCount': rescuedCount,
         'note': note,
-        'status': 'REPORTED'
+        'imageUrls': imageUrls,
+        'actualItems': actualItems,
+        'status': complete ? 'COMPLETED' : 'REPORTED'
       });
       return response.statusCode == 200;
     } catch (e) {
+      print('Error submitting rescue report: $e');
       return false;
     }
   }
