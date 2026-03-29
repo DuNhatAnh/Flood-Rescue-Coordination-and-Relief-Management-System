@@ -90,6 +90,10 @@ public class RescueCoordinationService {
         return teams;
     }
 
+    public List<RescueTeam> getAllTeams() {
+        return rescueTeamRepository.findAll();
+    }
+
     public List<Vehicles> getAvailableVehicles() {
         List<Vehicles> vehicles = vehiclesRepository.findByStatusIgnoreCase("AVAILABLE");
         logger.info("Fixed 403: Found {} available vehicles", vehicles.size());

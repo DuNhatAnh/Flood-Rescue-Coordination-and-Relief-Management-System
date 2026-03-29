@@ -20,23 +20,23 @@ public class InventoryController {
 
     // SỬA LỖI: Thêm @RequestParam userId để truyền vào Service ghi log
     @PostMapping("/import")
-    public ResponseEntity<InventoryResponse> importStock(
+    public ResponseEntity<ApiResponse<InventoryResponse>> importStock(
             @Valid @RequestBody StockInRequest request,
             @RequestParam String userId) {
         // Truyền đủ 2 tham số (request, userId) như Service yêu cầu
-        return ResponseEntity.ok(inventoryService.importStock(request, userId));
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.importStock(request, userId), "Nhập kho thành công"));
     }
 
     @GetMapping("/warehouse/{warehouseId}")
-    public ResponseEntity<List<InventoryResponse>> getWarehouseInventory(
+    public ResponseEntity<ApiResponse<List<InventoryResponse>>> getWarehouseInventory(
             @PathVariable("warehouseId") String warehouseId) {
-        return ResponseEntity.ok(inventoryService.getWarehouseInventory(warehouseId));
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.getWarehouseInventory(warehouseId), "Danh sách tồn kho"));
     }
 
     // Bổ sung: Lấy danh sách hàng sắp hết cho Dashboard (SCRUM-55)
     @GetMapping("/warehouse/{warehouseId}/low-stock")
-    public ResponseEntity<List<InventoryResponse>> getLowStock(
+    public ResponseEntity<ApiResponse<List<InventoryResponse>>> getLowStock(
             @PathVariable("warehouseId") String warehouseId) {
-        return ResponseEntity.ok(inventoryService.getLowStockItems(warehouseId));
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.getLowStockItems(warehouseId), "Hàng hóa sắp hết"));
     }
 }

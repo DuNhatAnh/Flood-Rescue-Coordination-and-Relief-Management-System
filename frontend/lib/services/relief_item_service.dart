@@ -13,7 +13,12 @@ class ReliefItemService {
     try {
       final response = await _dio.get('/relief-items');
       if (response.statusCode == 200) {
-        List<dynamic> data = response.data;
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          List<dynamic> data = responseData['data'];
+          return data.map((json) => ReliefItem.fromJson(json)).toList();
+        }
+        List<dynamic> data = responseData;
         return data.map((json) => ReliefItem.fromJson(json)).toList();
       }
       return [];
@@ -30,7 +35,11 @@ class ReliefItemService {
         data: item.toJson(),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return ReliefItem.fromJson(response.data);
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          return ReliefItem.fromJson(responseData['data']);
+        }
+        return ReliefItem.fromJson(responseData);
       }
       return null;
     } catch (e) {
@@ -46,7 +55,11 @@ class ReliefItemService {
         data: item.toJson(),
       );
       if (response.statusCode == 200) {
-        return ReliefItem.fromJson(response.data);
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          return ReliefItem.fromJson(responseData['data']);
+        }
+        return ReliefItem.fromJson(responseData);
       }
       return null;
     } catch (e) {
@@ -58,6 +71,10 @@ class ReliefItemService {
   Future<bool> delete(String id) async {
     try {
       final response = await _dio.delete('/relief-items/$id');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData is Map) return responseData['success'] == true;
+      }
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
       print('Error deleting relief item: $e');

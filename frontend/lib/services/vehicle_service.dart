@@ -22,8 +22,11 @@ class VehicleService {
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        // Backend Spring Boot trả về đối tượng Page trực tiếp
-        return jsonDecode(response.body);
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['success'] == true) {
+          return body['data'];
+        }
+        return body;
       } else {
         throw Exception('Không thể tải danh sách phương tiện (Code: ${response.statusCode})');
       }
@@ -38,7 +41,11 @@ class VehicleService {
       final response = await http.get(Uri.parse('$baseUrl/vehicles/available'));
       
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as List<dynamic>;
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['success'] == true) {
+          return body['data'] as List<dynamic>;
+        }
+        return body as List<dynamic>;
       } else {
         throw Exception('Không thể tải danh sách xe sẵn sàng');
       }
@@ -56,9 +63,12 @@ class VehicleService {
         body: jsonEncode(data),
       );
 
-      // Thường trả về 201 Created
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['success'] == true) {
+          return body['data'] as Map<String, dynamic>;
+        }
+        return body as Map<String, dynamic>;
       } else {
         throw Exception('Lỗi tạo phương tiện: ${response.body}');
       }
@@ -77,7 +87,11 @@ class VehicleService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['success'] == true) {
+          return body['data'] as Map<String, dynamic>;
+        }
+        return body as Map<String, dynamic>;
       } else {
         throw Exception('Lỗi cập nhật phương tiện: ${response.body}');
       }

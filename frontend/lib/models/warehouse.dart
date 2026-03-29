@@ -16,15 +16,26 @@ class Warehouse {
   });
 
   factory Warehouse.fromJson(Map<String, dynamic> json) {
+    DateTime? parsedDate;
+    try {
+      final dateStr = json['createdAt']?.toString() ?? json['created_at']?.toString();
+      if (dateStr != null && dateStr.isNotEmpty) {
+        parsedDate = DateTime.tryParse(dateStr);
+      }
+    } catch (e) {
+      print('Warning: Failed to parse createdAt for warehouse: $e');
+    }
+
     return Warehouse(
-      id: json['id'],
-      warehouseName: json['warehouseName'],
-      location: json['location'],
-      managerId: json['managerId'],
-      status: json['status'] ?? 'ACTIVE',
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      id: json['id']?.toString() ?? json['_id']?.toString(),
+      warehouseName: json['warehouseName']?.toString() ?? json['warehouse_name']?.toString() ?? 'Không tên',
+      location: json['location']?.toString() ?? json['address']?.toString() ?? 'Chưa cập nhật',
+      managerId: json['managerId']?.toString() ?? json['manager_id']?.toString(),
+      status: json['status']?.toString() ?? 'ACTIVE',
+      createdAt: parsedDate,
     );
   }
+
 
   Map<String, dynamic> toJson() {
     return {

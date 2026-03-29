@@ -279,7 +279,11 @@ class RescueService {
     try {
       final response = await _dio.get('/warehouses/manager/$managerId');
       if (response.statusCode == 200) {
-         return response.data;
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          return responseData['data'];
+        }
+        return responseData;
       }
       return null;
     } catch (e) {
@@ -293,7 +297,11 @@ class RescueService {
     try {
       final response = await _dio.get('/warehouses/$id');
       if (response.statusCode == 200) {
-         return response.data;
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          return responseData['data'];
+        }
+        return responseData;
       }
       return null;
     } catch (e) {

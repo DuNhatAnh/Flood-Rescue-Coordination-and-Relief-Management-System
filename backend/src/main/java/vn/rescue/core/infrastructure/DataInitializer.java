@@ -120,7 +120,7 @@ public class DataInitializer implements CommandLineRunner {
                             rescueTeamRepository.save(team);
                             updated = true;
                         }
-                        if (staff.getTeamId() == null || !staff.getTeamId().equals(team.getId())) {
+                        if (staff.getTeamId() == null) {
                             staff.setTeamId(team.getId());
                             userRepository.save(staff);
                             updated = true;
@@ -142,11 +142,20 @@ public class DataInitializer implements CommandLineRunner {
     private void syncWarehouseManager(String email, String warehouseName) {
         userRepository.findByEmail(email).ifPresent(staff -> {
             warehouseRepository.findByWarehouseName(warehouseName).ifPresent(warehouse -> {
-                if (warehouse.getManagerId() == null || !warehouse.getManagerId().equals(staff.getId())) {
+                if (warehouse.getManagerId() == null) {
                     warehouse.setManagerId(staff.getId());
                     warehouseRepository.save(warehouse);
                     log.info("Đã gán {} làm quản lý cho {} (ID: {})", email, warehouseName, warehouse.getId());
                 }
+                
+                // Đồng bộ Đội cứu hộ của Manager này với Kho (Nếu chưa gán)
+                rescueTeamRepository.findByLeaderId(staff.getId()).ifPresent(team -> {
+                    if (team.getWarehouseId() == null) {
+                        team.setWarehouseId(warehouse.getId());
+                        rescueTeamRepository.save(team);
+                        log.info("Đã tự động liên kết Đội '{}' với Kho '{}'", team.getTeamName(), warehouseName);
+                    }
+                });
             });
         });
     }

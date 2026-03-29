@@ -13,8 +13,14 @@ class InventoryService {
       );
 
       if (response.statusCode == 200) {
-        List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
-        return body.map((dynamic item) => Inventory.fromJson(item)).toList();
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['success'] == true) {
+          List<dynamic> data = body['data'];
+          return data.map((dynamic item) => Inventory.fromJson(item)).toList();
+        } else if (body is List) {
+           return body.map((dynamic item) => Inventory.fromJson(item)).toList();
+        }
+        throw Exception('Unexpected response format');
       } else {
         throw Exception('Failed to load inventory');
       }
@@ -40,7 +46,11 @@ class InventoryService {
       );
 
       if (response.statusCode == 200) {
-        return Inventory.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['success'] == true) {
+          return Inventory.fromJson(body['data']);
+        }
+        return Inventory.fromJson(body);
       } else {
         final error = jsonDecode(utf8.decode(response.bodyBytes));
         throw Exception(error['message'] ?? 'Failed to import stock');

@@ -12,7 +12,12 @@ class WarehouseService {
     try {
       final response = await _dio.get('/warehouses');
       if (response.statusCode == 200) {
-        List<dynamic> data = response.data;
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          List<dynamic> data = responseData['data'];
+          return data.map((json) => Warehouse.fromJson(json)).toList();
+        }
+        List<dynamic> data = responseData;
         return data.map((json) => Warehouse.fromJson(json)).toList();
       }
       return [];
@@ -25,8 +30,12 @@ class WarehouseService {
   Future<Warehouse?> getByManagerId(String managerId) async {
     try {
       final response = await _dio.get('/warehouses/manager/$managerId');
-      if (response.statusCode == 200 && response.data != null && response.data is Map<String, dynamic>) {
-        return Warehouse.fromJson(response.data);
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          return Warehouse.fromJson(responseData['data']);
+        }
+        return Warehouse.fromJson(responseData);
       }
       return null;
     } catch (e) {
@@ -42,7 +51,11 @@ class WarehouseService {
         data: warehouse.toJson(),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return Warehouse.fromJson(response.data);
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          return Warehouse.fromJson(responseData['data']);
+        }
+        return Warehouse.fromJson(responseData);
       }
       return null;
     } catch (e) {
@@ -58,7 +71,11 @@ class WarehouseService {
         data: warehouse.toJson(),
       );
       if (response.statusCode == 200) {
-        return Warehouse.fromJson(response.data);
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          return Warehouse.fromJson(responseData['data']);
+        }
+        return Warehouse.fromJson(responseData);
       }
       return null;
     } catch (e) {

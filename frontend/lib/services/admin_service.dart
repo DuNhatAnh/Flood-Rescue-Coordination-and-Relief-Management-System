@@ -18,8 +18,8 @@ class AdminService {
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      return body['data'];
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return (body is Map && body['success'] == true) ? (body['data'] ?? []) : (body is List ? body : []);
     }
     throw Exception('Failed to load users');
   }
@@ -32,9 +32,9 @@ class AdminService {
       headers: headers,
       body: jsonEncode(userData),
     );
-    if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      return body['data'];
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return (body is Map && body['success'] == true) ? (body['data'] ?? body) : body;
     }
     throw Exception('Failed to create user');
   }
@@ -108,8 +108,8 @@ class AdminService {
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      return body['data'];
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return (body is Map && body['success'] == true) ? (body['data'] ?? []) : (body is List ? body : []);
     }
     throw Exception('Failed to load roles');
   }
@@ -157,19 +157,34 @@ class AdminService {
   Future<List<dynamic>> getWarehouses() async {
     final url = Uri.parse('$baseUrl/warehouses');
     final headers = await _getAuthHeaders();
-    final response = await http.get(url, headers: headers);
-    if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      return body; // The backend returns List directly or inside data
+    try {
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['success'] == true) {
+          final data = body['data'];
+          if (data is List) return data;
+        }
+        if (body is List) return body;
+        if (body is Map && body['data'] is List) return body['data'];
+        return [];
+      }
+      throw Exception('Failed to load warehouses: ${response.statusCode}');
+    } catch (e) {
+      print('Error in getWarehouses: $e');
+      rethrow;
     }
-    throw Exception('Failed to load warehouses');
   }
+
 
   Future<Map<String, dynamic>> createWarehouse(Map<String, dynamic> data) async {
     final url = Uri.parse('$baseUrl/warehouses');
     final headers = await _getAuthHeaders();
     final response = await http.post(url, headers: headers, body: jsonEncode(data));
-    if (response.statusCode == 200) return jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return (body is Map && body['success'] == true) ? body['data'] : body;
+    }
     throw Exception('Failed to create warehouse');
   }
 
@@ -177,7 +192,10 @@ class AdminService {
     final url = Uri.parse('$baseUrl/warehouses/$id');
     final headers = await _getAuthHeaders();
     final response = await http.put(url, headers: headers, body: jsonEncode(data));
-    if (response.statusCode == 200) return jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return (body is Map && body['success'] == true) ? body['data'] : body;
+    }
     throw Exception('Failed to update warehouse');
   }
 

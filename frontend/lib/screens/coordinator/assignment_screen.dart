@@ -94,7 +94,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
         
         setState(() {
           _warehouseInventory = inventory;
-          _currentWarehouseName = warehouse!['warehouseName'] ?? warehouse!['warehouse_name'] ?? 'Kho không tên';
+          _currentWarehouseName = warehouse?['warehouseName'] ?? warehouse?['warehouse_name'] ?? 'Kho không tên';
           _isLoadingWarehouse = false;
           
           // Re-filter vehicles using the definite warehouseId found
