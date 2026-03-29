@@ -74,6 +74,35 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Xác nhận lần cuối trước khi gửi báo cáo quan trọng
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Hoàn thành nhiệm vụ?', style: TextStyle(fontWeight: FontWeight.bold, color: StaffTheme.successGreen)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Bạn xác nhận đã hoàn tất cứu hộ và muốn gửi báo cáo kết thúc?'),
+            const SizedBox(height: 12),
+            Text('Số người cứu được: $_rescuedCount', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: StaffTheme.primaryBlue)),
+            Text('Tình trạng: $_condition', style: const TextStyle(fontSize: 14)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('HỦY', style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: StaffTheme.successGreen, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text('XÁC NHẬN GỬI', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      )
+    );
+
+    if (confirm != true) return;
+
     setState(() {
       _isSubmitting = true;
       _uploadStatus = "Đang bắt đầu...";

@@ -936,26 +936,44 @@ Widget build(BuildContext context) {
       return;
     }
 
-    setState(() => _isLoading = true);
-    Navigator.pop(ctx);
+    showDialog(
+      context: context,
+      builder: (ctx2) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Xác nhận nhập kho?', style: TextStyle(fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
+        content: Text('Bạn chắc chắn muốn nhập ${qty} ${_selectedImportItem!.unit} ${_selectedImportItem!.itemName} từ nguồn "${_importSource}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx2), child: const Text('HỦY', style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx2);
+              setState(() => _isLoading = true);
+              Navigator.pop(ctx);
 
-    try {
-      await _inventoryService.importStock(
-        _myWarehouse!.id!,
-        _selectedImportItem!.id!,
-        qty,
-        userId: AuthService.currentUser?.id,
-        source: _importSource,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nhập kho thành công!'), backgroundColor: StaffTheme.successGreen));
-      _loadData(); 
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed));
-    } finally {
-      setState(() => _isLoading = false);
-    }
+              try {
+                await _inventoryService.importStock(
+                  _myWarehouse!.id!,
+                  _selectedImportItem!.id!,
+                  qty,
+                  userId: AuthService.currentUser?.id,
+                  source: _importSource,
+                );
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nhập kho thành công!'), backgroundColor: StaffTheme.successGreen));
+                _loadData(); 
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed));
+              } finally {
+                setState(() => _isLoading = false);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: StaffTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text('XÁC NHẬN', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      )
+    );
   }
 
   void _showImportDialog() {
@@ -1060,8 +1078,13 @@ Widget build(BuildContext context) {
                 mission: mission,
                 mode: mode,
                 onSuccess: () { 
-                  Navigator.pop(ctx); 
-                  _loadData(); 
+                  Navigator.pop(ctx); // Đóng dialog form
+                  if (mission != null) {
+                    // Nếu đang trong luồng Nhiệm vụ, tự động quay về màn hình Nhiệm vụ
+                    Navigator.pop(context); 
+                  } else {
+                    _loadData(); // Nếu ở kho bình thường thì tải lại data
+                  }
                 }
               )),
             ],

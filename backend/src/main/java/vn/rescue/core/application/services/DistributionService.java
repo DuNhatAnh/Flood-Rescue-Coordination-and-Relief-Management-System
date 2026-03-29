@@ -7,11 +7,14 @@ import vn.rescue.core.application.dto.DistributionRequest;
 import vn.rescue.core.domain.entities.Distribution;
 import vn.rescue.core.domain.entities.DistributionDetail;
 import vn.rescue.core.domain.entities.Inventory;
+import vn.rescue.core.domain.entities.MissionItem;
 import vn.rescue.core.domain.repositories.DistributionDetailRepository;
 import vn.rescue.core.domain.repositories.DistributionRepository;
 import vn.rescue.core.domain.repositories.InventoryRepository;
+import vn.rescue.core.domain.repositories.AssignmentRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -21,6 +24,7 @@ public class DistributionService {
     private final DistributionRepository distributionRepository;
     private final DistributionDetailRepository detailRepository;
     private final InventoryRepository inventoryRepository;
+    private final AssignmentRepository assignmentRepository;
 
     @Transactional
     public Distribution createDistribution(DistributionRequest request, String userId) {
@@ -55,16 +59,35 @@ public class DistributionService {
             inventory.setQuantity(inventory.getQuantity() - itemReq.getQuantity());
             inventoryRepository.save(inventory);
 
-            // If EXPORT, items are gone.
-            // If TRANSFER, they are in transit (already deducted from source).
-            // They will be added to destination in a separate step or automatically if simplicity is preferred.
-            // For now, let's handle the destination addition ONLY when status becomes COMPLETED.
-
             DistributionDetail detail = new DistributionDetail();
             detail.setDistributionId(savedDistribution.getId());
             detail.setItemId(itemReq.getItemId());
             detail.setQuantity(itemReq.getQuantity());
             detailRepository.save(detail);
+        }
+
+        // Logic bổ sung: Cập nhật Assignment nếu tìm thấy theo requestId
+        if (request.getRequestId() != null) {
+            assignmentRepository.findById(request.getRequestId()).ifPresent(assignment -> {
+                assignment.setItemsExported(true);
+                
+                // Đồng bộ danh sách mặt hàng thực tế đã được chuẩn bị
+                List<MissionItem> actualMissionItems = new ArrayList<>();
+                for (DistributionRequest.ItemQuantity itemReq : request.getItems()) {
+                    Inventory inventory = inventoryRepository.findByWarehouseIdAndItemId(
+                            request.getWarehouseId(), itemReq.getItemId()
+                    ).orElse(null);
+                    
+                    actualMissionItems.add(MissionItem.builder()
+                            .itemId(itemReq.getItemId())
+                            .itemName(inventory != null ? inventory.getItemName() : "Vật phẩm")
+                            .unit(inventory != null ? inventory.getUnit() : "-")
+                            .quantity(itemReq.getQuantity())
+                            .build());
+                }
+                assignment.setMissionItems(actualMissionItems);
+                assignmentRepository.save(assignment);
+            });
         }
 
         return savedDistribution;

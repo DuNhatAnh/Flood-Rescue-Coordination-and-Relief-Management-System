@@ -185,36 +185,60 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        
-        // Trạng thái xuất kho
+        const SizedBox(height: 24),
+
+        // 1. Mục Xuất kho hàng hóa
+        const Text('BƯỚC 1: XUẤT KHO HÀNG HÓA', 
+            style: TextStyle(fontSize: 11, color: StaffTheme.textLight, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+        const SizedBox(height: 12),
+
         if (!task.itemsExported) ...[
-          const Text('BƯỚC 1: XUẤT KHO HÀNG HÓA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _prepButton(
-                  'XUẤT KHO THỦ CÔNG', 
-                  Icons.edit_note_rounded, 
-                  Colors.white, 
-                  StaffTheme.primaryBlue,
-                  () => _navigateToWarehouse(task, manual: true),
+          if (task.assignedItems.isEmpty)
+             Container(
+               padding: const EdgeInsets.all(12),
+               decoration: BoxDecoration(color: StaffTheme.successGreen.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: StaffTheme.successGreen.withValues(alpha: 0.2))),
+               child: const Row(
+                 children: [
+                   Icon(Icons.info_outline, color: StaffTheme.successGreen, size: 18),
+                   SizedBox(width: 8),
+                   Expanded(child: Text('Nhiệm vụ này không yêu cầu mang kèm hàng cứu trợ. Bạn có thể bỏ qua bước này.', style: TextStyle(fontSize: 13, color: StaffTheme.successGreen, fontWeight: FontWeight.w500))),
+                 ],
+               ),
+             )
+          else 
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _navigateToWarehouse(task, manual: true),
+                    icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                    label: const Text('XUẤT KHO THỦ CÔNG', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      side: const BorderSide(color: StaffTheme.primaryBlue),
+                      foregroundColor: StaffTheme.primaryBlue,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _prepButton(
-                  'XUẤT KHO NHANH', 
-                  Icons.flash_on_rounded, 
-                  StaffTheme.primaryBlue, 
-                  Colors.white,
-                  () => _navigateToWarehouse(task, manual: false),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _navigateToWarehouse(task, manual: false),
+                    icon: const Icon(Icons.bolt_rounded, size: 18),
+                    label: const Text('XUẤT KHO NHANH', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: StaffTheme.primaryBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ] else ...[
+              ],
+            ),
+        ] else
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -223,18 +247,17 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: StaffTheme.successGreen.withValues(alpha: 0.3)),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.check_circle, color: StaffTheme.successGreen),
-                const SizedBox(width: 12),
-                const Expanded(
+                Icon(Icons.check_circle, color: StaffTheme.successGreen),
+                SizedBox(width: 12),
+                Expanded(
                   child: Text('Đã hoàn thành xuất kho hàng hóa và phương tiện.', 
                     style: TextStyle(color: StaffTheme.successGreen, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
               ],
             ),
           ),
-        ],
         const SizedBox(height: 16),
         _buildDetailsCard(task),
       ],
@@ -381,7 +404,13 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => _handleStatusUpdate(task, 'PREPARING', 'Đã chấp nhận nhiệm vụ. Hãy chuẩn bị hàng hóa!'),
+              onPressed: () => _showStatusConfirm(
+                context,
+                'Chấp nhận nhiệm vụ?',
+                'Bạn đồng ý thực hiện nhiệm vụ giải cứu này?',
+                StaffTheme.successGreen,
+                () => _handleStatusUpdate(task, 'PREPARING', 'Đã chấp nhận nhiệm vụ. Hãy chuẩn bị hàng hóa!'),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: StaffTheme.successGreen,
                 foregroundColor: Colors.white,
@@ -409,21 +438,30 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
     }
 
     if (status == 'PREPARING') {
+      final bool noItemsNeeded = task.assignedItems.isEmpty;
+      final bool canProceed = task.itemsExported || noItemsNeeded;
+
       return Row(
         children: [
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: task.itemsExported ? () {
-                _handleStatusUpdate(
-                  task, 
-                  'MOVING', 
-                  'Đã chuẩn bị xong và bắt đầu di chuyển!',
+              onPressed: canProceed ? () {
+                _showStatusConfirm(
+                  context,
+                  'Xác nhận chuẩn bị xong?',
+                  'Bạn đã sẵn sàng phương tiện và hàng hóa để bắt đầu di chuyển?',
+                  StaffTheme.successGreen,
+                  () => _handleStatusUpdate(
+                    task, 
+                    'MOVING', 
+                    'Đã chuẩn bị xong và bắt đầu di chuyển!',
+                  ),
                 );
-              } : null, // Chỉ cho nhấn khi đã xuất hàng
+              } : null, // Chỉ cho nhấn khi đã xuất hàng hoặc không cần hàng
               icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
               label: const Text('XÁC NHẬN CHUẨN BỊ XONG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: task.itemsExported ? StaffTheme.successGreen : Colors.grey,
+                backgroundColor: canProceed ? StaffTheme.successGreen : Colors.grey,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -436,13 +474,25 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
 
     if (status == 'MOVING') {
       return _buildSingleActionButton(
-        task, 'RESCUING', 'ĐÃ ĐẾN HIỆN TRƯỜNG', StaffTheme.warningOrange, 'Đã đến nơi. Hãy thực hiện cứu hộ!'
+        task, 
+        'RESCUING', 
+        'ĐÃ ĐẾN HIỆN TRƯỜNG', 
+        StaffTheme.warningOrange, 
+        'Đã đến nơi. Hãy thực hiện cứu hộ!',
+        'Xác nhận đã đến nơi?',
+        'Bạn xác nhận đội cứu hộ đã có mặt tại hiện trường?'
       );
     }
 
     if (status == 'RESCUING') {
       return _buildSingleActionButton(
-        task, 'RETURNING', 'ĐƯA NẠN NHÂN VỀ AN TOÀN', StaffTheme.successGreen, 'Đang đưa nạn nhân về vùng an toàn.'
+        task, 
+        'RETURNING', 
+        'ĐƯA NẠN NHÂN VỀ AN TOÀN', 
+        StaffTheme.successGreen, 
+        'Đang đưa nạn nhân về vùng an toàn.',
+        'Xác nhận cứu hộ xong?',
+        'Bạn xác nhận đã cứu hộ nạn nhân và bắt đầu quay về?'
       );
     }
 
@@ -468,9 +518,15 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildSingleActionButton(Assignment task, String nextStatus, String label, Color color, String message) {
+  Widget _buildSingleActionButton(Assignment task, String nextStatus, String label, Color color, String message, String confirmTitle, String confirmMsg) {
     return ElevatedButton(
-      onPressed: () => _handleStatusUpdate(task, nextStatus, message),
+      onPressed: () => _showStatusConfirm(
+        context,
+        confirmTitle,
+        confirmMsg,
+        color,
+        () => _handleStatusUpdate(task, nextStatus, message),
+      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
@@ -759,6 +815,28 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
       case 'CANCELLED': return StaffTheme.errorRed;
       default: return StaffTheme.primaryBlue;
     }
+  }
+
+  void _showStatusConfirm(BuildContext context, String title, String message, Color color, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('HỦY', style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onConfirm();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: color, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text('XÁC NHẬN', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      )
+    );
   }
 
   String _getStatusLabel(String status) {

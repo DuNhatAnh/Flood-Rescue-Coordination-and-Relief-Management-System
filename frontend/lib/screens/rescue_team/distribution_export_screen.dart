@@ -211,6 +211,39 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
       return;
     }
 
+    // Hiển thị hộp thoại xác nhận trước khi thực hiện
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Xác nhận xuất kho?', style: TextStyle(fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Bạn chắc chắn muốn thực hiện phiếu ${_exportType == 'EXPORT' ? 'xuất cứu trợ' : 'điều chuyển'} này?'),
+            const SizedBox(height: 12),
+            const Text('Danh sách vật phẩm:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            ..._selectedItems.map((item) => Text('• ${item['quantity']} ${item['itemName']}', style: const TextStyle(fontSize: 13))).toList(),
+            if (_selectedVehicle != null) ...[
+              const SizedBox(height: 8),
+              Text('Phương tiện: ${_selectedVehicle!.licensePlate}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('HỦY', style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: StaffTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text('XÁC NHẬN', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      )
+    );
+
+    if (confirm != true) return;
+
     setState(() => _isLoading = true);
     
     // Nếu có đổi xe (kiểm tra xem xe đã chọn có nằm trong danh sách xe được gán không)
