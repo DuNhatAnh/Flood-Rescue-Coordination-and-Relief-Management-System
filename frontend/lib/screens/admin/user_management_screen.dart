@@ -79,7 +79,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
                   TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Số điện thoại')),
                   DropdownButtonFormField<String>(
-                    initialValue: selectedRole,
+                    value: selectedRole,
                     items: _roles.map((role) => DropdownMenuItem<String>(
                       value: role['id'],
                       child: Text(role['name'] ?? ''),
@@ -91,7 +91,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    initialValue: selectedTeam,
+                    value: selectedTeam,
                     items: [
                       const DropdownMenuItem<String>(value: null, child: Text('Không thuộc đội nào')),
                       ..._teams.map((team) => DropdownMenuItem<String>(
@@ -264,7 +264,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               ),
                               Switch(
                                 value: isActive,
-                                activeThumbColor: Colors.green,
+                                activeColor: Colors.green,
                                   onChanged: (val) async {
                                     final newStatus = val ? 'ACTIVE' : 'LOCKED';
                                     try {

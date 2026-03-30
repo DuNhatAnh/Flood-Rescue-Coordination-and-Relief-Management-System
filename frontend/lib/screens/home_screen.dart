@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:ui_web' as ui_web;
-// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
-import 'dart:html' as html;
-// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
-import 'dart:js' as js;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
 import 'package:flood_rescue_app/screens/track_rescue_request_screen.dart';
 import 'package:flood_rescue_app/screens/auth/login_screen.dart';
@@ -421,45 +418,6 @@ class MainContent extends StatefulWidget {
 }
 
 class _MainContentState extends State<MainContent> {
-  late String _mapViewId;
-
-  @override
-  void initState() {
-    super.initState();
-    _mapViewId = 'leaflet-map-${DateTime.now().millisecondsSinceEpoch}';
-
-    // Register the div element for Leaflet
-    final html.DivElement mapElement = html.DivElement()
-      ..id = _mapViewId
-      ..style.width = '100%'
-      ..style.height = '100%'
-      ..style.borderRadius = '24px';
-
-    ui_web.platformViewRegistry.registerViewFactory(
-      _mapViewId,
-      (int viewId) => mapElement,
-    );
-
-    // Call JS init script after rendering with multiple attempts
-    _initMapWithRetry(mapElement, 0);
-  }
-
-  void _initMapWithRetry(html.DivElement element, int attempt) {
-    if (attempt > 5) return; // Stop after 5 attempts
-    
-    Future.delayed(Duration(milliseconds: 300 * (attempt + 1)), () {
-      try {
-        if (js.context.hasProperty('initLeafletMap')) {
-          js.context.callMethod('initLeafletMap', [element]);
-        } else {
-          _initMapWithRetry(element, attempt + 1);
-        }
-      } catch (e) {
-        _initMapWithRetry(element, attempt + 1);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -472,9 +430,22 @@ class _MainContentState extends State<MainContent> {
           horizontal: BorderSide(color: Colors.blue.withValues(alpha: 0.1)),
         ),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: HtmlElementView(viewType: _mapViewId),
+      child: FlutterMap(
+        options: const MapOptions(
+          initialCenter: LatLng(16.047079, 108.206230), // Đà Nẵng, Việt Nam làm trung tâm
+          initialZoom: 6,
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'com.example.flood_rescue_app',
+          ),
+          const MarkerLayer(
+            markers: [
+              // Có thể thêm Marker ở đây khi có dữ liệu từ backend
+            ],
+          ),
+        ],
       ),
     );
   }
