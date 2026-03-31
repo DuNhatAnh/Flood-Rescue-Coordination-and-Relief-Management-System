@@ -29,4 +29,10 @@ public class DistributionController {
     public ResponseEntity<List<Distribution>> getHistory() {
         return ResponseEntity.ok(distributionService.getHistory());
     }
+
+    // BỔ SUNG: Xác nhận hoàn thành việc điều chuyển kho (Dành cho nghiệp vụ TRANSFER)
+    @PostMapping("/{id}/complete-transfer")
+    public ResponseEntity<Distribution> completeTransfer(@PathVariable String id) {
+        return ResponseEntity.ok(distributionService.completeTransfer(id));
+    }
 }

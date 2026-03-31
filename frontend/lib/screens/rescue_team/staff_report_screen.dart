@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../models/distribution.dart';
 import '../../services/distribution_service.dart';
-import '../../services/rescue_service.dart';
+import '../../services/report_service.dart';
 import '../../utils/staff_theme.dart';
-import 'package:intl/intl.dart';
 
 class StaffReportScreen extends StatefulWidget {
   const StaffReportScreen({Key? key}) : super(key: key);
@@ -14,29 +14,66 @@ class StaffReportScreen extends StatefulWidget {
 
 class _StaffReportScreenState extends State<StaffReportScreen> {
   final DistributionService _distService = DistributionService();
-  final RescueService _rescueService = RescueService();
+  final ReportService _reportService = ReportService();
   
   List<Distribution> _history = [];
   bool _isLoading = true;
   
-  // Fake stats for Demo
-  final int _completedTasks = 12;
-  final int _activeTasks = 3;
-  final int _pendingTasks = 5;
+  // Biến lưu trữ số liệu thực tế từ API
+  int _completedTasks = 0;
+  int _activeTasks = 0;
+  int _pendingTasks = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadHistory();
+    _loadData();
   }
 
-  Future<void> _loadHistory() async {
+  /// Tải dữ liệu thực tế từ Backend
+  Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
-    final history = await _distService.getHistory();
-    setState(() {
-      _history = history;
-      _isLoading = false;
-    });
+    
+    try {
+      // Chạy song song các API để tối ưu tốc độ
+      final results = await Future.wait([
+        _reportService.getStaffDashboard(),
+        _distService.getHistory(),
+      ]);
+
+      // results[0] là Map<String, dynamic> do ReportService trả về trực tiếp phần 'data'
+      final dynamic responseData = results[0];
+      final List<Distribution> historyData = (results[1] as List<Distribution>?) ?? [];
+
+      if (mounted) {
+        setState(() {
+          // XỬ LÝ DỮ LIỆU DASHBOARD VỚI ÉP KIỂU AN TOÀN
+          if (responseData != null && responseData is Map) {
+            // Sử dụng int.tryParse kết hợp toString() để tránh lỗi subtype (double/int/num)
+            _completedTasks = int.tryParse(responseData['completedTasks']?.toString() ?? '0') ?? 0;
+            _activeTasks = int.tryParse(responseData['activeTasks']?.toString() ?? '0') ?? 0;
+            _pendingTasks = int.tryParse(responseData['pendingTasks']?.toString() ?? '0') ?? 0;
+            
+            debugPrint("📊 UI CẬP NHẬT THÀNH CÔNG:");
+            debugPrint("- Hoàn thành: $_completedTasks");
+            debugPrint("- Đang làm (Assigned): $_activeTasks");
+            debugPrint("- Chờ xử lý: $_pendingTasks");
+          } else {
+            debugPrint("⚠️ Cảnh báo: API Dashboard không trả về dữ liệu Map hợp lệ.");
+          }
+          
+          // XỬ LÝ DỮ LIỆU LỊCH SỬ
+          _history = historyData;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ Lỗi nghiêm trọng tại StaffReportScreen: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -44,29 +81,39 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
     return Scaffold(
       backgroundColor: StaffTheme.background,
       appBar: AppBar(
-        title: const Text('THỐNG KÊ & LỊCH SỬ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('THỐNG KÊ & LỊCH SỬ', 
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
         flexibleSpace: Container(decoration: BoxDecoration(gradient: StaffTheme.primaryGradient)),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _loadData,
+          )
+        ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadHistory,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatsGrid(),
-              const SizedBox(height: 30),
-              _buildSectionTitle('LỊCH SỬ BIẾN ĐỘNG NGUỒN LỰC'),
-              const SizedBox(height: 15),
-              _isLoading 
-                  ? const Center(child: CircularProgressIndicator())
-                  : _history.isEmpty 
+        onRefresh: _loadData,
+        child: _isLoading 
+          ? const Center(child: CircularProgressIndicator()) 
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              physics: const AlwaysScrollableScrollPhysics(), // Đảm bảo luôn vuốt được để refresh
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('TỔNG QUAN NHIỆM VỤ'),
+                  const SizedBox(height: 15),
+                  _buildStatsGrid(),
+                  const SizedBox(height: 30),
+                  _buildSectionTitle('LỊCH SỬ BIẾN ĐỘNG NGUỒN LỰC'),
+                  const SizedBox(height: 15),
+                  _history.isEmpty 
                       ? _buildEmptyHistory()
                       : _buildHistoryList(),
-            ],
-          ),
-        ),
+                ],
+              ),
+            ),
       ),
     );
   }
@@ -115,7 +162,7 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: StaffTheme.textMedium));
+    return Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: StaffTheme.textMedium, letterSpacing: 0.5));
   }
 
   Widget _buildHistoryList() {
@@ -133,42 +180,32 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10)],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor: (isExport ? StaffTheme.primaryBlue : Colors.indigo).withValues(alpha: 0.1),
+              backgroundColor: (isExport ? StaffTheme.primaryBlue : Colors.indigo).withOpacity(0.1),
               child: Icon(
                 isExport ? Icons.outbox_rounded : Icons.local_shipping_rounded,
                 color: isExport ? StaffTheme.primaryBlue : Colors.indigo,
               ),
             ),
             title: Text(
-              isExport ? 'Xuất cứu trợ #${(dist.id ?? "....").substring((dist.id?.length ?? 4) - 4)}' : 'Điều chuyển kho #${(dist.id ?? "....").substring((dist.id?.length ?? 4) - 4)}',
+              isExport ? 'Xuất cứu trợ #${_formatId(dist.id)}' : 'Điều chuyển kho #${_formatId(dist.id)}',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
             ),
             subtitle: Text(dateStr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(dist.status).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    dist.status,
-                    style: TextStyle(color: _getStatusColor(dist.status), fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey),
-              ],
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getStatusColor(dist.status).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                dist.status,
+                style: TextStyle(color: _getStatusColor(dist.status), fontSize: 10, fontWeight: FontWeight.bold),
+              ),
             ),
             onTap: () => _showHistoryDetail(dist),
           ),
@@ -177,11 +214,17 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
     );
   }
 
+  String _formatId(String? id) {
+    if (id == null || id.length < 4) return "....";
+    return id.substring(id.length - 4).toUpperCase();
+  }
+
   Color _getStatusColor(String status) {
-    switch (status) {
+    switch (status.toUpperCase()) {
       case 'COMPLETED': return Colors.green;
       case 'IN_TRANSIT': return Colors.blue;
-      default: return Colors.orange;
+      case 'PENDING': return Colors.orange;
+      default: return Colors.grey;
     }
   }
 
@@ -189,10 +232,10 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
     return Center(
       child: Column(
         children: [
-          const SizedBox(height: 40),
-          Icon(Icons.history_rounded, size: 60, color: Colors.grey.shade200),
-          const SizedBox(height: 10),
-          const Text('Chưa có dữ liệu lịch sử', style: TextStyle(color: StaffTheme.textLight)),
+          const SizedBox(height: 60),
+          Icon(Icons.assignment_turned_in_outlined, size: 80, color: Colors.grey.shade200),
+          const SizedBox(height: 16),
+          const Text('Chưa có lịch sử biến động nào', style: TextStyle(color: StaffTheme.textLight, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -202,37 +245,37 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        expand: false,
-        builder: (_, controller) => SingleChildScrollView(
-          controller: controller,
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Chi tiết giao dịch', style: StaffTheme.titleLarge),
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
-                ],
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        padding: const EdgeInsets.fromLTRB(30, 12, 30, 30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 20),
+            Text('Chi tiết giao dịch', style: StaffTheme.titleLarge),
+            const Divider(height: 30),
+            _buildDetailRow('Mã vận đơn:', dist.id ?? 'N/A'),
+            _buildDetailRow('Ngày giờ:', DateFormat('dd/MM/yyyy HH:mm').format(dist.distributedAt)),
+            _buildDetailRow('Loại hình:', dist.type == 'EXPORT' ? 'Xuất cứu trợ' : 'Điều chuyển kho'),
+            _buildDetailRow('Trạng thái:', dist.status),
+            const SizedBox(height: 20),
+            const Text('DANH SÁCH VẬT PHẨM', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 10),
+            if (dist.items.isNotEmpty)
+              ...dist.items.map((item) => _buildDetailItem(item.itemName, "${item.quantity} ${item.unit}")).toList()
+            else
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Text("Không có thông tin vật phẩm", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
               ),
-              const Divider(height: 30),
-              _buildDetailRow('Mã vận đơn:', dist.id ?? 'N/A'),
-              _buildDetailRow('Ngày giờ:', DateFormat('dd/MM/yyyy HH:mm').format(dist.distributedAt)),
-              _buildDetailRow('Loại hình:', dist.type == 'EXPORT' ? 'Xuất cứu trợ' : 'Điều chuyển kho'),
-              _buildDetailRow('Trạng thái:', dist.status),
-              const SizedBox(height: 30),
-              const Text('DANH SÁCH HÀNG HÓA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
-              const SizedBox(height: 15),
-              // Dummy items for transaction detail
-              _buildDetailItem('Mì tôm Hảo Hảo', '20 thùng'),
-              _buildDetailItem('Nước suối Aquafina', '50 lốc'),
-              _buildDetailItem('Áo phao cứu sinh', '10 cái'),
-            ],
-          ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );
@@ -246,14 +289,7 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
         children: [
           Text(label, style: const TextStyle(color: StaffTheme.textLight)),
           const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              value, 
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          Flexible(child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
         ],
       ),
     );
@@ -261,13 +297,13 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
 
   Widget _buildDetailItem(String name, String qty) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: StaffTheme.background, borderRadius: BorderRadius.circular(10)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
           Text(qty, style: const TextStyle(color: StaffTheme.primaryBlue, fontWeight: FontWeight.bold)),
         ],
       ),
