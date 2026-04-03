@@ -5,9 +5,16 @@ import org.springframework.stereotype.Repository;
 import vn.rescue.core.domain.entities.RescueTeam;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RescueTeamRepository extends MongoRepository<RescueTeam, String> {
+
     List<RescueTeam> findByStatusIgnoreCase(String status);
-    java.util.Optional<RescueTeam> findByLeaderId(String leaderId);
+
+    Optional<RescueTeam> findByLeaderId(String leaderId);
+
+    long countByStatusIgnoreCase(String status);
+
+    List<RescueTeam> findByStatusOrderByTeamNameAsc(String status);
 }

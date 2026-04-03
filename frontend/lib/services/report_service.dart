@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../utils/constants.dart';
+import '../models/dashboard_stats_model.dart'; // Đảm bảo import đúng model đã tạo
 import 'auth_service.dart';
 
 class ReportService {
@@ -17,33 +18,34 @@ class ReportService {
   }
 
   /// Lấy dữ liệu Dashboard cho nhân viên
-  Future<Map<String, dynamic>?> getStaffDashboard() async {
+  /// Đã cập nhật trả về DashboardStats? thay vì Map
+  Future<DashboardStats?> getStaffDashboard() async {
     try {
       final url = Uri.parse('$baseUrl/staff-dashboard');
       final headers = await _getHeaders();
       
       final response = await http.get(url, headers: headers).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15), // Tăng timeout để xử lý các báo cáo phức tạp
       );
 
-      if (kDebugMode) print("🚀 Response (${response.statusCode}): ${response.body}");
+      if (kDebugMode) {
+        print("🚀 [GET] Staff Dashboard (${response.statusCode})");
+      }
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
         
-        // CHUẨN HÓA: Chỉ trả về nội dung của key 'data'
+        // Kiểm tra success và data từ cấu trúc ApiResponse của Spring Boot
         if (decodedResponse['success'] == true && decodedResponse['data'] != null) {
-          return decodedResponse['data'] as Map<String, dynamic>;
+          // Chuyển đổi Map thành Object DashboardStats thông qua factory fromJson
+          return DashboardStats.fromJson(decodedResponse['data']);
         }
-        return null; 
       } else if (response.statusCode == 401) {
-        if (kDebugMode) print("🔑 Token expired hoặc không hợp lệ");
-        // Có thể thêm logic logout hoặc refresh token ở đây
-        return null;
+        if (kDebugMode) print("🔑 Phiên đăng nhập hết hạn (401)");
       }
-      return null;
+      return null; 
     } catch (e) {
-      if (kDebugMode) print("⚠️ Lỗi ReportService: $e");
+      if (kDebugMode) print("⚠️ Lỗi kết nối ReportService: $e");
       return null;
     }
   }
