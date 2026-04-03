@@ -444,9 +444,9 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                                margin: const EdgeInsets.only(bottom: 8),
                                padding: const EdgeInsets.all(12),
                                decoration: BoxDecoration(
-                                 color: isMatch ? StaffTheme.successGreen.withValues(alpha: 0.1) : StaffTheme.background,
+                                 color: isMatch ? StaffTheme.successGreen.withOpacity(0.1) : StaffTheme.background,
                                  borderRadius: BorderRadius.circular(12),
-                                 border: Border.all(color: isMatch ? StaffTheme.successGreen.withValues(alpha: 0.3) : StaffTheme.border),
+                                 border: Border.all(color: isMatch ? StaffTheme.successGreen.withOpacity(0.3) : StaffTheme.border),
                                ),
                                child: Row(
                                  children: [

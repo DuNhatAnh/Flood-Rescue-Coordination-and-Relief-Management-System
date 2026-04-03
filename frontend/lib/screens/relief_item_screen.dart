@@ -401,7 +401,7 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                          color: StaffTheme.primaryBlue.withValues(alpha: 0.05),
+                          color: StaffTheme.primaryBlue.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: ClipRRect(
@@ -411,9 +411,9 @@ class ReliefItemScreenState extends State<ReliefItemScreen> {
                                   'http://localhost:8080${item.imageUrl}',
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) => 
-                                      Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue.withValues(alpha: 0.5), size: 28),
+                                      Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue.withOpacity(0.5), size: 28),
                                 )
-                              : Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue.withValues(alpha: 0.5), size: 28),
+                              : Icon(Icons.inventory_2_outlined, color: StaffTheme.primaryBlue.withOpacity(0.5), size: 28),
                         ),
                       ),
                       const SizedBox(width: 16),

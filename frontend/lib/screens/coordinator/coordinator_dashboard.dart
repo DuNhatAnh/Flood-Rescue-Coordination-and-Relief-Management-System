@@ -191,9 +191,9 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
+        color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -215,7 +215,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
+        color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(8),
         boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
       ),
@@ -322,7 +322,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: request.urgencyColor.withValues(alpha: 0.1),
+                          color: request.urgencyColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -340,9 +340,9 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha: 0.1),
+                            color: Colors.green.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                            border: Border.all(color: Colors.green.withOpacity(0.3)),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -505,7 +505,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                       width: 30,
                       height: 30,
                       decoration: BoxDecoration(
-                        color: request.urgencyColor.withValues(alpha: 0.3),
+                        color: request.urgencyColor.withOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
                     ),

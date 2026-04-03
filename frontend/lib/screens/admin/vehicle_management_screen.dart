@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/vehicle_service.dart';
+import '../../services/auth_service.dart';
 import 'package:latlong2/latlong.dart';
 import 'location_picker_screen.dart';
 
@@ -17,6 +18,7 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
   int _currentPage = 0;
   int _totalPages = 1;
   String _searchType = '';
+  String? _statusFilter;
 
   @override
   void initState() {
@@ -25,16 +27,31 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
   }
 
   Future<void> _loadVehicles({int page = 0}) async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final result = await _vehicleService.getAllVehicles(page: page, type: _searchType);
-      setState(() {
-        _vehicles = result['content'] ?? [];
-        _currentPage = result['number'] ?? 0;
-        _totalPages = result['totalPages'] ?? 1;
-      });
+      final result = await _vehicleService.getAllVehicles(
+        page: page, 
+        type: _searchType,
+        status: _statusFilter,
+      );
+      if (mounted) {
+        setState(() {
+          _vehicles = result['content'] ?? [];
+          _currentPage = result['number'] ?? 0;
+          _totalPages = result['totalPages'] ?? 1;
+        });
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi tải danh sách xe: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          )
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -46,32 +63,36 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
     final plateController = TextEditingController(text: isEdit ? vehicle['licensePlate'] : '');
     final locationController = TextEditingController(text: isEdit ? vehicle['currentLocation'] : '');
     final teamController = TextEditingController(text: isEdit ? vehicle['teamId'] : '');
+    String currentStatus = isEdit ? (vehicle['status'] ?? 'AVAILABLE') : 'AVAILABLE';
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(isEdit ? 'Sửa Phương Tiện' : 'Thêm Phương Tiện'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
               children: [
-                TextField(
-                  controller: typeController,
-                  decoration: const InputDecoration(labelText: 'Loại phương tiện (VD: Xuồng máy...)'),
-                ),
-                TextField(
-                  controller: plateController,
-                  decoration: const InputDecoration(labelText: 'Biển số / Định danh'),
-                ),
-                TextField(
-                  controller: locationController,
-                  decoration: InputDecoration(
-                    labelText: 'Vị trí hiện tại (Tọa độ GPS)',
-                    hintText: 'VD: 16.0544, 108.2022',
-                    suffixIcon: IconButton(
+                Icon(isEdit ? Icons.edit : Icons.add_circle_outline, color: const Color(0xFF2555D4)),
+                const SizedBox(width: 10),
+                Text(isEdit ? 'Sửa Phương Tiện' : 'Thêm Phương Tiện'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDialogField(typeController, 'Loại phương tiện', Icons.category, 'VD: Xuồng máy, Xe tải...'),
+                  const SizedBox(height: 16),
+                  _buildDialogField(plateController, 'Biển số / Định danh', Icons.credit_card, 'VD: 43A-12345'),
+                  const SizedBox(height: 16),
+                  _buildDialogField(
+                    locationController, 
+                    'Vị trí GPS', 
+                    Icons.location_on, 
+                    '16.0544, 108.2022',
+                    suffix: IconButton(
                       icon: const Icon(Icons.map, color: Colors.blue),
-                      tooltip: 'Chọn trên bản đồ',
                       onPressed: () async {
                         LatLng? initialLoc;
                         if (locationController.text.isNotEmpty) {
@@ -84,9 +105,7 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
                         }
                         final LatLng? picked = await Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => LocationPickerScreen(initialLocation: initialLoc),
-                          ),
+                          MaterialPageRoute(builder: (context) => LocationPickerScreen(initialLocation: initialLoc)),
                         );
                         if (picked != null) {
                           locationController.text = '${picked.latitude.toStringAsFixed(6)}, ${picked.longitude.toStringAsFixed(6)}';
@@ -94,55 +113,83 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
                       },
                     ),
                   ),
-                ),
-                TextField(
-                  controller: teamController,
-                  decoration: const InputDecoration(labelText: 'ID Đội cứu hộ (tùy chọn)'),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  _buildDialogField(teamController, 'ID Đội cứu hộ', Icons.group, 'Để trống nếu chưa gán'),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: currentStatus,
+                    decoration: InputDecoration(
+                      labelText: 'Trạng thái',
+                      prefixIcon: const Icon(Icons.info_outline),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'AVAILABLE', child: Text('Sẵn sàng')),
+                      DropdownMenuItem(value: 'IN_USE', child: Text('Đang sử dụng')),
+                      DropdownMenuItem(value: 'MAINTENANCE', child: Text('Bảo trì')),
+                    ],
+                    onChanged: (val) => setDialogState(() => currentStatus = val!),
+                  ),
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final data = {
-                  'vehicleType': typeController.text.trim(),
-                  'licensePlate': plateController.text.trim(),
-                  'currentLocation': locationController.text.trim(),
-                  'teamId': teamController.text.trim() == '' ? null : teamController.text.trim()
-                };
-                if (data['vehicleType'] == '' || data['licensePlate'] == '') {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập đủ thông tin bắt buộc')));
-                  return;
-                }
-                Navigator.pop(context);
-                setState(() => _isLoading = true);
-                try {
-                  if (isEdit) {
-                    await _vehicleService.updateVehicle(vehicle['id'], data);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật thành công')));
-                  } else {
-                    await _vehicleService.createVehicle(data);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thêm phương tiện thành công')));
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2555D4),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: () async {
+                  final adminId = AuthService.currentUser?.id ?? 'ADMIN';
+                  final data = {
+                    'vehicleType': typeController.text.trim(),
+                    'licensePlate': plateController.text.trim(),
+                    'currentLocation': locationController.text.trim(),
+                    'teamId': teamController.text.trim() == '' ? null : teamController.text.trim(),
+                    'status': currentStatus,
+                  };
+                  if (data['vehicleType'] == '' || data['licensePlate'] == '') {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập đủ thông tin')));
+                    return;
                   }
-                  _loadVehicles(page: _currentPage);
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-                  setState(() => _isLoading = false);
-                }
-              },
-              child: const Text('Lưu'),
-            ),
-          ],
+                  Navigator.pop(context);
+                  setState(() => _isLoading = true);
+                  try {
+                    if (isEdit) {
+                      await _vehicleService.updateVehicle(vehicle['id'], data, userId: adminId);
+                    } else {
+                      await _vehicleService.createVehicle(data, userId: adminId);
+                    }
+                    _loadVehicles(page: _currentPage);
+                  } catch (e) {
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                    setState(() => _isLoading = false);
+                  }
+                },
+                child: const Text('Lưu Thay Đổi', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildDialogField(TextEditingController controller, String label, IconData icon, String hint, {Widget? suffix}) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon, size: 20),
+        suffixIcon: suffix,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
     );
   }
 
@@ -150,27 +197,25 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: const Text('Bạn có chắc muốn xóa phương tiện này?'),
+        title: const Text('Xác nhận xóa?'),
+        content: const Text('Hành động này không thể hoàn tác. Phương tiện sẽ được xóa khỏi hệ thống.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
+              final adminId = AuthService.currentUser?.id ?? 'ADMIN';
               Navigator.pop(context);
               setState(() => _isLoading = true);
               try {
-                await _vehicleService.deleteVehicle(id);
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xóa thành công')));
+                await _vehicleService.deleteVehicle(id, userId: adminId);
                 _loadVehicles(page: _currentPage);
               } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
                 setState(() => _isLoading = false);
               }
             },
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            child: const Text('Xóa Ngay', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -180,216 +225,219 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Quản lý phương tiện'),
+        title: const Text('Quản lý phương tiện', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF2555D4),
         foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Tìm theo loại phương tiện...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    onChanged: (val) {
-                      _searchType = val;
-                      _loadVehicles();
-                    },
-                  ),
+          _buildTopBar(),
+          Expanded(
+            child: _isLoading && _vehicles.isEmpty 
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                  onRefresh: () => _loadVehicles(page: 0),
+                  child: _vehicles.isEmpty 
+                    ? const Center(child: Text('Không tìm thấy phương tiện nào'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: _vehicles.length,
+                        itemBuilder: (context, index) => _buildVehicleCard(_vehicles[index]),
+                      ),
                 ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddEditDialog(),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Thêm phương tiện'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2555D4),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                ),
-              ],
-            ),
           ),
-          if (_isLoading)
-            const LinearProgressIndicator()
-          else if (_vehicles.isEmpty)
-            const Expanded(child: Center(child: Text('Không có phương tiện nào')))
-          else
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.only(bottom: 20),
-                itemCount: _vehicles.length,
-                itemBuilder: (context, index) {
-                  final v = _vehicles[index];
-                  // Determine status color
-                  Color statusColor = Colors.grey;
-                  if (v['status'] == 'AVAILABLE') statusColor = Colors.green;
-                  if (v['status'] == 'IN_USE') statusColor = Colors.orange;
-                  if (v['status'] == 'MAINTENANCE') statusColor = Colors.redAccent;
+          if (_totalPages > 1) _buildPagination(),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddEditDialog(),
+        label: const Text('Thêm mới', style: TextStyle(fontWeight: FontWeight.bold)),
+        icon: const Icon(Icons.add),
+        backgroundColor: const Color(0xFF2555D4),
+      ),
+    );
+  }
 
-                  // Determine vehicle icon and color based on type
-                  IconData vehicleIcon = Icons.directions_car;
-                  Color iconColor = const Color(0xFF2555D4); // Mặc định xanh dương
-                  
-                  String typeMatch = (v['vehicleType'] ?? '').toString().toLowerCase();
-                  if (typeMatch.contains('xuồng') || typeMatch.contains('thuyền') || typeMatch.contains('boat')) {
-                    vehicleIcon = Icons.directions_boat;
-                    iconColor = Colors.blue; 
-                  } else if (typeMatch.contains('tải') || typeMatch.contains('truck')) {
-                    vehicleIcon = Icons.local_shipping;
-                    iconColor = Colors.orange; 
-                  } else if (typeMatch.contains('ambulance') || typeMatch.contains('thương') || typeMatch.contains('cứu')) {
-                    vehicleIcon = Icons.emergency_share;
-                    iconColor = Colors.red; 
-                  } else if (typeMatch.contains('trực thăng') || typeMatch.contains('heli')) {
-                    vehicleIcon = Icons.flight;
-                    iconColor = Colors.deepPurple;
-                  } else if (typeMatch.contains('máy cày') || typeMatch.contains('tractor')) {
-                    vehicleIcon = Icons.agriculture;
-                    iconColor = Colors.brown;
-                  } else if (typeMatch.contains('mô tô') || typeMatch.contains('moto') || typeMatch.contains('xe máy')) {
-                    vehicleIcon = Icons.two_wheeler;
-                    iconColor = Colors.teal;
-                  }
+  Widget _buildTopBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF2555D4),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Tìm theo loại phương tiện...',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              prefixIcon: const Icon(Icons.search, color: Colors.white),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.15),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            onChanged: (val) {
+              _searchType = val;
+              _loadVehicles();
+            },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildFilterChip('Tất cả', null),
+              const SizedBox(width: 8),
+              _buildFilterChip('Sẵn sàng', 'AVAILABLE'),
+              const SizedBox(width: 8),
+              _buildFilterChip('Đang dùng', 'IN_USE'),
+              const SizedBox(width: 8),
+              _buildFilterChip('Bảo trì', 'MAINTENANCE'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-                  return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: iconColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(vehicleIcon, color: iconColor, size: 32),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildFilterChip(String label, String? value) {
+    bool isSelected = _statusFilter == value;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 12)),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() => _statusFilter = selected ? value : null);
+        _loadVehicles();
+      },
+      selectedColor: Colors.white.withOpacity(0.3),
+      backgroundColor: Colors.transparent,
+      side: BorderSide(color: isSelected ? Colors.white : Colors.white24),
+      checkmarkColor: Colors.white,
+    );
+  }
+
+  Widget _buildVehicleCard(Map<String, dynamic> v) {
+    Color statusColor = Colors.grey;
+    String statusText = 'N/A';
+    if (v['status'] == 'AVAILABLE') { statusColor = Colors.green; statusText = 'Sẵn sàng'; }
+    if (v['status'] == 'IN_USE') { statusColor = Colors.orange; statusText = 'Đang sử dụng'; }
+    if (v['status'] == 'MAINTENANCE') { statusColor = Colors.red; statusText = 'Bảo trì'; }
+
+    IconData vehicleIcon = Icons.directions_car;
+    Color iconColor = const Color(0xFF2555D4);
+    String typeMatch = (v['vehicleType'] ?? '').toString().toLowerCase();
+    if (typeMatch.contains('xuồng') || typeMatch.contains('thuyền')) { vehicleIcon = Icons.directions_boat; iconColor = Colors.blue; }
+    else if (typeMatch.contains('tải')) { vehicleIcon = Icons.local_shipping; iconColor = Colors.orange; }
+    else if (typeMatch.contains('thương') || typeMatch.contains('cứu')) { vehicleIcon = Icons.emergency; iconColor = Colors.red; }
+    else if (typeMatch.contains('trực thăng')) { vehicleIcon = Icons.flight; iconColor = Colors.deepPurple; }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                color: statusColor,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 54, height: 54,
+                        decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(15)),
+                        child: Icon(vehicleIcon, color: iconColor, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(v['licensePlate'] ?? 'Chưa rõ BS', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B))),
+                            Text(v['vehicleType'] ?? 'Loại xe', style: TextStyle(color: Colors.blueGrey.shade600, fontSize: 14)),
+                            const SizedBox(height: 8),
+                            Row(
                               children: [
-                                Text('${v['vehicleType']} - ${v['licensePlate']}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: statusColor.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: statusColor.withValues(alpha: 0.5)),
-                                      ),
-                                      child: Text(
-                                        v['status'] ?? 'N/A',
-                                        style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.security, 
-                                            size: 14, 
-                                            color: (v['teamId'] == null || v['teamId'].toString().isEmpty) ? Colors.grey.shade400 : Colors.grey.shade600,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              (v['teamId'] == null || v['teamId'].toString().isEmpty) ? 'Chưa gán đội' : 'Đội: ${v['teamId']}',
-                                              style: TextStyle(
-                                                color: (v['teamId'] == null || v['teamId'].toString().isEmpty) ? Colors.grey.shade400 : Colors.grey.shade600, 
-                                                fontSize: 13,
-                                                fontStyle: (v['teamId'] == null || v['teamId'].toString().isEmpty) ? FontStyle.italic : FontStyle.normal,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(
-                                      Icons.location_on, 
-                                      size: 14, 
-                                      color: (v['currentLocation'] == null || v['currentLocation'].toString().trim().isEmpty) ? Colors.grey.shade400 : Colors.redAccent
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        (v['currentLocation'] != null && v['currentLocation'].toString().trim().isNotEmpty) ? v['currentLocation'] : 'Chưa rõ vị trí',
-                                        style: TextStyle(
-                                          fontSize: 13, 
-                                          color: (v['currentLocation'] == null || v['currentLocation'].toString().trim().isEmpty) ? Colors.grey.shade500 : Colors.blueGrey.shade800,
-                                          fontStyle: (v['currentLocation'] == null || v['currentLocation'].toString().trim().isEmpty) ? FontStyle.italic : FontStyle.normal,
-                                          fontWeight: (v['currentLocation'] == null || v['currentLocation'].toString().trim().isEmpty) ? FontWeight.normal : FontWeight.w500,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                _buildBadge(statusText, statusColor),
+                                const SizedBox(width: 8),
+                                _buildBadge(v['teamId'] != null ? 'Đội: ${v['teamId']}' : 'Chưa gán đội', Colors.blueGrey.shade400, isOutline: true),
                               ],
                             ),
-                          ),
-                          Column(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit_square, color: Color(0xFF2555D4)),
-                                onPressed: () => _showAddEditDialog(v),
-                                tooltip: 'Sửa',
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                onPressed: () => _confirmDelete(v['id']),
-                                tooltip: 'Xóa',
-                              ),
-                            ],
-                          ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, size: 14, color: Colors.redAccent),
+                                const SizedBox(width: 4),
+                                Expanded(child: Text(v['currentLocation'] ?? 'Chưa rõ vị trí', style: const TextStyle(fontSize: 12, color: Colors.blueGrey), overflow: TextOverflow.ellipsis)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.blue), onPressed: () => _showAddEditDialog(v)),
+                          IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _confirmDelete(v['id'])),
                         ],
                       ),
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                ),
               ),
-            ),
-          if (_totalPages > 1)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: _currentPage > 0 ? () => _loadVehicles(page: _currentPage - 1) : null,
-                ),
-                Text('Trang ${_currentPage + 1} / $_totalPages'),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: _currentPage < _totalPages - 1 ? () => _loadVehicles(page: _currentPage + 1) : null,
-                ),
-              ],
-            ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color color, {bool isOutline = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isOutline ? Colors.transparent : color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildPagination() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.black12))),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios, size: 16),
+            onPressed: _currentPage > 0 ? () => _loadVehicles(page: _currentPage - 1) : null,
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(color: const Color(0xFF2555D4).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            child: Text('Trang ${_currentPage + 1} / $_totalPages', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2555D4))),
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios, size: 16),
+            onPressed: _currentPage < _totalPages - 1 ? () => _loadVehicles(page: _currentPage + 1) : null,
+          ),
         ],
       ),
     );

@@ -196,7 +196,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
           if (task.assignedItems.isEmpty)
              Container(
                padding: const EdgeInsets.all(12),
-               decoration: BoxDecoration(color: StaffTheme.successGreen.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: StaffTheme.successGreen.withValues(alpha: 0.2))),
+               decoration: BoxDecoration(color: StaffTheme.successGreen.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: StaffTheme.successGreen.withOpacity(0.2))),
                child: const Row(
                  children: [
                    Icon(Icons.info_outline, color: StaffTheme.successGreen, size: 18),
@@ -243,9 +243,9 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: StaffTheme.successGreen.withValues(alpha: 0.1),
+              color: StaffTheme.successGreen.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: StaffTheme.successGreen.withValues(alpha: 0.3)),
+              border: Border.all(color: StaffTheme.successGreen.withOpacity(0.3)),
             ),
             child: const Row(
               children: [
@@ -704,10 +704,10 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: StaffTheme.warningOrange.withValues(alpha: 0.08),
+                    color: StaffTheme.warningOrange.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.assignment_late_rounded, color: StaffTheme.warningOrange.withValues(alpha: 0.7), size: 32),
+                  child: Icon(Icons.assignment_late_rounded, color: StaffTheme.warningOrange.withOpacity(0.7), size: 32),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -729,7 +729,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(task.status).withValues(alpha: 0.12),
+                          color: _getStatusColor(task.status).withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -790,7 +790,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
   Widget _buildIconText(IconData icon, String text, Color color) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: color.withValues(alpha: 0.7)),
+        Icon(icon, size: 14, color: color.withOpacity(0.7)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(

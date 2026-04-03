@@ -135,7 +135,7 @@ class _VehicleLocationScreenState extends State<VehicleLocationScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
               ),

@@ -190,7 +190,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 28,
-                                backgroundColor: const Color(0xFF2555D4).withValues(alpha: 0.1),
+                                backgroundColor: const Color(0xFF2555D4).withOpacity(0.1),
                                 child: Text(
                                   (user['fullName'] ?? 'U').substring(0, 1).toUpperCase(),
                                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2555D4)),
@@ -216,9 +216,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: isActive ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+                                            color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: isActive ? Colors.green.withValues(alpha: 0.5) : Colors.red.withValues(alpha: 0.5)),
+                                            border: Border.all(color: isActive ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5)),
                                           ),
                                           child: Text(
                                             isActive ? 'Hoạt động' : 'Đã khóa',
