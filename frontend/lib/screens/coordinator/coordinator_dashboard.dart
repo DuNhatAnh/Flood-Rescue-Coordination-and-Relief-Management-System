@@ -11,7 +11,8 @@ import 'package:flood_rescue_app/screens/home_screen.dart';
 import 'package:flood_rescue_app/screens/coordinator/notification_screen.dart'; 
 import 'package:flood_rescue_app/screens/coordinator/tracking_screen.dart';
 class CoordinatorDashboard extends StatefulWidget {
-  const CoordinatorDashboard({Key? key}) : super(key: key);
+  final int initialIndex;
+  const CoordinatorDashboard({Key? key, this.initialIndex = 0}) : super(key: key);
 
   @override
   State<CoordinatorDashboard> createState() => _CoordinatorDashboardState();
@@ -83,7 +84,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
         ),
         backgroundColor: const Color(0xFF0288D1),
         foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true, // Cho phép nút quay lại từ Dashboard Admin
         actions: [
           IconButton(
     onPressed: () {
@@ -252,6 +253,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
 
     return DefaultTabController(
       length: 2,
+      initialIndex: widget.initialIndex,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,

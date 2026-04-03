@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
 import '../home_screen.dart';
+import '../coordinator/coordinator_dashboard.dart';
+
 
 class SystemDashboardScreen extends StatefulWidget {
   const SystemDashboardScreen({Key? key}) : super(key: key);
@@ -102,10 +104,46 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
                       children: [
-                        _buildStatCard('Người dùng', '${_stats!['totalUsers']}', Icons.people, Colors.blue),
-                        _buildStatCard('Đội cứu hộ', '${_stats!['totalTeams']}', Icons.security, Colors.deepPurple),
-                        _buildStatCard('Tổng yêu cầu', '${_stats!['totalRequests']}', Icons.list_alt, Colors.orange),
-                        _buildStatCard('Đang xử lý', '${_stats!['pendingRequests']}', Icons.pending_actions, Colors.redAccent),
+                        _buildStatCard(
+                          'Người dùng',
+                          '${_stats!['totalUsers']}',
+                          Icons.people,
+                          Colors.blue,
+                          onTap: () => Navigator.pushNamed(context, '/admin/users'),
+                        ),
+                        _buildStatCard(
+                          'Đội cứu hộ',
+                          '${_stats!['totalTeams']}',
+                          Icons.security,
+                          Colors.deepPurple,
+                          onTap: () => Navigator.pushNamed(context, '/admin/vehicles'),
+                        ),
+                        _buildStatCard(
+                          'Tổng yêu cầu',
+                          '${_stats!['totalRequests']}',
+                          Icons.list_alt,
+                          Colors.orange,
+                          onTap: () {
+                            // Navigate to Coordinator Dashboard
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const CoordinatorDashboard(initialIndex: 1)),
+                            );
+                          },
+                        ),
+                        _buildStatCard(
+                          'Đang xử lý',
+                          '${_stats!['pendingRequests']}',
+                          Icons.pending_actions,
+                          Colors.redAccent,
+                          onTap: () {
+                            // Navigate to Verified/Assigned tab
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const CoordinatorDashboard(initialIndex: 1)),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   const SizedBox(height: 36),
@@ -170,47 +208,55 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.white, color.withValues(alpha: 0.05)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+  Widget _buildStatCard(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 4))],
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, color.withValues(alpha: 0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 4))],
+            border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15), 
-                  borderRadius: BorderRadius.circular(12)
-                ),
-                child: Icon(icon, color: color, size: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15), 
+                      borderRadius: BorderRadius.circular(12)
+                    ),
+                    child: Icon(icon, color: color, size: 32),
+                  ),
+                  Expanded(
+                    child: Text(
+                      value, 
+                      textAlign: TextAlign.right,
+                      style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: color, letterSpacing: -1),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: Text(
-                  value, 
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: color, letterSpacing: -1),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              const SizedBox(height: 16),
+              Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-        ],
+        ),
       ),
     );
   }

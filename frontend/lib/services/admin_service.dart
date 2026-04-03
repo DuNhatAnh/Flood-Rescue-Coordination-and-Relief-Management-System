@@ -58,18 +58,18 @@ class AdminService {
   }
 
   Future<List<dynamic>> fetchAllNotifications() async {
-    final url = Uri.parse('$baseUrl/notifications');
+    final url = Uri.parse('$baseUrl/v1/notifications');
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
       return body['data'];
     }
     throw Exception('Failed to load notifications');
   }
 
   Future<void> sendNotification(Map<String, dynamic> notificationData) async {
-    final url = Uri.parse('$baseUrl/notifications');
+    final url = Uri.parse('$baseUrl/v1/notifications');
     final headers = await _getAuthHeaders();
     final response = await http.post(
       url,
