@@ -18,10 +18,10 @@ class StaffManagedWarehouseScreen extends StatefulWidget {
   const StaffManagedWarehouseScreen({Key? key}) : super(key: key);
 
   @override
-  State<StaffManagedWarehouseScreen> createState() => _StaffManagedWarehouseScreenState();
+  State<StaffManagedWarehouseScreen> createState() => StaffManagedWarehouseScreenState();
 }
 
-class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScreen> with SingleTickerProviderStateMixin {
+class StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScreen> with SingleTickerProviderStateMixin {
   final WarehouseService _warehouseService = WarehouseService();
   final InventoryService _inventoryService = InventoryService();
   final VehicleService _vehicleService = VehicleService();
@@ -48,7 +48,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadData();
+    refreshData();
     
     // Kiểm tra xem có được mở từ màn hình Nhiệm vụ không
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -70,7 +70,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  Future<void> refreshData() async {
     setState(() => _isLoading = true);
     try {
       final String? userId = AuthService.currentUser?.id;
@@ -147,7 +147,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
       }, userId: AuthService.currentUser?.id ?? 'STAFF');
       
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thêm phương tiện thành công!'), backgroundColor: StaffTheme.successGreen));
-      _loadData();
+      refreshData();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed));
     } finally {
@@ -268,7 +268,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã xóa phương tiện thành công!'), backgroundColor: StaffTheme.successGreen)
       );
-      _loadData(); // Tải lại danh sách mới
+      refreshData(); // Tải lại danh sách mới
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi khi xóa: $e'), backgroundColor: StaffTheme.errorRed)
@@ -300,7 +300,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cập nhật thông tin thành công!'), backgroundColor: StaffTheme.successGreen)
       );
-      _loadData(); 
+      refreshData(); 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi cập nhật: $e'), backgroundColor: StaffTheme.errorRed)
@@ -375,7 +375,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () => _handleUpdateVehicle(ctx, vehicle.id!),
+                          onPressed: () => _handleUpdateVehicle(ctx, vehicle.id),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: StaffTheme.primaryBlue,
                             padding: const EdgeInsets.symmetric(vertical: 15),
@@ -752,7 +752,7 @@ Widget build(BuildContext context) {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.delete_outline_rounded, color: StaffTheme.errorRed, size: 22),
-                  onPressed: () => _handleDeleteVehicle(vehicle.id!),
+                  onPressed: () => _handleDeleteVehicle(vehicle.id),
                   tooltip: 'Xóa xe',
                 ),
               ],
@@ -977,7 +977,7 @@ Widget build(BuildContext context) {
                 );
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nhập kho thành công!'), backgroundColor: StaffTheme.successGreen));
-                _loadData(); 
+                refreshData(); 
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: StaffTheme.errorRed));
@@ -1109,7 +1109,7 @@ Widget build(BuildContext context) {
                     // Nếu đang trong luồng Nhiệm vụ, tự động quay về màn hình Nhiệm vụ
                     Navigator.pop(context); 
                   } else {
-                    _loadData(); // Nếu ở kho bình thường thì tải lại data
+                    refreshData(); // Nếu ở kho bình thường thì tải lại data
                   }
                 }
               )),

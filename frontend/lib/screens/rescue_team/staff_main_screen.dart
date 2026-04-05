@@ -11,11 +11,15 @@ class StaffMainScreen extends StatefulWidget {
   const StaffMainScreen({Key? key}) : super(key: key);
 
   @override
-  State<StaffMainScreen> createState() => _StaffMainScreenState();
+  State<StaffMainScreen> createState() => StaffMainScreenState();
 }
 
-class _StaffMainScreenState extends State<StaffMainScreen> {
+class StaffMainScreenState extends State<StaffMainScreen> {
   int _selectedIndex = 0; // Mặc định vào tab Nhiệm vụ
+  
+  final GlobalKey<TeamTasksScreenState> _tasksKey = GlobalKey();
+  final GlobalKey<StaffManagedWarehouseScreenState> _warehouseKey = GlobalKey();
+  final GlobalKey<StaffReportScreenState> _reportKey = GlobalKey();
 
   late List<Widget> _screens;
 
@@ -23,9 +27,9 @@ class _StaffMainScreenState extends State<StaffMainScreen> {
   void initState() {
     super.initState();
     _screens = [
-      const TeamTasksScreen(),
-      const StaffManagedWarehouseScreen(),
-      const StaffReportScreen(),
+      TeamTasksScreen(key: _tasksKey),
+      StaffManagedWarehouseScreen(key: _warehouseKey),
+      StaffReportScreen(key: _reportKey),
     ];
   }
 
@@ -77,6 +81,19 @@ class _StaffMainScreenState extends State<StaffMainScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            onPressed: () {
+              if (_selectedIndex == 0) {
+                _tasksKey.currentState?.refreshTasks();
+              } else if (_selectedIndex == 1) {
+                _warehouseKey.currentState?.refreshData();
+              } else if (_selectedIndex == 2) {
+                _reportKey.currentState?.refreshData();
+              }
+            },
+            tooltip: 'Tải lại dữ liệu',
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16, left: 8),
             child: PopupMenuButton<String>(

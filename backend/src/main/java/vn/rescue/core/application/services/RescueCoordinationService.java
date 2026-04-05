@@ -202,6 +202,12 @@ public class RescueCoordinationService {
             if (body.containsKey("imageUrls")) {
                 assignment.setImageUrls((java.util.List<String>) body.get("imageUrls"));
             }
+            if (body.containsKey("rescuedCount")) {
+                assignment.setRescuedCount((Integer) body.get("rescuedCount"));
+            }
+            if (body.containsKey("note") && !"COMPLETED".equalsIgnoreCase(status)) {
+                assignment.setReportNote((String) body.get("note"));
+            }
             if (body.containsKey("actualItems")) {
                 List<Map<String, Object>> itemsRawActual = (List<Map<String, Object>>) body.get("actualItems");
                 List<MissionItem> actualItems = itemsRawActual.stream().map(m -> {

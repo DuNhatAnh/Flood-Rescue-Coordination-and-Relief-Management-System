@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
 import '../home_screen.dart';
-import '../coordinator/coordinator_dashboard.dart';
 
 
 class SystemDashboardScreen extends StatefulWidget {
@@ -124,11 +123,8 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                           Icons.list_alt,
                           Colors.orange,
                           onTap: () {
-                            // Navigate to Coordinator Dashboard
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const CoordinatorDashboard(initialIndex: 1)),
-                            );
+                            // Navigate to Coordinator Dashboard via named route
+                            Navigator.pushNamed(context, '/coordinator/dashboard', arguments: 1);
                           },
                         ),
                         _buildStatCard(
@@ -137,11 +133,8 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                           Icons.pending_actions,
                           Colors.redAccent,
                           onTap: () {
-                            // Navigate to Verified/Assigned tab
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const CoordinatorDashboard(initialIndex: 1)),
-                            );
+                            // Navigate to Verified/Assigned tab via named route
+                            Navigator.pushNamed(context, '/coordinator/dashboard', arguments: 1);
                           },
                         ),
                       ],

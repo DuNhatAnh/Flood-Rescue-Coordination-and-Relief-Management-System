@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
-import '../coordinator/coordinator_dashboard.dart';
-import '../rescue_team/staff_main_screen.dart';
-import '../admin/system_dashboard_screen.dart';
 import '../home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -29,27 +26,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToDashboard(UserModel user) {
-    Widget nextScreen;
+    String routeName;
     switch (user.role) {
       case UserRole.admin:
-        nextScreen = const SystemDashboardScreen();
+        routeName = '/admin/dashboard';
         break;
       case UserRole.coordinator:
-        nextScreen = const CoordinatorDashboard();
+        routeName = '/coordinator/dashboard';
         break;
       case UserRole.rescueStaff:
-        nextScreen = const StaffMainScreen();
+        routeName = '/staff/dashboard';
         break;
       case UserRole.user:
       default:
-        nextScreen = const HomeScreen();
-        break;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+        return;
     }
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => nextScreen),
-    );
+    Navigator.pushReplacementNamed(context, routeName);
   }
 
   final AuthService _authService = AuthService();

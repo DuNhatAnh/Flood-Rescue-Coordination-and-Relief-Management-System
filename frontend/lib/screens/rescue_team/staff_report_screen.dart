@@ -11,10 +11,10 @@ class StaffReportScreen extends StatefulWidget {
   const StaffReportScreen({Key? key}) : super(key: key);
 
   @override
-  State<StaffReportScreen> createState() => _StaffReportScreenState();
+  State<StaffReportScreen> createState() => StaffReportScreenState();
 }
 
-class _StaffReportScreenState extends State<StaffReportScreen> {
+class StaffReportScreenState extends State<StaffReportScreen> {
   final DistributionService _distService = DistributionService();
   final ReportService _reportService = ReportService();
 
@@ -25,10 +25,10 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    refreshData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> refreshData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
@@ -61,11 +61,11 @@ class _StaffReportScreenState extends State<StaffReportScreen> {
         flexibleSpace: Container(decoration: BoxDecoration(gradient: StaffTheme.primaryGradient)),
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _loadData)
+          IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: refreshData)
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadData,
+        onRefresh: refreshData,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(

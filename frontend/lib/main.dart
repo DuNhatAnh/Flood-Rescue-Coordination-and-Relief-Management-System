@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flood_rescue_app/screens/coordinator/coordinator_dashboard.dart';
+import 'package:flood_rescue_app/screens/rescue_team/staff_main_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:flood_rescue_app/services/auth_service.dart';
 import 'screens/admin/user_management_screen.dart';
@@ -41,6 +43,8 @@ class FloodRescueApp extends StatelessWidget {
         '/admin/roles': (context) => const RoleManagementScreen(),
         '/admin/notifications': (context) => const NotificationManagementScreen(),
         '/admin/dashboard': (context) => const SystemDashboardScreen(),
+        '/coordinator/dashboard': (context) => const CoordinatorDashboard(),
+        '/staff/dashboard': (context) => const StaffMainScreen(),
         '/admin/vehicles': (context) => const VehicleManagementScreen(),
         '/admin/vehicle_locations': (context) => const VehicleLocationScreen(),
         '/admin/warehouses': (context) => const WarehouseManagementScreen(),

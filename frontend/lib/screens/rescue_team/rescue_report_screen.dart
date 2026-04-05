@@ -157,13 +157,13 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
         note: _noteController.text.trim(),
         imageUrls: uploadedUrls,
         actualItems: _actualItems,
-        complete: true, // Kết thúc luôn
+        complete: false, // Chuyển sang REPORTED để chờ điều phối viên xác nhận
       );
 
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Nhiệm vụ đã hoàn thành xuất sắc!'), backgroundColor: StaffTheme.successGreen),
+            const SnackBar(content: Text('Báo cáo đã được gửi! Đang chờ điều phối viên xác nhận.'), backgroundColor: StaffTheme.successGreen),
           );
           Navigator.pop(context, true);
         }

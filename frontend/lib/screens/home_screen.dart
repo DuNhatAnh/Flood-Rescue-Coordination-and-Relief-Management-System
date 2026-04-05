@@ -9,9 +9,6 @@ import 'package:flood_rescue_app/screens/auth/login_screen.dart';
 import 'package:flood_rescue_app/screens/citizen/safety_report_screen.dart';
 import 'package:flood_rescue_app/services/auth_service.dart';
 import 'package:flood_rescue_app/models/user_model.dart';
-import 'package:flood_rescue_app/screens/coordinator/coordinator_dashboard.dart';
-import 'package:flood_rescue_app/screens/rescue_team/staff_main_screen.dart';
-import 'package:flood_rescue_app/screens/admin/system_dashboard_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -184,20 +181,11 @@ class _TopBarState extends State<TopBar> {
 
                         // Explicitly handle each role for maximum reliability
                         if (role == UserRole.coordinator) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const CoordinatorDashboard()),
-                          );
+                          Navigator.pushNamed(context, '/coordinator/dashboard');
                         } else if (role == UserRole.admin) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const SystemDashboardScreen()),
-                          );
+                          Navigator.pushNamed(context, '/admin/dashboard');
                         } else if (role == UserRole.rescueStaff) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const StaffMainScreen()),
-                          );
+                          Navigator.pushNamed(context, '/staff/dashboard');
                         } else {
                           // For regular users, maybe take them to their request history?
                           Navigator.push(

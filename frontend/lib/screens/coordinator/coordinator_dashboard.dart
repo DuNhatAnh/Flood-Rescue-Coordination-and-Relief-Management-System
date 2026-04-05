@@ -70,10 +70,54 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
     }
   }
 
+  Widget _buildAppBarAction(IconData icon, String label, VoidCallback onPressed, {bool hasBadge = false}) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(icon, size: 24, color: Colors.white),
+                if (hasBadge)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 75,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -86,39 +130,32 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
         foregroundColor: Colors.white,
         automaticallyImplyLeading: true, // Cho phép nút quay lại từ Dashboard Admin
         actions: [
-          IconButton(
-    onPressed: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const NotificationScreen()),
-      );
-    },
-    icon: const Icon(Icons.notifications),
-    tooltip: 'Thông báo',
-  ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-                (route) => false,
-              );
-            },
-            icon: const Icon(Icons.home),
-            tooltip: 'Về trang chủ',
-          ),
-          IconButton(
-            onPressed: () {
+          _buildAppBarAction(
+            Icons.notifications, 
+            'Thông báo', 
+            () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const TrackingScreen()),
+                MaterialPageRoute(builder: (context) => const NotificationScreen()),
               );
             },
-            icon: const Icon(Icons.history),
-            tooltip: 'Theo dõi & Lịch sử',
+            hasBadge: _requests.any((r) => !r.isVerified),
           ),
-          IconButton(onPressed: _refreshData, icon: const Icon(Icons.refresh)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.filter_list)),
+          _buildAppBarAction(Icons.home, 'Trang chủ', () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+              (route) => false,
+            );
+          }),
+          _buildAppBarAction(Icons.history, 'Theo dõi', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TrackingScreen()),
+            );
+          }),
+          _buildAppBarAction(Icons.refresh, 'Tải lại', _refreshData),
+          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading 
@@ -253,7 +290,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
 
     return DefaultTabController(
       length: 2,
-      initialIndex: widget.initialIndex,
+      initialIndex: (ModalRoute.of(context)?.settings.arguments as int?) ?? widget.initialIndex,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -425,17 +462,6 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                           tooltip: 'Xác minh',
                           visualDensity: VisualDensity.compact,
                         ),
-                      IconButton(
-                        onPressed: () {
-                          // Logic to forward to external agencies
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Đã chuyển tiếp thông tin sang Quân đội & Hội Chữ thập đỏ')),
-                          );
-                        },
-                        icon: const Icon(Icons.share, color: Colors.orange, size: 20),
-                        tooltip: 'Chuyển tiếp',
-                        visualDensity: VisualDensity.compact,
-                      ),
                       const SizedBox(width: 4),
                       OutlinedButton(
                         onPressed: () => _showRequestDetails(request),
