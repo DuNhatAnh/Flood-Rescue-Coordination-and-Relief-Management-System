@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import '../services/rescue_service.dart';
 
 class RescueRequestScreen extends StatefulWidget {
   const RescueRequestScreen({super.key});
@@ -33,6 +34,7 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
   final List<XFile> _images = [];
   bool _isLoading = false;
   final MapController _mapController = MapController();
+  final RescueService _rescueService = RescueService();
 
   @override
   void initState() {
@@ -179,46 +181,29 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse('http://localhost:8080/api/v1/rescue-requests'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'citizenName': _nameController.text,
-          'citizenPhone': _phoneController.text,
-          'locationLat': _currentLocation!.latitude,
-          'locationLng': _currentLocation!.longitude,
-          'addressText': _addressController.text,
-          'description': _descriptionController.text,
-          'urgencyLevel': _urgencyLevel,
-          'numberOfPeople': int.tryParse(_peopleController.text) ?? 1,
-        }),
-      );
+      final responseData = await _rescueService.createRescueRequest({
+        'citizenName': _nameController.text,
+        'citizenPhone': _phoneController.text,
+        'locationLat': _currentLocation!.latitude,
+        'locationLng': _currentLocation!.longitude,
+        'addressText': _addressController.text,
+        'description': _descriptionController.text,
+        'urgencyLevel': _urgencyLevel,
+        'numberOfPeople': int.tryParse(_peopleController.text) ?? 1,
+      });
 
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
+      if (responseData != null && responseData['success'] == true) {
         final requestId = responseData['data']['requestId'];
 
+        // Tải ảnh sử dụng RescueService mới để gán đúng RequestId
         for (var image in _images) {
-          var uploadRequest = http.MultipartRequest(
-            'POST',
-            Uri.parse('http://localhost:8080/api/v1/attachments/upload'),
-          );
-          uploadRequest.fields['requestId'] = requestId.toString();
-
-          final bytes = await image.readAsBytes();
-          uploadRequest.files.add(http.MultipartFile.fromBytes(
-            'file',
-            bytes,
-            filename: image.name,
-          ));
-
-          await uploadRequest.send();
+          await _rescueService.uploadFile(image, requestId: requestId.toString());
         }
 
         if (!mounted) return;
         _showSuccessDialog(requestId.toString());
       } else {
-        throw Exception('Gửi yêu cầu thất bại');
+        throw Exception(responseData?['message'] ?? 'Gửi yêu cầu thất bại');
       }
     } catch (e) {
       if (!mounted) return;

@@ -8,11 +8,12 @@ import 'package:flood_rescue_app/models/vehicle.dart';
 import 'package:flood_rescue_app/models/assignment.dart';
 import 'package:flood_rescue_app/models/safety_report.dart';
 import 'auth_service.dart';
+import '../utils/constants.dart';
 
 class RescueService {
-  final String baseUrl = 'http://localhost:8080/api/v1';
+  final String baseUrl = Constants.apiBaseUrl;
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://localhost:8080/api/v1',
+    baseUrl: Constants.apiBaseUrl,
     connectTimeout: const Duration(seconds: 5),
     receiveTimeout: const Duration(seconds: 3),
   ));
@@ -33,6 +34,34 @@ class RescueService {
     } catch (e) {
       print('Error fetching pending requests: $e');
       return [];
+    }
+  }
+
+  // TẠO YÊU CẦU CỨU NẠN (SCRUM-12)
+  Future<Map<String, dynamic>?> createRescueRequest(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/rescue-requests', data: data);
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      return null;
+    } catch (e) {
+      print('Error creating rescue request: $e');
+      return null;
+    }
+  }
+
+  // THEO DÕI YÊU CẦU CỨU NẠN (SCRUM-18)
+  Future<Map<String, dynamic>?> trackRescueRequest(String requestId) async {
+    try {
+      final response = await _dio.get('/rescue-requests/track/$requestId');
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      return null;
+    } catch (e) {
+      print('Error tracking rescue request: $e');
+      return null;
     }
   }
 
@@ -176,18 +205,26 @@ class RescueService {
     }
   }
 
-  // Tải lên hình ảnh (Mới cho Phần 3)
-  Future<String?> uploadFile(dynamic file) async {
+  // Tải lên hình ảnh (Cải tiến: Hỗ trợ gắn liên kết với RequestId)
+  Future<String?> uploadFile(dynamic file, {String? requestId}) async {
     try {
       final String fileName = file.name;
-      final FormData formData = FormData.fromMap({
-        "file": await MultipartFile.fromBytes(
+      final Map<String, dynamic> dataMap = {
+        "file": MultipartFile.fromBytes(
           await file.readAsBytes(),
           filename: fileName,
         ),
-      });
+      };
 
-      final response = await _dio.post('/files/upload', data: formData);
+      String endpoint = '/files/upload';
+      if (requestId != null) {
+        dataMap["requestId"] = requestId;
+        endpoint = '/attachments/upload';
+      }
+
+      final FormData formData = FormData.fromMap(dataMap);
+      final response = await _dio.post(endpoint, data: formData);
+      
       if (response.statusCode == 200) {
         final responseData = response.data;
         if (responseData['success'] == true) {

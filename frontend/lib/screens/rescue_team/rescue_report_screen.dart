@@ -50,14 +50,19 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
   Future<void> _loadAssignment() async {
     setState(() => _isLoading = true);
     try {
-      final tasks = await _rescueService.getMyTasks();
-      final task = tasks.firstWhere((t) => t.id == widget.assignmentId);
+      final List<Assignment> tasks = await _rescueService.getMyTasks();
       
+      // Tìm nhiệm vụ khớp với assignmentId truyền vào
+      final task = tasks.firstWhere(
+        (t) => t.id == widget.assignmentId,
+        orElse: () => throw Exception("Không tìm thấy nhiệm vụ ID: ${widget.assignmentId}"),
+      );
+
       // HỢP NHẤT: Lấy cả vật phẩm nhiệm vụ VÀ vật phẩm do điều phối viên gán thêm
       final allReqItems = {
         ...{for (var i in task.assignedItems) i.itemId: i},
         ...{for (var i in task.missionItems) i.itemId: i}
-      }.values.toList();
+      }.values.where((i) => i.itemId.isNotEmpty).toList();
       
       // Reset controllers
       for (var c in _controllers) {
@@ -145,7 +150,10 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
       List<String> uploadedUrls = [];
       for (int i = 0; i < _selectedImages.length; i++) {
         setState(() => _uploadStatus = "Đang tải ảnh ${i + 1}/${_selectedImages.length}...");
-        final url = await _rescueService.uploadFile(_selectedImages[i]);
+        final url = await _rescueService.uploadFile(
+          _selectedImages[i], 
+          requestId: _assignment?.requestId
+        );
         if (url != null) uploadedUrls.add(url);
       }
 
@@ -267,7 +275,7 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
     return IconButton(
       onPressed: onTap,
       icon: Icon(icon, color: StaffTheme.primaryBlue, size: 32),
-      style: IconButton.styleFrom(backgroundColor: StaffTheme.primaryBlue.withOpacity(0.1)),
+      style: IconButton.styleFrom(backgroundColor: StaffTheme.primaryBlue.withValues(alpha: 0.1)),
     );
   }
 
@@ -430,6 +438,12 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
     return TextFormField(
       controller: _noteController,
       maxLines: 4,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Vui lòng nhập ghi chú chi tiết kết quả';
+        }
+        return null;
+      },
       decoration: InputDecoration(
         hintText: 'Nhập diễn biến chi tiết, khó khăn hoặc kiến nghị...',
         fillColor: Colors.white,

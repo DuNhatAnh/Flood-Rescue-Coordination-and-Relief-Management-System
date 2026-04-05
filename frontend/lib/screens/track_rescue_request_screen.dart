@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../services/rescue_service.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
@@ -19,6 +18,7 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
   bool _isLoading = false;
   Map<String, dynamic>? _requestData;
   String? _errorMessage;
+  final RescueService _rescueService = RescueService();
 
   Future<void> _trackRequest() async {
     final requestId = _requestIdController.text.trim();
@@ -34,21 +34,14 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('http://localhost:8080/api/v1/rescue-requests/track/$requestId'),
-      );
+      final responseData = await _rescueService.trackRescueRequest(requestId);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true) {
-          setState(() {
-            _requestData = data['data'];
-          });
-        } else {
-          setState(() => _errorMessage = data['message'] ?? "Không tìm thấy yêu cầu");
-        }
+      if (responseData != null && responseData['success'] == true) {
+        setState(() {
+          _requestData = responseData['data'];
+        });
       } else {
-        setState(() => _errorMessage = "Không tìm thấy yêu cầu cứu trợ.");
+        setState(() => _errorMessage = responseData?['message'] ?? "Không tìm thấy yêu cầu cứu trợ.");
       }
     } catch (e) {
       setState(() => _errorMessage = "Lỗi kết nối máy chủ");
