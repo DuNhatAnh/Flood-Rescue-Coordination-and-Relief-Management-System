@@ -331,4 +331,27 @@ class RescueService {
       return [start, end];
     }
   }
+
+  // Lấy toàn bộ phương tiện theo kho (Hỗ trợ hiển thị HẾT trong kho)
+  Future<List<Vehicle>> getVehiclesByWarehouse(String warehouseId) async {
+    try {
+      final response = await _dio.get('/vehicles', queryParameters: {
+        'warehouseId': warehouseId,
+        'size': 100 // Đảm bảo lấy được nhiều nhất có thể
+      });
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData['success'] == true) {
+          final data = responseData['data'];
+          final List<dynamic> content = data['content'] ?? [];
+          return content.map((json) => Vehicle.fromJson(json)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching vehicles by warehouse: $e');
+      return [];
+    }
+  }
 }
+

@@ -49,31 +49,43 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
 
   Future<void> _loadAssignment() async {
     setState(() => _isLoading = true);
-    final tasks = await _rescueService.getMyTasks();
-    // HỢP NHẤT: Lấy cả vật phẩm nhiệm vụ VÀ vật phẩm do điều phối viên gán thêm
-    final allReqItems = {
-      ...{for (var i in task.assignedItems) i.itemId: i},
-      ...{for (var i in task.missionItems) i.itemId: i}
-    }.values.toList();
-    
-    // Reset controllers
-    for (var c in _controllers) {
-      c.dispose();
-    }
-    _controllers = allReqItems.map((item) => TextEditingController(text: '${item.quantity}')).toList();
+    try {
+      final tasks = await _rescueService.getMyTasks();
+      final task = tasks.firstWhere((t) => t.id == widget.assignmentId);
+      
+      // HỢP NHẤT: Lấy cả vật phẩm nhiệm vụ VÀ vật phẩm do điều phối viên gán thêm
+      final allReqItems = {
+        ...{for (var i in task.assignedItems) i.itemId: i},
+        ...{for (var i in task.missionItems) i.itemId: i}
+      }.values.toList();
+      
+      // Reset controllers
+      for (var c in _controllers) {
+        c.dispose();
+      }
+      _controllers = allReqItems.map((item) => TextEditingController(text: '${item.quantity}')).toList();
 
-    setState(() {
-      _assignment = task;
-      _rescuedCount = task.numberOfPeople ?? 1;
-      // Khởi tạo danh sách hàng thực tế dựa trên Items đã xuất kho
-      _actualItems = allReqItems.map((item) => {
-        'itemId': item.itemId,
-        'itemName': item.itemName,
-        'unit': item.unit,
-        'quantity': item.quantity,
-      }).toList();
-      _isLoading = false;
-    });
+      setState(() {
+        _assignment = task;
+        _rescuedCount = task.numberOfPeople ?? 1;
+        // Khởi tạo danh sách hàng thực tế dựa trên Items đã xuất kho
+        _actualItems = allReqItems.map((item) => {
+          'itemId': item.itemId,
+          'itemName': item.itemName,
+          'unit': item.unit,
+          'quantity': item.quantity,
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading assignment: $e');
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không tìm thấy thông tin nhiệm vụ: $e'), backgroundColor: StaffTheme.errorRed),
+        );
+      }
+    }
   }
 
   Future<void> _pickImages() async {

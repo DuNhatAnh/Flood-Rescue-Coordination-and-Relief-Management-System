@@ -89,18 +89,26 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       if (warehouse != null && (warehouse['id'] != null || warehouse['_id'] != null)) {
         final warehouseId = (warehouse['id'] ?? warehouse['_id']).toString();
         print('DEBUG: Definite warehouseId: $warehouseId');
-        final inventory = await _inventoryService.getWarehouseInventory(warehouseId);
-        print('DEBUG: Inventory count: ${inventory.length}');
         
+        // Fetch inventory and vehicles in parallel
+        final results = await Future.wait([
+          _inventoryService.getWarehouseInventory(warehouseId),
+          _rescueService.getVehiclesByWarehouse(warehouseId),
+        ]);
+        
+        final inventory = results[0] as List<Inventory>;
+        final warehouseVehicles = results[1] as List<Vehicle>;
+
         setState(() {
           _warehouseInventory = inventory;
           _currentWarehouseName = warehouse?['warehouseName'] ?? warehouse?['warehouse_name'] ?? 'Kho không tên';
           _isLoadingWarehouse = false;
           
-          // Re-filter vehicles using the definite warehouseId found
-          _filteredVehicles = _availableVehicles.where((v) => 
-            v.warehouseId == warehouseId || v.teamId == team.id
-          ).toList();
+          // Ưu tiên dùng danh sách xe lấy trực tiếp từ kho, nếu không có thì lọc từ danh sách available
+          _filteredVehicles = warehouseVehicles.isNotEmpty 
+              ? warehouseVehicles 
+              : _availableVehicles.where((v) => v.warehouseId == warehouseId || v.teamId == team.id).toList();
+          
           print('DEBUG: Filtered vehicles count: ${_filteredVehicles.length}');
         });
       } else {
@@ -470,6 +478,11 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
         final isSelected = _selectedVehicleIds.contains(vehicle.id);
         return InkWell(
           onTap: () {
+            if (vehicle.status != 'AVAILABLE' && !isSelected) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Phương tiện này đang ${vehicle.status}. Bạn vẫn muốn chọn?')),
+              );
+            }
             setState(() {
               if (isSelected) {
                 _selectedVehicleIds.remove(vehicle.id);
@@ -496,16 +509,36 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                   alignment: Alignment.topRight,
                   children: [
                     Icon(
-                      vehicle.vehicleType == 'Xuồng Máy' ? Icons.directions_boat : Icons.local_shipping,
-                      color: isSelected ? Colors.blue : Colors.grey[400],
+                      vehicle.vehicleType.contains('Xuồng') || vehicle.vehicleType.contains('Cano') 
+                        ? Icons.directions_boat 
+                        : Icons.local_shipping,
+                      color: isSelected ? Colors.blue : (vehicle.status == 'AVAILABLE' ? Colors.grey[400] : Colors.orange[300]),
                       size: 40,
                     ),
                     if (isSelected) const Icon(Icons.check_circle, color: Colors.blue, size: 18),
+                    if (vehicle.status != 'AVAILABLE' && !isSelected) 
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Icon(Icons.warning, color: Colors.orange[400], size: 14),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(vehicle.vehicleType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(vehicle.licensePlate, style: TextStyle(fontSize: 12, color: Colors.grey[600], letterSpacing: 0.5)),
+                Text(vehicle.vehicleType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis),
+                Text(vehicle.licensePlate, style: TextStyle(fontSize: 11, color: Colors.grey[600], letterSpacing: 0.5)),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getVehicleStatusColor(vehicle.status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _getVehicleStatusLabel(vehicle.status),
+                    style: TextStyle(fontSize: 9, color: _getVehicleStatusColor(vehicle.status), fontWeight: FontWeight.bold),
+                  ),
+                ),
               ],
             ),
           ),
@@ -574,5 +607,25 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
     if (name.contains('Mì')) return Icons.fastfood_outlined;
     if (name.contains('Áo phao')) return Icons.emergency_outlined;
     return Icons.category_outlined;
+  }
+
+  Color _getVehicleStatusColor(String status) {
+    switch (status) {
+      case 'AVAILABLE': return Colors.green;
+      case 'IN_USE': return Colors.blue;
+      case 'BUSY': return Colors.orange;
+      case 'MAINTENANCE': return Colors.red;
+      default: return Colors.grey;
+    }
+  }
+
+  String _getVehicleStatusLabel(String status) {
+    switch (status) {
+      case 'AVAILABLE': return 'SẴN SÀNG';
+      case 'IN_USE': return 'ĐANG ĐI';
+      case 'BUSY': return 'ĐANG BẬN';
+      case 'MAINTENANCE': return 'BẢO TRÌ';
+      default: return status;
+    }
   }
 }

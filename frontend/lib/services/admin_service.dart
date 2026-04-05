@@ -155,7 +155,7 @@ class AdminService {
 
   // --- Warehouse Management ---
   Future<List<dynamic>> getWarehouses() async {
-    final url = Uri.parse('$baseUrl/warehouses');
+    final url = Uri.parse('$baseUrl/v1/warehouses');
     final headers = await _getAuthHeaders();
     try {
       final response = await http.get(url, headers: headers);
@@ -178,7 +178,7 @@ class AdminService {
 
 
   Future<Map<String, dynamic>> createWarehouse(Map<String, dynamic> data) async {
-    final url = Uri.parse('$baseUrl/warehouses');
+    final url = Uri.parse('$baseUrl/v1/warehouses');
     final headers = await _getAuthHeaders();
     final response = await http.post(url, headers: headers, body: jsonEncode(data));
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -189,7 +189,7 @@ class AdminService {
   }
 
   Future<Map<String, dynamic>> updateWarehouse(String id, Map<String, dynamic> data) async {
-    final url = Uri.parse('$baseUrl/warehouses/$id');
+    final url = Uri.parse('$baseUrl/v1/warehouses/$id');
     final headers = await _getAuthHeaders();
     final response = await http.put(url, headers: headers, body: jsonEncode(data));
     if (response.statusCode == 200) {
@@ -200,7 +200,7 @@ class AdminService {
   }
 
   Future<void> deleteWarehouse(String id) async {
-    final url = Uri.parse('$baseUrl/warehouses/$id');
+    final url = Uri.parse('$baseUrl/v1/warehouses/$id');
     final headers = await _getAuthHeaders();
     final response = await http.delete(url, headers: headers);
     if (response.statusCode != 200) throw Exception('Failed to delete warehouse');
