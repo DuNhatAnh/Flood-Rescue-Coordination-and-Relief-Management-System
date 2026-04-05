@@ -169,10 +169,13 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
             children: [
               const Text('VẬT PHẨM ĐƯỢC GIAO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: StaffTheme.primaryBlue)),
               const SizedBox(height: 12),
-              if (task.assignedItems.isEmpty)
+              if (task.assignedItems.isEmpty && task.missionItems.isEmpty)
                 const Text('Chưa có danh sách vật phẩm cụ thể.', style: TextStyle(fontSize: 12, color: Colors.grey))
               else
-                ...task.assignedItems.map((item) => Padding(
+                ...({
+                  ...{for (var i in task.assignedItems) i.itemId: i},
+                  ...{for (var i in task.missionItems) i.itemId: i}
+                }.values).map((item) => Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -193,7 +196,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
         const SizedBox(height: 12),
 
         if (!task.itemsExported) ...[
-          if (task.assignedItems.isEmpty)
+          if (task.assignedItems.isEmpty && task.missionItems.isEmpty)
              Container(
                padding: const EdgeInsets.all(12),
                decoration: BoxDecoration(color: StaffTheme.successGreen.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: StaffTheme.successGreen.withOpacity(0.2))),
@@ -360,21 +363,6 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
               style: const TextStyle(fontSize: 14, height: 1.5, color: StaffTheme.textMedium),
             ),
           ),
-          if (task.missionItems.isNotEmpty) ...[
-            const Divider(height: 30),
-            const Text('VẬT PHẨM MANG THEO', style: TextStyle(fontSize: 11, color: StaffTheme.textLight, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ...task.missionItems.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(item.itemName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                  Text('${item.quantity} ${item.unit}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
-                ],
-              ),
-            )).toList(),
-          ],
         ],
       ),
     );
@@ -438,7 +426,7 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
     }
 
     if (status == 'PREPARING') {
-      final bool noItemsNeeded = task.assignedItems.isEmpty;
+      final bool noItemsNeeded = task.assignedItems.isEmpty && task.missionItems.isEmpty;
       final bool canProceed = task.itemsExported || noItemsNeeded;
 
       return Row(

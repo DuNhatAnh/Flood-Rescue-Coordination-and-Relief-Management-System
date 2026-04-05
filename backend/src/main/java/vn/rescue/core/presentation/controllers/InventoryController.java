@@ -12,7 +12,7 @@ import vn.rescue.core.presentation.common.ApiResponse; // Giả định bạn d�
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/api/v1/inventory")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Hỗ trợ Flutter gọi API
 public class InventoryController {

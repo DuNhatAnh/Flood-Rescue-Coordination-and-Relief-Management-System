@@ -54,6 +54,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
   
   Assignment? _selectedTask;
   Warehouse? _selectedWarehouse;
+  Warehouse? _myManagedWarehouse; // KHO CỐ ĐỊNH CỦA ĐỘI (VD: Xuân Hòa)
   Vehicle? _selectedVehicle;
   final TextEditingController _changeReasonController = TextEditingController();
   
@@ -75,10 +76,20 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
     final warehouses = await _warehouseService.getAll();
     
     Warehouse? myWarehouse;
-    if (AuthService.currentUser?.role == UserRole.rescueStaff) {
-       final managedWh = await _warehouseService.getByManagerId(AuthService.currentUser!.id);
+    // HỢP NHẤT: Thử lấy kho cố định của Manager HOẶC kho của Nhiệm vụ hiện tại
+    final String? currentUserId = AuthService.currentUser?.id;
+    if (currentUserId != null) {
+       // Thử lấy qua WarehouseService (fixed API)
+       final managedWh = await _warehouseService.getByManagerId(currentUserId);
        if (managedWh != null) {
          myWarehouse = warehouses.firstWhere((w) => w.id == managedWh.id, orElse: () => managedWh);
+       } else {
+         // Thử qua RescueService (dùng manager ID)
+         final whMap = await _rescueService.getWarehouseByManager(currentUserId);
+         if (whMap != null) {
+            final whId = (whMap['id'] ?? whMap['_id']).toString();
+            myWarehouse = warehouses.firstWhere((w) => w.id == whId, orElse: () => Warehouse.fromJson(whMap));
+         }
        }
     }
 
@@ -87,6 +98,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
         _myTasks = tasks;
         _warehouses = warehouses;
         _isLoading = false;
+        _myManagedWarehouse = myWarehouse;
         
         if (widget.mission != null) {
           _selectedTask = tasks.firstWhere((t) => t.id == widget.mission!.id, orElse: () => widget.mission!);
@@ -94,10 +106,42 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
         }
 
         if (myWarehouse != null) {
+          _selectedWarehouse = myWarehouse; // Mặc định kho xuất là kho của mình (FIX KHO CỦA TÔI)
           _onWarehouseChanged(myWarehouse);
+        } else if (widget.mission != null) {
+          // Nếu không tìm thấy kho của Manager, tìm theo tên "Xuân Hòa" nếu có (Dự phòng)
+          try {
+             final xuanHoa = warehouses.firstWhere((w) => w.warehouseName.contains('Xuân Hòa'));
+             _selectedWarehouse = xuanHoa;
+             _onWarehouseChanged(xuanHoa);
+          } catch (_) {
+             if (warehouses.isNotEmpty) _onWarehouseChanged(warehouses.first);
+          }
         }
       });
     }
+  }
+
+  // LOGIC CHUYỂN ĐỔI LOẠI HÌNH THEO YÊU CẦU CỐ ĐỊNH KHO
+  void _toggleExportType(String type) {
+    if (_exportType == type) return;
+
+    setState(() {
+      _exportType = type;
+      _selectedItems = [];
+      _currentInventory = [];
+      
+      if (type == 'EXPORT') {
+        // XUẤT CỨU TRỢ: Kho xuất hàng = Kho Xuân Hòa (Cố định)
+        _selectedWarehouse = _myManagedWarehouse;
+        _destinationWarehouse = null;
+        if (_myManagedWarehouse != null) _onWarehouseChanged(_myManagedWarehouse);
+      } else {
+        // ĐIỀU CHUYỂN: Kho đích = Kho Xuân Hòa (Cố định), Kho xuất = Tự chọn kho khác
+        _destinationWarehouse = _myManagedWarehouse;
+        _selectedWarehouse = null; // Để người dùng tự chọn kho nguồn khác
+      }
+    });
   }
 
   Future<void> _loadVehicles(String warehouseId) async {
@@ -122,9 +166,15 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
       setState(() {
         _currentInventory = inv;
         
-        // AUTO-FILL FOR QUICK MODE
+        // AUTO-FILL FOR QUICK MODE (Fix Hình 1: Không hiện danh sách)
         if (widget.mode == 'QUICK' && widget.mission != null) {
-          for (var item in widget.mission!.assignedItems) {
+          // HỢP NHẤT: missionItems + assignedItems
+          final reqItems = {
+            ...{for (var i in widget.mission!.assignedItems) i.itemId: i},
+            ...{for (var i in widget.mission!.missionItems) i.itemId: i}
+          }.values;
+
+          for (var item in reqItems) {
             final stock = inv.firstWhere((s) => s.itemId == item.itemId, orElse: () => Inventory(warehouseId: _selectedWarehouse!.id!, itemId: item.itemId, itemName: item.itemName, quantity: 0, unit: item.unit));
             _selectedItems.add({
               'itemId': item.itemId,
@@ -196,9 +246,55 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
 
     if (result != null) {
       setState(() {
-        // Add default status and comparison info
-        result['stock'] = _currentInventory.firstWhere((e) => e.itemId == result['itemId']).quantity;
-        _selectedItems.add(result);
+        final existingIndex = _selectedItems.indexWhere((item) => item['itemId'] == result['itemId']);
+        if (existingIndex != -1) {
+          // GỘP HÀNG: Cộng dồn nếu đã có vật phẩm này
+          _selectedItems[existingIndex]['quantity'] += result['quantity'];
+        } else {
+          result['stock'] = _currentInventory.firstWhere((e) => e.itemId == result['itemId']).quantity;
+          _selectedItems.add(result);
+        }
+      });
+    }
+  }
+
+  void _editItem(Map<String, dynamic> item) async {
+    final qtyController = TextEditingController(text: item['quantity'].toString());
+    
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Sửa số lượng: ${item['itemName']}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Tồn kho hiện tại: ${item['stock']}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: qtyController,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Số lượng mới', border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          ElevatedButton(
+            onPressed: () {
+              final q = int.tryParse(qtyController.text) ?? 0;
+              if (q <= 0 || q > item['stock']) return;
+              Navigator.pop(context, q);
+            },
+            child: const Text('Cập nhật'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        item['quantity'] = result;
       });
     }
   }
@@ -300,7 +396,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                     value: 'EXPORT',
                     groupValue: _exportType,
                     dense: true,
-                    onChanged: (val) => setState(() => _exportType = val!),
+                    onChanged: (val) => _toggleExportType(val!),
                   ),
                 ),
                 Expanded(
@@ -309,7 +405,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                     value: 'TRANSFER',
                     groupValue: _exportType,
                     dense: true,
-                    onChanged: (val) => setState(() => _exportType = val!),
+                    onChanged: (val) => _toggleExportType(val!),
                   ),
                 ),
               ],
@@ -317,7 +413,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
           ),
 
           const SizedBox(height: 20),
-          if (_exportType == 'EXPORT') ...[
+          if (_exportType == 'EXPORT' && widget.mission == null) ...[
             _buildSectionTitle('2. CHỌN NHIỆM VỤ'),
             _buildCard(
               child: DropdownButtonFormField<Assignment>(
@@ -331,38 +427,41 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                 onChanged: (val) => setState(() => _selectedTask = val),
               ),
             ),
-          ] else ...[
-            _buildSectionTitle('2. CHỌN KHO ĐÍCH'),
+          ] else if (_exportType == 'TRANSFER') ...[
+            _buildSectionTitle(_exportType == 'TRANSFER' ? '2. KHO TIẾP NHẬN (CỐ ĐỊNH)' : '2. CHỌN KHO ĐÍCH'),
             _buildCard(
               child: DropdownButtonFormField<Warehouse>(
-                hint: const Text('Chọn kho tiếp nhận'),
+                hint: const Text('Kho mặc định của bạn'),
                 value: _destinationWarehouse,
                 isExpanded: true,
                 items: _warehouses
-                    .where((w) => w.id != _selectedWarehouse?.id)
                     .map((e) => DropdownMenuItem(
                   value: e,
                   child: Text(e.warehouseName),
                 )).toList(),
-                onChanged: (val) => setState(() => _destinationWarehouse = val),
+                // Nếu là Điều chuyển thì Kho đích cố định là kho Xuân Hòa của bạn
+                onChanged: (_exportType == 'TRANSFER') ? null : (val) => setState(() => _destinationWarehouse = val),
               ),
             ),
           ],
           
           const SizedBox(height: 20),
-          _buildSectionTitle('3. KHO XUẤT HÀNG'),
+          _buildSectionTitle(_exportType == 'EXPORT' ? '3. KHO XUẤT HÀNG (CỐ ĐỊNH)' : '3. CHỌN KHO XUẤT HÀNG'),
           _buildCard(
             child: DropdownButtonFormField<Warehouse>(
               hint: const Text('Chọn kho hàng'),
               value: _selectedWarehouse,
               isExpanded: true,
-              items: _warehouses.map((e) => DropdownMenuItem(
+              items: _warehouses
+                  .where((w) => _exportType != 'TRANSFER' || w.id != _myManagedWarehouse?.id)
+                  .map((e) => DropdownMenuItem(
                 value: e,
                 child: Text(e.warehouseName),
               )).toList(),
-              onChanged: (AuthService.currentUser?.role == UserRole.admin && widget.mission == null) 
-                  ? _onWarehouseChanged 
-                  : null, 
+              // Nếu là Xuất cứu trợ thì Kho xuất cố định là kho của đội
+              onChanged: (_exportType == 'EXPORT') 
+                  ? null 
+                  : _onWarehouseChanged, 
             ),
           ),
 
@@ -429,7 +528,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                    ],
                  ),
                ),
-               if (widget.mission != null && widget.mode == 'MANUAL') ...[
+                if (widget.mission != null && widget.mode == 'MANUAL') ...[
                   const SizedBox(width: 20),
                   Expanded(
                     flex: 2,
@@ -437,27 +536,21 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                          _buildSectionTitle('ĐỐI CHIẾU YÊU CẦU'),
-                         ...widget.mission!.assignedItems.map((req) {
+                         // HỢP NHẤT: missionItems + assignedItems (Fix Hình 2: Không hiện danh sách đối chiếu)
+                         ...{
+                           ...{for (var i in widget.mission!.assignedItems) i.itemId: i},
+                           ...{for (var i in widget.mission!.missionItems) i.itemId: i}
+                         }.values.map((req) {
                              final selected = _selectedItems.firstWhere((s) => s['itemId'] == req.itemId, orElse: () => {});
                              final isMatch = selected.isNotEmpty && selected['quantity'] == req.quantity;
-                             return Container(
-                               margin: const EdgeInsets.only(bottom: 8),
-                               padding: const EdgeInsets.all(12),
-                               decoration: BoxDecoration(
-                                 color: isMatch ? StaffTheme.successGreen.withOpacity(0.1) : StaffTheme.background,
-                                 borderRadius: BorderRadius.circular(12),
-                                 border: Border.all(color: isMatch ? StaffTheme.successGreen.withOpacity(0.3) : StaffTheme.border),
-                               ),
-                               child: Row(
-                                 children: [
-                                   Icon(isMatch ? Icons.check_circle : Icons.pending_outlined, 
-                                        color: isMatch ? StaffTheme.successGreen : Colors.grey, size: 16),
-                                   const SizedBox(width: 8),
-                                   Expanded(child: Text('${req.quantity} ${req.itemName}', style: TextStyle(fontSize: 11, fontWeight: isMatch ? FontWeight.bold : FontWeight.normal))),
-                                 ],
-                               ),
-                             );
+                             return _buildComparisonItem('${req.quantity} ${req.itemName}', isMatch);
                          }).toList(),
+                         if (widget.mission?.licensePlate != null) ...[
+                            const SizedBox(height: 12),
+                            const Text('PHƯƠNG TIỆN ĐÃ GIAO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: StaffTheme.textLight)),
+                            const SizedBox(height: 4),
+                            _buildComparisonItem(widget.mission!.licensePlate!, _selectedVehicle?.licensePlate == widget.mission!.licensePlate || _selectedVehicle == null),
+                         ],
                       ],
                     ),
                   ),
@@ -479,6 +572,26 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
               child: const Text('XÁC NHẬN XUẤT KHO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComparisonItem(String text, bool isMatch) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isMatch ? StaffTheme.successGreen.withOpacity(0.1) : StaffTheme.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isMatch ? StaffTheme.successGreen.withOpacity(0.3) : StaffTheme.border),
+      ),
+      child: Row(
+        children: [
+          Icon(isMatch ? Icons.check_circle : Icons.pending_outlined, 
+               color: isMatch ? StaffTheme.successGreen : Colors.grey, size: 16),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 11, fontWeight: isMatch ? FontWeight.bold : FontWeight.normal))),
         ],
       ),
     );
@@ -508,7 +621,12 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
     bool isSuccess = false;
     
     if (widget.mission != null) {
-      final req = widget.mission!.assignedItems.firstWhere((r) => r.itemId == item['itemId'], orElse: () => MissionItem(itemId: '', itemName: '', unit: '', quantity: 0));
+      // HỢP NHẤT: Tìm trong danh sách yêu cầu tổng hợp
+      final allReqs = [
+        ...widget.mission!.assignedItems,
+        ...widget.mission!.missionItems
+      ];
+      final req = allReqs.firstWhere((r) => r.itemId == item['itemId'], orElse: () => MissionItem(itemId: '', itemName: '', unit: '', quantity: 0));
       if (req.itemId.isNotEmpty) {
         if (item['quantity'] == req.quantity) isSuccess = true;
         if (item['quantity'] > item['stock']) isWarning = true;
@@ -543,9 +661,20 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
             ],
           ),
           if (widget.mode != 'QUICK')
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: StaffTheme.errorRed, size: 20),
-              onPressed: () => setState(() => _selectedItems.remove(item)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: StaffTheme.primaryBlue, size: 20),
+                  onPressed: () => _editItem(item),
+                  tooltip: 'Chỉnh sửa',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: StaffTheme.errorRed, size: 20),
+                  onPressed: () => setState(() => _selectedItems.remove(item)),
+                  tooltip: 'Xóa',
+                ),
+              ],
             ),
         ],
       ),

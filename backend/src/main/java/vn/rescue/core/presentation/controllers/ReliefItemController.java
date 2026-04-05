@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/relief-items")
+@RequestMapping("/api/v1/relief-items")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ReliefItemController {

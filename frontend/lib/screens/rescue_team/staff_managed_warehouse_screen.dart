@@ -79,8 +79,24 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
       final managed = await _warehouseService.getByManagerId(userId);
       final all = await _warehouseService.getAll();
 
+      // SỬA LỖI (Hình 3): Tăng cường tìm kho cho Đội trưởng/Nhân viên đang làm nhiệm vụ
+      Warehouse? currentWarehouse = managed;
+      if (currentWarehouse == null) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('missionContext')) {
+          // 1. Thử tìm kho có Manager là Leader của mission (nếu có)
+          // 2. Thử tìm kho Xuân Hòa theo tên (User đặc biệt nhắc tới)
+          try {
+             currentWarehouse = all.firstWhere((w) => w.warehouseName.contains('Xuân Hòa'));
+          } catch (_) {
+             if (all.isNotEmpty) currentWarehouse = all.first;
+          }
+        }
+      }
+
       List<Vehicle> vehicles = [];
       try {
+        // Lấy tất cả xe để lọc theo kho sau này nếu cần
         final vehicleData = await _vehicleService.getAvailableVehicles();
         vehicles = vehicleData.map((v) => Vehicle.fromJson(v)).toList();
       } catch (e) {
@@ -95,19 +111,19 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
       }
 
       setState(() {
-        _myWarehouse = managed;
+        _myWarehouse = currentWarehouse;
         _allWarehouses = all;
         _vehicles = vehicles;
       });
 
-      if (managed != null) {
-        final inv = await _inventoryService.getWarehouseInventory(managed.id!);
+      if (currentWarehouse != null) {
+        final inv = await _inventoryService.getWarehouseInventory(currentWarehouse.id!);
         setState(() => _inventory = inv);
       }
     } catch (e) {
-      print('Error loading management data: $e');
+      print('Error in _loadData: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -382,8 +398,7 @@ class _StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScree
   @override
 Widget build(BuildContext context) {
   if (_isLoading) return const Center(child: CircularProgressIndicator());
-  if (_myWarehouse == null) return _buildNoWarehouseState();
-
+  
   return Scaffold(
     backgroundColor: StaffTheme.background,
 
@@ -391,7 +406,7 @@ Widget build(BuildContext context) {
       automaticallyImplyLeading: true,
       iconTheme: const IconThemeData(color: Colors.white),
       title: Text(
-        _myWarehouse!.warehouseName,
+        _myWarehouse?.warehouseName ?? 'Quản lý kho',
         style: const TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 18,
@@ -404,7 +419,9 @@ Widget build(BuildContext context) {
       elevation: 0,
     ),
 
-    body: LayoutBuilder(
+    body: _myWarehouse == null 
+      ? _buildNoWarehouseState()
+      : LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth > 900) {
           return Row(
@@ -479,7 +496,7 @@ Widget build(BuildContext context) {
     ),
 
     // ✅🔥 NÚT THÊM PHƯƠNG TIỆN LUÔN HIỆN
-    floatingActionButton: FloatingActionButton.extended(
+    floatingActionButton: _myWarehouse != null ? FloatingActionButton.extended(
       onPressed: _showAddVehicleDialog,
       backgroundColor: StaffTheme.primaryBlue,
       icon: const Icon(Icons.local_shipping, color: Colors.white),
@@ -490,7 +507,7 @@ Widget build(BuildContext context) {
           fontWeight: FontWeight.bold,
         ),
       ),
-    ),
+    ) : null,
 
     floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
   );
@@ -1070,7 +1087,16 @@ Widget build(BuildContext context) {
                   children: [
                     Text(mission != null ? 'XUẤT KHO THEO NHIỆM VỤ' : 'BIỂU MẪU XUẤT HÀNG', 
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                    IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close, color: Colors.white)),
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pop(ctx); // Đóng dialog
+                        if (mission != null) {
+                          // Nếu đang trong luồng Nhiệm vụ, tự động quay về màn hình Nhiệm vụ
+                          Navigator.pop(context); 
+                        }
+                      }, 
+                      icon: const Icon(Icons.close, color: Colors.white)
+                    ),
                   ],
                 ),
               ),

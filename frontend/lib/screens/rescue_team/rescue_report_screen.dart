@@ -30,6 +30,16 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
   final TextEditingController _noteController = TextEditingController();
   List<XFile> _selectedImages = [];
   List<Map<String, dynamic>> _actualItems = [];
+  List<TextEditingController> _controllers = [];
+
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    _noteController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -40,13 +50,23 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
   Future<void> _loadAssignment() async {
     setState(() => _isLoading = true);
     final tasks = await _rescueService.getMyTasks();
-    final task = tasks.firstWhere((t) => t.id == widget.assignmentId);
+    // HỢP NHẤT: Lấy cả vật phẩm nhiệm vụ VÀ vật phẩm do điều phối viên gán thêm
+    final allReqItems = {
+      ...{for (var i in task.assignedItems) i.itemId: i},
+      ...{for (var i in task.missionItems) i.itemId: i}
+    }.values.toList();
     
+    // Reset controllers
+    for (var c in _controllers) {
+      c.dispose();
+    }
+    _controllers = allReqItems.map((item) => TextEditingController(text: '${item.quantity}')).toList();
+
     setState(() {
       _assignment = task;
       _rescuedCount = task.numberOfPeople ?? 1;
       // Khởi tạo danh sách hàng thực tế dựa trên Items đã xuất kho
-      _actualItems = task.missionItems.map((item) => {
+      _actualItems = allReqItems.map((item) => {
         'itemId': item.itemId,
         'itemName': item.itemName,
         'unit': item.unit,
@@ -327,33 +347,59 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
         border: Border.all(color: StaffTheme.border),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header Row
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Expanded(flex: 3, child: Text('VẬT PHẨM', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: StaffTheme.textLight))),
+                Expanded(flex: 1, child: Center(child: Text('ĐÃ XUẤT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: StaffTheme.textLight)))),
+                Expanded(flex: 2, child: Center(child: Text('THỰC TẾ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: StaffTheme.textLight)))),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
           ..._actualItems.asMap().entries.map((entry) {
             int idx = entry.key;
             var item = entry.value;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 16),
               child: Row(
                 children: [
+                  // Tên vật phẩm
                   Expanded(
+                    flex: 3,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item['itemName'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text('Đã xuất: ${item['quantity']} ${item['unit']}', style: const TextStyle(fontSize: 12, color: StaffTheme.textLight)),
+                        Text(item['itemName'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(item['unit'], style: const TextStyle(fontSize: 11, color: Colors.grey)),
                       ],
                     ),
                   ),
-                  SizedBox(
-                    width: 100,
+                  // Số lượng đã xuất
+                  Expanded(
+                    flex: 1,
+                    child: Center(
+                      child: Text('${item['quantity']}', style: const TextStyle(fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
+                    ),
+                  ),
+                  // Ô nhập thực tế
+                  Expanded(
+                    flex: 2,
                     child: TextField(
+                      controller: _controllers[idx],
+                      textAlign: TextAlign.center,
                       decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: StaffTheme.border)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: StaffTheme.primaryBlue)),
                       ),
                       keyboardType: TextInputType.number,
-                      controller: TextEditingController(text: '${item['quantity']}'),
                       onChanged: (val) {
                         _actualItems[idx]['quantity'] = int.tryParse(val) ?? 0;
                       },

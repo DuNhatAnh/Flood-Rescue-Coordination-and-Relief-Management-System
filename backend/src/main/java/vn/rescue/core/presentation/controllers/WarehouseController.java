@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/warehouses")
+@RequestMapping("/api/v1/warehouses")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class WarehouseController {

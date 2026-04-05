@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/inventory.dart';
 
 class InventoryService {
-  static const String baseUrl = 'http://localhost:8080/api/inventory';
+  static const String baseUrl = 'http://localhost:8080/api/v1/inventory';
 
   Future<List<Inventory>> getWarehouseInventory(String warehouseId) async {
     try {
