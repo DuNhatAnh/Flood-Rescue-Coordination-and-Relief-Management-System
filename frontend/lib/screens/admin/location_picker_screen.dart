@@ -16,7 +16,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   LatLng? _selectedLocation;
   
   // Default coordinate (Center of Vietnam)
-  static const LatLng _defaultCenter = LatLng(16.0544, 108.2022);
+  static const LatLng _defaultCenter = LatLng(15.6, 108.5);
 
   @override
   void initState() {
@@ -48,7 +48,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _selectedLocation ?? _defaultCenter,
-              initialZoom: _selectedLocation != null ? 12.0 : 5.5,
+              initialZoom: _selectedLocation != null ? 12.0 : 11.5,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
               onTap: (tapPosition, point) {
                 setState(() {
                   _selectedLocation = point;

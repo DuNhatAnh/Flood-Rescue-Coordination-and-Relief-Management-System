@@ -23,7 +23,6 @@ class RescueService {
     try {
       final response = await _dio.get('/rescue-requests/pending');
       if (response.statusCode == 200) {
-        // Handle ApiResponse wrapper
         final responseData = response.data;
         if (responseData['success'] == true) {
           List<dynamic> data = responseData['data'];
@@ -33,6 +32,24 @@ class RescueService {
       return [];
     } catch (e) {
       print('Error fetching pending requests: $e');
+      return [];
+    }
+  }
+
+  // Lấy toàn bộ danh sách yêu cầu (SCRUM-ALL)
+  Future<List<RescueRequest>> getAllRequests() async {
+    try {
+      final response = await _dio.get('/rescue-requests');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData['success'] == true) {
+          List<dynamic> data = responseData['data'];
+          return data.map((json) => RescueRequest.fromJson(json)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching all requests: $e');
       return [];
     }
   }

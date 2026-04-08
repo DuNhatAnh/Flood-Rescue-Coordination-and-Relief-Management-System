@@ -100,7 +100,7 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
                   child: TextField(
                     controller: _requestIdController,
                     decoration: InputDecoration(
-                      hintText: "VD: RES-XXXX",
+                      hintText: "VD: XXXX",
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
                       fillColor: Colors.white,

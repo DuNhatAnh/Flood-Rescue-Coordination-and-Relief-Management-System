@@ -34,7 +34,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
     setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
-        _rescueService.getPendingRequests(),
+        _rescueService.getAllRequests(), // Lấy tất cả để thống kê COMPLETED
         _rescueService.getSafetyReports(),
       ]);
       if (mounted) {
@@ -201,8 +201,10 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
 
   Widget _buildStatsBar(List<RescueRequest> requests, List<SafetyReport> safetyReports) {
     final pending = requests.where((r) => r.status == RequestStatus.pending).length;
-    final verified = requests.where((r) => r.isVerified).length;
-    final people = requests.fold<int>(0, (sum, r) => sum + r.numberOfPeople);
+    final completed = requests.where((r) => r.status == RequestStatus.completed).length;
+    final peopleSupported = requests
+        .where((r) => r.status == RequestStatus.completed)
+        .fold<int>(0, (sum, r) => sum + r.numberOfPeople);
     final safe = safetyReports.length;
 
     return Container(
@@ -213,9 +215,9 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
         child: Row(
           children: [
             _buildStatCard('Đang tiếp nhận', '$pending', Colors.red, Icons.emergency),
-            _buildStatCard('Đã xác minh', '$verified', Colors.blue, Icons.verified),
-            _buildStatCard('Người cần hỗ trợ', '$people', Colors.orange, Icons.people),
-            _buildStatCard('Báo an toàn', '$safe', Colors.green, Icons.check_circle),
+            _buildStatCard('Đã hỗ trợ', '$completed', Colors.blue, Icons.volunteer_activism),
+            _buildStatCard('Người được hỗ trợ', '$peopleSupported', Colors.orange, Icons.groups),
+            _buildStatCard('Báo an toàn', '$safe', Colors.green, Icons.verified_user),
           ],
         ),
       ),
@@ -506,8 +508,11 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
   Widget _buildMap(List<RescueRequest> requests) {
     return FlutterMap(
       options: const MapOptions(
-        initialCenter: LatLng(16.0471, 108.2062),
-        initialZoom: 13.0,
+        initialCenter: const LatLng(15.6, 108.5), // Nhóm đô thị ven biển
+        initialZoom: 11.5,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
       ),
       children: [
         TileLayer(

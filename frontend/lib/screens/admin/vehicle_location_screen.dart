@@ -17,7 +17,7 @@ class _VehicleLocationScreenState extends State<VehicleLocationScreen> {
   final MapController _mapController = MapController();
 
   // Default coordinate (Center of Vietnam)
-  static const LatLng _defaultCenter = LatLng(16.0544, 108.2022);
+  static const LatLng _defaultCenter = LatLng(15.6, 108.5);
 
   @override
   void initState() {
@@ -110,7 +110,10 @@ class _VehicleLocationScreenState extends State<VehicleLocationScreen> {
             mapController: _mapController,
             options: const MapOptions(
               initialCenter: _defaultCenter,
-              initialZoom: 5.5,
+              initialZoom: 11.5,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
             ),
             children: [
               TileLayer(

@@ -119,10 +119,21 @@ public class RescueRequestService {
     }
 
     public Map<String, Long> getStats() {
+        long pending = rescueRequestRepository.countByStatus("PENDING");
+        long completed = rescueRequestRepository.countByStatus("COMPLETED");
+        long safeReports = safetyReportRepository.count();
+        
+        // Tính tổng số nhân khẩu được hỗ trợ (sum của number_of_people)
+        long peopleSupported = rescueRequestRepository.findByStatus("COMPLETED")
+                .stream()
+                .mapToLong(r -> r.getNumberOfPeople() != null ? r.getNumberOfPeople() : 1)
+                .sum();
+
         return Map.of(
-                "pending", rescueRequestRepository.countByStatus("PENDING"),
-                "completed", rescueRequestRepository.countByStatus("COMPLETED"),
-                "safeReports", safetyReportRepository.count()
+                "pending", pending,
+                "completed", completed,
+                "peopleSupported", peopleSupported,
+                "safeReports", safeReports
         );
     }
 

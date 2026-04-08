@@ -420,8 +420,11 @@ class _MainContentState extends State<MainContent> {
       ),
       child: FlutterMap(
         options: const MapOptions(
-          initialCenter: LatLng(16.047079, 108.206230), // Đà Nẵng, Việt Nam làm trung tâm
-          initialZoom: 6,
+          initialCenter: LatLng(15.6, 108.5), // Nhóm đô thị ven biển Đà Nẵng - Quảng Nam - Quảng Ngãi
+          initialZoom: 30.0,
+          interactionOptions: InteractionOptions(
+            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+          ),
         ),
         children: [
           TileLayer(
