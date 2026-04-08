@@ -59,4 +59,22 @@ public class ReportController {
                     .body(ApiResponse.error(500, "Lỗi hệ thống: " + e.getMessage()));
         }
     }
+
+    /**
+     * API Thống kê chi tiết cho Coordinator/Admin Dashboard
+     */
+    @GetMapping("/analytics")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getDetailedAnalytics() {
+        log.info("Tiếp nhận yêu cầu lấy thống kê chi tiết Analytics");
+        try {
+            Map<String, Object> data = reportService.getDetailedAnalytics();
+            return ResponseEntity.ok(
+                    ApiResponse.success(data, "Thống kê chi tiết đã được tải thành công")
+            );
+        } catch (Exception e) {
+            log.error("Lỗi khi tải thống kê chi tiết: ", e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error(500, "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
 }

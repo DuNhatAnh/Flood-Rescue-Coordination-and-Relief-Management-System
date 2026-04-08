@@ -421,7 +421,7 @@ class _MainContentState extends State<MainContent> {
       child: FlutterMap(
         options: const MapOptions(
           initialCenter: LatLng(15.6, 108.5), // Nhóm đô thị ven biển Đà Nẵng - Quảng Nam - Quảng Ngãi
-          initialZoom: 30.0,
+          initialZoom: 11.5,
           interactionOptions: InteractionOptions(
             flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
           ),

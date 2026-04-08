@@ -103,6 +103,24 @@ class AdminService {
     throw Exception('Failed to load system statistics');
   }
 
+  Future<Map<String, dynamic>> fetchDetailedAnalytics() async {
+    final url = Uri.parse('$baseUrl/v1/reports/analytics');
+    final headers = await _getAuthHeaders();
+    try {
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['success'] == true) {
+          return body['data'] as Map<String, dynamic>;
+        }
+      }
+      return {}; // return empty map if failed
+    } catch (e) {
+      print('Error fetching analytics: $e');
+      return {};
+    }
+  }
+
   Future<List<dynamic>> getRoles() async {
     final url = Uri.parse('$baseUrl/v1/admin/roles');
     final headers = await _getAuthHeaders();

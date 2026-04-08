@@ -11,6 +11,7 @@ import vn.rescue.core.domain.entities.SystemConfig;
 import vn.rescue.core.presentation.common.ApiResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/system")
@@ -57,5 +58,11 @@ public class AdminSystemController {
     @GetMapping("/reports/general")
     public ResponseEntity<ApiResponse<Object>> getGeneralReports() {
         return ResponseEntity.ok(ApiResponse.success(reportService.getGeneralStats(), "General reports retrieved"));
+    }
+
+    @GetMapping("/analytics")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COORDINATOR')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getDetailedAnalytics() {
+        return ResponseEntity.ok(ApiResponse.success(reportService.getDetailedAnalytics(), "Detailed analytics retrieved"));
     }
 }

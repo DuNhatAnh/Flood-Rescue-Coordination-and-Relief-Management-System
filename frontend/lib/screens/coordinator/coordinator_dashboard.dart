@@ -154,6 +154,9 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
               MaterialPageRoute(builder: (context) => const TrackingScreen()),
             );
           }),
+          _buildAppBarAction(Icons.analytics, 'Thống kê', () {
+            Navigator.pushNamed(context, '/coordinator/analytics');
+          }),
           _buildAppBarAction(Icons.refresh, 'Tải lại', _refreshData),
           const SizedBox(width: 8),
         ],
@@ -225,27 +228,33 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
   }
 
   Widget _buildStatCard(String label, String value, Color color, IconData icon) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-              Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[700])),
-            ],
-          ),
-        ],
+    return InkWell(
+      onTap: () {
+        Navigator.pushNamed(context, '/coordinator/analytics');
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+                Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[700])),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
