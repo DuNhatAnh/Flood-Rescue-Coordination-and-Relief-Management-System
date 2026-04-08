@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/distribution.dart';
-import '../utils/constants.dart';
 import 'auth_service.dart';
 
 class DistributionService {
