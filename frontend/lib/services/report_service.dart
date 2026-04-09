@@ -6,7 +6,7 @@ import '../models/dashboard_stats_model.dart'; // Đảm bảo import đúng mod
 import 'auth_service.dart';
 
 class ReportService {
-  final String baseUrl = "${Constants.apiBaseUrl}/reports";
+  final String baseUrl = "${Constants.apiV1}/reports";
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await AuthService.getToken();

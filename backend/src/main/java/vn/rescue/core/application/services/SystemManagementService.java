@@ -41,10 +41,16 @@ public class SystemManagementService {
 
         // 2. Tự động tạo thông báo nếu đây là hành động quan trọng (RESCUE hoặc INVENTORY)
         if (module != null && (module.equals("RESCUE") || module.equals("INVENTORY"))) {
+            // Nâng cấp: Nếu là thiếu hụt hàng hóa thì dùng SOS (đỏ), còn lại dùng WARNING (vàng) hoặc SOS tùy module
+            String notificationType = "WARNING";
+            if (module.equals("RESCUE") || action.equals("INVENTORY_SHORTAGE")) {
+                notificationType = "SOS";
+            }
+
             Notification autoNotice = Notification.builder()
                     .title("Hệ thống: " + action)
                     .content(details)
-                    .type(module.equals("RESCUE") ? "SOS" : "WARNING") // SOS cho cứu hộ, WARNING cho kho
+                    .type(notificationType)
                     .priority("HIGH")
                     .isRead(false)
                     .userId(null) // Thông báo chung cho các điều phối viên

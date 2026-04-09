@@ -15,9 +15,11 @@ import vn.rescue.core.domain.repositories.RescueRequestRepository;
 import vn.rescue.core.domain.repositories.RescueTeamRepository;
 import vn.rescue.core.domain.repositories.VehiclesRepository;
 import vn.rescue.core.domain.repositories.WarehouseRepository;
-import vn.rescue.core.domain.repositories.RescueReportRepository;
 import vn.rescue.core.domain.entities.RescueReport;
 import vn.rescue.core.domain.entities.MissionItem;
+import vn.rescue.core.domain.entities.User;
+import vn.rescue.core.domain.repositories.RescueReportRepository;
+import vn.rescue.core.domain.repositories.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -56,6 +58,9 @@ public class RescueCoordinationService {
 
     @Autowired
     private RescueReportRepository rescueReportRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public List<RescueRequest> getPendingRequests() {
         return rescueRequestRepository.findByStatus("PENDING");
@@ -174,12 +179,26 @@ public class RescueCoordinationService {
         Optional<Assignment> assignmentOpt = assignmentRepository.findById(id);
         if (assignmentOpt.isPresent()) {
             Assignment assignment = assignmentOpt.get();
+            
+            // 1. KIỂM TRA QUYỀN HẠN (Vấn đề 4)
+            // Chỉ Đội trưởng (Role STAFF/LEAD) của đúng Team mới được nhấn nút
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null || !user.getTeamId().equals(assignment.getTeamId())) {
+                throw new RuntimeException("Bạn không có quyền cập nhật trạng thái cho nhiệm vụ này!");
+            }
+            // Giả định RoleId chứa chuỗi "STAFF" hoặc "LEADER"
+            if (!user.getRoleId().contains("STAFF") && !user.getRoleId().contains("LEADER")) {
+                 throw new RuntimeException("Chỉ đội trưởng mới có quyền thực hiện thao tác này!");
+            }
+
             String oldStatus = assignment.getStatus();
             assignment.setStatus(status);
             System.out.println("DEBUG: Updating assignment " + id + " to status: " + status);
 
-            // LOGIC PHẦN 2: Xử lý xuất hàng khi bắt đầu di chuyển (PREPARING -> MOVING)
-            if ("MOVING".equalsIgnoreCase(status) && "PREPARING".equalsIgnoreCase(oldStatus) && itemsRaw != null) {
+            // LOGIC PHẦN 2: Xử lý xuất hàng - Bổ sung CHỐNG NHẢY CÓC (Vấn đề 3)
+            // Nếu chuyển sang trạng thái đang hoạt động mà chưa trừ hàng thì tự động trừ
+            boolean isActiveStatus = List.of("MOVING", "RESCUING", "RETURNING").contains(status.toUpperCase());
+            if (isActiveStatus && !assignment.isItemsExported() && itemsRaw != null) {
                 List<MissionItem> missionItems = itemsRaw.stream().map(m -> {
                     MissionItem item = new MissionItem();
                     item.setItemId((String) m.get("itemId"));
@@ -189,12 +208,10 @@ public class RescueCoordinationService {
                     return item;
                 }).collect(Collectors.toList());
 
-                // Tìm kho của Team Leader để trừ hàng
                 warehouseRepository.findByManagerId(userId).ifPresent(warehouse -> {
                     inventoryService.batchExport(warehouse.getId(), id, missionItems, userId);
-                    // Cập nhật lại danh sách hàng sau khi đã bị "Auto-Cap" bởi InventoryService
                     assignment.setMissionItems(missionItems);
-                    assignment.setItemsExported(true); // Đánh dấu đã xuất hàng
+                    assignment.setItemsExported(true);
                 });
             }
 
@@ -244,9 +261,14 @@ public class RescueCoordinationService {
                 requestStatusHistoryRepository.save(history);
             }
 
-            // If COMPLETED, persist full RescueReport object
+            // If COMPLETED, persist full RescueReport object & HOÀN KHO (Vấn đề 1)
             if ("COMPLETED".equalsIgnoreCase(status)) {
                 assignment.setCompletedAt(LocalDateTime.now());
+                
+                // Lưu thời gian thực tế nếu có (Vấn đề mở rộng)
+                if (body.containsKey("occurredAt")) {
+                    assignment.setActualCompletedAt(LocalDateTime.parse((String) body.get("occurredAt")));
+                }
                 
                 RescueReport report = new RescueReport();
                 report.setAssignmentId(assignment.getId());
@@ -256,13 +278,40 @@ public class RescueCoordinationService {
                 report.setActualDistributedItems(assignment.getActualDistributedItems());
                 report.setCreatedAt(LocalDateTime.now());
                 rescueReportRepository.save(report);
+
+                // LOGIC HOÀN KHO (Vấn đề 1)
+                if (assignment.getMissionItems() != null && assignment.getActualDistributedItems() != null) {
+                    Map<String, Integer> actualMap = assignment.getActualDistributedItems().stream()
+                            .collect(Collectors.toMap(MissionItem::getItemId, MissionItem::getQuantity, (a, b) -> a));
+                    
+                    List<MissionItem> surplusItems = assignment.getMissionItems().stream()
+                            .map(planned -> {
+                                int actual = actualMap.getOrDefault(planned.getItemId(), 0);
+                                int surplus = planned.getQuantity() - actual;
+                                if (surplus > 0) {
+                                    MissionItem s = new MissionItem();
+                                    s.setItemId(planned.getItemId());
+                                    s.setQuantity(surplus);
+                                    return s;
+                                }
+                                return null;
+                            })
+                            .filter(java.util.Objects::nonNull)
+                            .collect(Collectors.toList());
+
+                    if (!surplusItems.isEmpty()) {
+                        warehouseRepository.findByManagerId(userId).ifPresent(warehouse -> {
+                            inventoryService.batchReturn(warehouse.getId(), assignment.getId(), surplusItems, userId);
+                        });
+                    }
+                }
             }
 
             assignmentRepository.save(assignment);
 
-            // If COMPLETED or REJECTED or CANCELLED, release resources
-            // REPORTED status does NOT release resources yet - Coordinator must confirm (COMPLETED)
-            if ("COMPLETED".equalsIgnoreCase(status) || "REJECTED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
+            // If RETURNING, COMPLETED or REJECTED or CANCELLED, release resources (Vấn đề 4)
+            // Giải phóng sớm khi bắt đầu quay về hoặc hoàn thành
+            if ("RETURNING".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || "REJECTED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
                 // Release Team
                 Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(assignment.getTeamId());
                 teamOpt.ifPresent(team -> {

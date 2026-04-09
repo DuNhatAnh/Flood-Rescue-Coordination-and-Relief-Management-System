@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import '../utils/constants.dart';
 import '../models/relief_item.dart';
 
 class ReliefItemService {
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://localhost:8080/api/v1',
+    baseUrl: Constants.apiV1,
     connectTimeout: const Duration(seconds: 5),
     receiveTimeout: const Duration(seconds: 3),
   ));

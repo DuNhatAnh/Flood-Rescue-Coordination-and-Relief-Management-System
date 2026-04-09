@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' as dio;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -320,7 +320,7 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
                         image: DecorationImage(
                           image: kIsWeb 
                             ? NetworkImage(_selectedImages[index].path) as ImageProvider
-                            : FileImage(File(_selectedImages[index].path)),
+                            : FileImage(dio.File(_selectedImages[index].path)) as ImageProvider,
                           fit: BoxFit.cover,
                         ),
                       ),

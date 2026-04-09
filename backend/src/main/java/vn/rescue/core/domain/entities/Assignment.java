@@ -42,6 +42,9 @@ public class Assignment {
     @Field("completed_at")
     private LocalDateTime completedAt;
 
+    @Field("actual_completed_at")
+    private LocalDateTime actualCompletedAt;
+
     @Field("rescued_count")
     private Integer rescuedCount;
 

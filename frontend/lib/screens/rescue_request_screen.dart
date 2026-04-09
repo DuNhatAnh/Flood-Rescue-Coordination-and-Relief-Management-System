@@ -479,7 +479,7 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
                       TileLayer(
                         urlTemplate:
                             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.example.app',
+                        userAgentPackageName: 'vn.rescue.app.citizen.v1',
                       ),
                       if (_currentLocation != null)
                         MarkerLayer(

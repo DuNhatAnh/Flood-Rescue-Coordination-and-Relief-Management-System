@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../utils/constants.dart';
 import 'auth_service.dart';
 
 class AdminService {
-  final String baseUrl = 'http://localhost:8080/api';
+  final String baseUrl = Constants.apiBaseUrl;
 
   Future<Map<String, String>> _getAuthHeaders() async {
     final token = await AuthService.getToken();
@@ -82,7 +83,7 @@ class AdminService {
   }
 
   Future<List<dynamic>> fetchSystemLogs() async {
-    final url = Uri.parse('$baseUrl/admin/system/logs');
+    final url = Uri.parse('$baseUrl/v1/admin/system/logs');
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {
@@ -93,7 +94,7 @@ class AdminService {
   }
 
   Future<Map<String, dynamic>> fetchSystemStats() async {
-    final url = Uri.parse('$baseUrl/admin/system/reports/general');
+    final url = Uri.parse('$baseUrl/v1/admin/system/reports/general');
     final headers = await _getAuthHeaders();
     final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {

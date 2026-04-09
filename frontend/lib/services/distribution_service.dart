@@ -1,14 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../utils/constants.dart';
 import '../models/distribution.dart';
 import 'auth_service.dart';
 
 class DistributionService {
-  // Đảm bảo baseUrl trỏ đúng đến API Spring Boot của bạn (không có /v1)
-  // Nếu Constants.apiBaseUrl của bạn đang có /v1, hãy dùng .replaceAll('/v1', '')
-  final String baseUrl = "http://localhost:8080/api/distributions";
+  final String baseUrl = "${Constants.apiV1}/distributions";
 
   /// Lấy Header có chứa Token để xác thực
   Future<Map<String, String>> _getHeaders() async {
@@ -82,12 +80,9 @@ class DistributionService {
         if (kDebugMode) print("❌ Lỗi API (${response.statusCode}): ${response.body}");
         return [];
       }
-    } on SocketException {
-      if (kDebugMode) print("🌐 Lỗi kết nối: Hãy kiểm tra Server Spring Boot đang chạy");
-      return [];
     } catch (e) {
-      if (kDebugMode) print("⚠️ Lỗi mapping dữ liệu: $e");
+      if (kDebugMode) print("🌐 Lỗi kết nối: $e");
       return [];
     }
   }
-}
+}

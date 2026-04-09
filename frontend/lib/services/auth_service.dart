@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/constants.dart';
 import '../models/user_model.dart';
 
 class AuthService {
   static UserModel? currentUser;
   static const String _userKey = 'logged_in_user';
   static const String _tokenKey = 'jwt_token';
-  static const String _baseUrl = 'http://localhost:8080/api/auth';
+  static final String _baseUrl = Constants.apiAuth;
 
   // Khôi phục phiên làm việc khi khởi động
   static Future<void> restoreSession() async {

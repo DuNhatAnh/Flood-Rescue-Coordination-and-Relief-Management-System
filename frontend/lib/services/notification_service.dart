@@ -1,18 +1,11 @@
 import 'dart:convert';
-import 'dart:io'; // Thêm để kiểm tra nền tảng
-import 'package:flutter/foundation.dart'; // Để dùng kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../utils/constants.dart';
 import '../models/notification_model.dart';
 
 class NotificationService {
-  // Tự động điều chỉnh IP tùy theo môi trường chạy
-  static String get baseUrl {
-    if (kIsWeb) return "http://localhost:8080/api/v1/notifications";
-    // Nếu là Android Emulator thì dùng 10.0.2.2, nếu iOS/Thật thì dùng IP máy tính
-    return Platform.isAndroid 
-        ? "http://10.0.2.2:8080/api/v1/notifications" 
-        : "http://localhost:8080/api/v1/notifications";
-  }
+  static final String baseUrl = "${Constants.apiV1}/notifications";
 
   // Header chung cho các request
   Map<String, String> get _headers => {

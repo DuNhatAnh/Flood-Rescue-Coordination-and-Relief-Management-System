@@ -131,6 +131,14 @@ public class InventoryService {
                             inventory.getItemName(), toExport, inventory.getUnit(), 
                             request.getAssignmentId() != null ? request.getAssignmentId().substring(0, 8) : "N/A"),
                     "INVENTORY");
+            
+            // CẢNH BÁO NẾU THIẾU HÀNG (Vấn đề 5 - Đã nâng cấp thành thông báo khẩn cấp)
+            if (toExport < request.getQuantity()) {
+                systemService.logAction(userId, "INVENTORY_SHORTAGE",
+                    String.format("KHO KHÔNG ĐỦ HÀNG: %s cho nhiệm vụ #%s. Yêu cầu: %d, Thực tế: %d. Cần điều chuyển hàng (TRANSFER) gấp!",
+                        inventory.getItemName(), request.getAssignmentId() != null ? request.getAssignmentId().substring(0, 8) : "N/A", request.getQuantity(), toExport),
+                    "INVENTORY");
+            }
         }
         return toExport;
     }
@@ -149,6 +157,25 @@ public class InventoryService {
             int actualExported = exportStock(request, userId);
             // Cập nhật lại số lượng thực tế đã mang đi nếu bị hụt kho (Auto-cap)
             item.setQuantity(actualExported);
+        }
+    }
+
+    @Transactional
+    public void batchReturn(String warehouseId, String assignmentId, List<MissionItem> items, String userId) {
+        if (items == null || items.isEmpty()) return;
+        
+        for (MissionItem item : items) {
+            if (item.getQuantity() != null && item.getQuantity() > 0) {
+                StockInRequest request = StockInRequest.builder()
+                        .warehouseId(warehouseId)
+                        .itemId(item.getItemId())
+                        .quantity(item.getQuantity())
+                        .source("MISSION_RETURN")
+                        .referenceNumber(assignmentId)
+                        .condition("GOOD") // Mặc định hàng tốt, team leader phân loại sau
+                        .build();
+                importStock(request, userId);
+            }
         }
     }
 

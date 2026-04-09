@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../utils/constants.dart';
 import '../models/inventory.dart';
 
 class InventoryService {
-  static const String baseUrl = 'http://localhost:8080/api/v1/inventory';
+  static final String baseUrl = '${Constants.apiV1}/inventory';
 
   Future<List<Inventory>> getWarehouseInventory(String warehouseId) async {
     try {

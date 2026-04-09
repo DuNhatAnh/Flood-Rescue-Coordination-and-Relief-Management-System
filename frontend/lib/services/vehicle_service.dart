@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../utils/constants.dart';
 import 'auth_service.dart';
 
 class VehicleService {
-  final String baseUrl = 'http://localhost:8080/api/v1';
+  final String baseUrl = Constants.apiV1;
 
   Future<Map<String, String>> _headers() async {
     final token = await AuthService.getToken();

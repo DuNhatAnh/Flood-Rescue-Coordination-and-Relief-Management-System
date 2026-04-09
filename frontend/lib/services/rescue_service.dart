@@ -11,9 +11,9 @@ import 'auth_service.dart';
 import '../utils/constants.dart';
 
 class RescueService {
-  final String baseUrl = Constants.apiBaseUrl;
+  final String baseUrl = Constants.apiV1;
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: Constants.apiBaseUrl,
+    baseUrl: Constants.apiV1,
     connectTimeout: const Duration(seconds: 5),
     receiveTimeout: const Duration(seconds: 3),
   ));
