@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'team_tasks_screen.dart';
 import 'staff_managed_warehouse_screen.dart';
 import 'staff_report_screen.dart';
+import 'staff_vehicle_management_screen.dart'; // Import trang mới
 import '../relief_item_screen.dart';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
@@ -17,8 +18,10 @@ class StaffMainScreen extends StatefulWidget {
 class StaffMainScreenState extends State<StaffMainScreen> {
   int _selectedIndex = 0; // Mặc định vào tab Nhiệm vụ
   
+  // Khai báo các Key để có thể gọi hàm refresh từ bên ngoài
   final GlobalKey<TeamTasksScreenState> _tasksKey = GlobalKey();
   final GlobalKey<StaffManagedWarehouseScreenState> _warehouseKey = GlobalKey();
+  final GlobalKey<StaffVehicleManagementScreenState> _vehicleKey = GlobalKey();
   final GlobalKey<StaffReportScreenState> _reportKey = GlobalKey();
 
   late List<Widget> _screens;
@@ -29,6 +32,7 @@ class StaffMainScreenState extends State<StaffMainScreen> {
     _screens = [
       TeamTasksScreen(key: _tasksKey),
       StaffManagedWarehouseScreen(key: _warehouseKey),
+      StaffVehicleManagementScreen(key: _vehicleKey), // Trang quản lý phương tiện mới
       StaffReportScreen(key: _reportKey),
     ];
   }
@@ -84,11 +88,14 @@ class StaffMainScreenState extends State<StaffMainScreen> {
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
             onPressed: () {
+              // Xử lý làm mới dữ liệu cho từng tab tương ứng
               if (_selectedIndex == 0) {
                 _tasksKey.currentState?.refreshTasks();
               } else if (_selectedIndex == 1) {
                 _warehouseKey.currentState?.refreshData();
               } else if (_selectedIndex == 2) {
+                _vehicleKey.currentState?.refreshData(); // Refresh trang phương tiện
+              } else if (_selectedIndex == 3) {
                 _reportKey.currentState?.refreshData();
               }
             },
@@ -138,7 +145,7 @@ class StaffMainScreenState extends State<StaffMainScreen> {
                     children: [
                       const Icon(Icons.inventory_2_rounded, color: StaffTheme.primaryBlue, size: 20),
                       const SizedBox(width: 12),
-                      Text('Danh mục hàng', style: StaffTheme.cardSubtitle.copyWith(color: StaffTheme.textDark)),
+                      const Text('Danh mục hàng'),
                     ],
                   ),
                 ),
@@ -165,7 +172,7 @@ class StaffMainScreenState extends State<StaffMainScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        height: 75,
+        height: 85, // Tăng nhẹ chiều cao để chứa 4 item
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -177,7 +184,8 @@ class StaffMainScreenState extends State<StaffMainScreen> {
           children: [
             _buildNavItem(0, Icons.assignment_rounded, 'Nhiệm vụ'),
             _buildNavItem(1, Icons.warehouse_rounded, 'Kho bãi'),
-            _buildNavItem(2, Icons.analytics_rounded, 'Thống kê'),
+            _buildNavItem(2, Icons.local_shipping_rounded, 'Phương tiện'), // Tab mới
+            _buildNavItem(3, Icons.analytics_rounded, 'Thống kê'),
           ],
         ),
       ),
@@ -188,7 +196,8 @@ class StaffMainScreenState extends State<StaffMainScreen> {
     switch (_selectedIndex) {
       case 0: return 'Nhiệm vụ được giao';
       case 1: return 'Quản lý Kho bãi';
-      case 2: return 'Thống kê & Lịch sử';
+      case 2: return 'Quản lý Phương tiện';
+      case 3: return 'Thống kê & Lịch sử';
       default: return 'Staff Dashboard';
     }
   }
@@ -210,14 +219,14 @@ class StaffMainScreenState extends State<StaffMainScreen> {
               color: isSelected ? StaffTheme.primaryBlue.withOpacity(0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             ),
           ),
