@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/assignment.dart';
 import '../../services/rescue_service.dart';
 import '../../utils/staff_theme.dart';
+import '../../services/auth_service.dart';
 
 class RescueReportScreen extends StatefulWidget {
   final String assignmentId;
@@ -163,6 +164,7 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
         assignmentId: widget.assignmentId,
         rescuedCount: _rescuedCount,
         note: _noteController.text.trim(),
+        userId: AuthService.currentUser?.id,
         imageUrls: uploadedUrls,
         actualItems: _actualItems,
         complete: false, // Chuyển sang REPORTED để chờ điều phối viên xác nhận

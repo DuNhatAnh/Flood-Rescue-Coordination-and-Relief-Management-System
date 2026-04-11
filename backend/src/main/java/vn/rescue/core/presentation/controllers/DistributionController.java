@@ -11,7 +11,7 @@ import vn.rescue.core.domain.entities.Distribution;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/distributions")
+@RequestMapping("/api/v1/distributions")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class DistributionController {

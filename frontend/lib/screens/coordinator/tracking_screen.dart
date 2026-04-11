@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flood_rescue_app/models/assignment.dart';
 import 'package:flood_rescue_app/services/rescue_service.dart';
+import 'package:flood_rescue_app/services/auth_service.dart';
 
 class TrackingScreen extends StatefulWidget {
   const TrackingScreen({Key? key}) : super(key: key);
@@ -68,6 +69,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
         assignment.id, 
         'COMPLETED',
         note: 'Điều phối viên xác nhận hoàn thành',
+        userId: AuthService.currentUser?.id,
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

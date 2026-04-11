@@ -180,15 +180,26 @@ public class RescueCoordinationService {
         if (assignmentOpt.isPresent()) {
             Assignment assignment = assignmentOpt.get();
             
-            // 1. KIỂM TRA QUYỀN HẠN (Vấn đề 4)
-            // Chỉ Đội trưởng (Role STAFF/LEAD) của đúng Team mới được nhấn nút
+            // 1. KIỂM TRA QUYỀN HẠN
+            if (userId == null || userId.isEmpty()) {
+                throw new RuntimeException("Thiếu thông tin nhận diện người dùng!");
+            }
             User user = userRepository.findById(userId).orElse(null);
-            if (user == null || !user.getTeamId().equals(assignment.getTeamId())) {
+            if (user == null) {
+                throw new RuntimeException("Không tìm thấy người dùng!");
+            }
+
+            String userRole = user.getRoleId() != null ? user.getRoleId().toUpperCase() : "";
+            boolean isElevatedUser = userRole.contains("ADMIN") || userRole.contains("COORDINATOR");
+            boolean isTeamMember = user.getTeamId() != null && user.getTeamId().equals(assignment.getTeamId());
+
+            if (!isElevatedUser && !isTeamMember) {
                 throw new RuntimeException("Bạn không có quyền cập nhật trạng thái cho nhiệm vụ này!");
             }
-            // Giả định RoleId chứa chuỗi "STAFF" hoặc "LEADER"
-            if (!user.getRoleId().contains("STAFF") && !user.getRoleId().contains("LEADER")) {
-                 throw new RuntimeException("Chỉ đội trưởng mới có quyền thực hiện thao tác này!");
+            
+            // Nếu là Staff/Leader thì mới cần kiểm tra chuỗi vai trò cụ thể (phòng hờ trường hợp Role khác gán TeamId)
+            if (!isElevatedUser && !userRole.contains("STAFF") && !userRole.contains("LEADER")) {
+                 throw new RuntimeException("Chỉ thành viên đội cứu hộ hoặc điều phối viên mới có quyền thực hiện thao tác này!");
             }
 
             String oldStatus = assignment.getStatus();
@@ -204,7 +215,13 @@ public class RescueCoordinationService {
                     item.setItemId((String) m.get("itemId"));
                     item.setItemName((String) m.get("itemName"));
                     item.setUnit((String) m.get("unit"));
-                    item.setQuantity((Integer) m.get("quantity"));
+                    
+                    Object qtyObj = m.get("quantity");
+                    if (qtyObj instanceof Number) {
+                        item.setQuantity(((Number) qtyObj).intValue());
+                    } else {
+                        item.setQuantity(0);
+                    }
                     return item;
                 }).collect(Collectors.toList());
 
@@ -232,7 +249,13 @@ public class RescueCoordinationService {
                     item.setItemId((String) m.get("itemId"));
                     item.setItemName((String) m.get("itemName"));
                     item.setUnit((String) m.get("unit"));
-                    item.setQuantity((Integer) m.get("quantity"));
+                    
+                    Object qtyObj = m.get("quantity");
+                    if (qtyObj instanceof Number) {
+                        item.setQuantity(((Number) qtyObj).intValue());
+                    } else {
+                        item.setQuantity(0);
+                    }
                     return item;
                 }).collect(Collectors.toList());
                 assignment.setActualDistributedItems(actualItems);

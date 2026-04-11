@@ -260,6 +260,7 @@ class RescueService {
     required String assignmentId,
     required int rescuedCount,
     required String note,
+    String? userId,
     List<String>? imageUrls,
     List<Map<String, dynamic>>? actualItems,
     bool complete = true,
@@ -268,6 +269,7 @@ class RescueService {
       final response = await _dio.put('/assignments/$assignmentId/status', data: {
         'rescuedCount': rescuedCount,
         'note': note,
+        'userId': userId,
         'imageUrls': imageUrls,
         'actualItems': actualItems,
         'status': complete ? 'COMPLETED' : 'REPORTED'

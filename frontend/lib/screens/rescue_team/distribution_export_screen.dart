@@ -53,13 +53,14 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
   List<Vehicle> _availableVehicles = [];
   
   Assignment? _selectedTask;
+  bool _isLoading = true;
+  bool _isSubmitting = false;
   Warehouse? _selectedWarehouse;
   Warehouse? _myManagedWarehouse; // KHO CỐ ĐỊNH CỦA ĐỘI (VD: Xuân Hòa)
   Vehicle? _selectedVehicle;
   final TextEditingController _changeReasonController = TextEditingController();
   
   List<Map<String, dynamic>> _selectedItems = [];
-  bool _isLoading = true;
   String _exportType = 'EXPORT'; 
   Warehouse? _destinationWarehouse;
   bool _vehicleStepConfirmed = false;
@@ -119,6 +120,29 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
           }
         }
       });
+      
+      // AUTO-FILL VEHICLE FROM MISSION (Fix: Nới lỏng logic so khớp biển số)
+      if (widget.mission != null && widget.mission!.licensePlate != null) {
+        _loadVehicles(_selectedWarehouse?.id ?? '').then((_) {
+          if (mounted && _availableVehicles.isNotEmpty) {
+            setState(() {
+              try {
+                // Chuẩn hóa biển số: chữ thường và bỏ ký tự đặc biệt
+                final normMissionPlate = widget.mission!.licensePlate!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+                _selectedVehicle = _availableVehicles.firstWhere(
+                  (v) {
+                    if (v.id != null && (widget.mission!.vehicleIds?.contains(v.id) ?? false)) return true;
+                    if (v.licensePlate == null) return false;
+                    String normVPlate = v.licensePlate!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+                    return normMissionPlate.contains(normVPlate) || normVPlate.contains(normMissionPlate);
+                  }
+                );
+              } catch (_) {
+              }
+            });
+          }
+        });
+      }
     }
   }
 
@@ -146,9 +170,44 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
 
   Future<void> _loadVehicles(String warehouseId) async {
     final vehiclesRaw = await _vehicleService.getAvailableVehicles();
-    final vehicles = vehiclesRaw.map((v) => Vehicle.fromJson(v)).toList();
-    // Filter vehicles by team's locality or warehouse if applicable (simplified here)
-    if (mounted) setState(() => _availableVehicles = vehicles);
+    List<Vehicle> vehicles = vehiclesRaw.map((v) => Vehicle.fromJson(v)).toList();
+
+    // HỢP NHẤT: Bổ sung xe của nhiệm vụ vào danh sách nếu nó đang bị lọc mất do trạng thái BUSY
+    if (widget.mission != null && widget.mission!.vehicleIds != null) {
+      for (String vId in widget.mission!.vehicleIds!) {
+        bool exists = vehicles.any((v) => v.id == vId);
+        if (!exists) {
+          // Thử lấy thông tin xe cụ thể (giả lập hoặc từ licensePlate đã có)
+          vehicles.add(Vehicle(
+            id: vId, 
+            vehicleType: widget.mission!.vehicleType ?? 'Phương tiện cứu hộ', 
+            licensePlate: widget.mission!.licensePlate ?? 'ĐANG DÙNG', 
+            status: 'IN_USE'
+          ));
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _availableVehicles = vehicles;
+        
+        // Tự động chọn nếu khớp với nhiệm vụ mà chưa được chọn
+        if (_selectedVehicle == null && widget.mission != null && widget.mission!.licensePlate != null) {
+          try {
+            final normMissionPlate = widget.mission!.licensePlate!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            _selectedVehicle = vehicles.firstWhere(
+              (v) {
+                if (v.id != null && (widget.mission!.vehicleIds?.contains(v.id) ?? false)) return true;
+                if (v.licensePlate == null) return false;
+                String normVPlate = v.licensePlate!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+                return normMissionPlate.contains(normVPlate) || normVPlate.contains(normMissionPlate);
+              }
+            );
+          } catch (_) {}
+        }
+      });
+    }
   }
 
   Future<void> _onWarehouseChanged(Warehouse? wh) async {
@@ -321,9 +380,9 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
             const SizedBox(height: 12),
             const Text('Danh sách vật phẩm:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ..._selectedItems.map((item) => Text('• ${item['quantity']} ${item['itemName']}', style: const TextStyle(fontSize: 13))).toList(),
-            if (_selectedVehicle != null) ...[
+            if (_selectedVehicle != null || (widget.mission?.licensePlate != null)) ...[
               const SizedBox(height: 8),
-              Text('Phương tiện: ${_selectedVehicle!.licensePlate}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
+              Text('Phương tiện: ${_selectedVehicle?.licensePlate ?? widget.mission!.licensePlate}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
             ],
           ],
         ),
@@ -354,6 +413,11 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
        );
     }
 
+    print("📦 DEBUG: Create Distribution Payload:");
+    print("   - Warehouse: ${_selectedWarehouse!.id}");
+    print("   - RequestId: ${_selectedTask?.id}");
+    print("   - Items: $_selectedItems");
+
     final success = await _distService.createDistribution(
       _selectedWarehouse!.id!,
       _exportType == 'EXPORT' ? _selectedTask?.id : null,
@@ -361,19 +425,19 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
       type: _exportType,
       destinationWarehouseId: _exportType == 'TRANSFER' ? _destinationWarehouse?.id : null,
     );
-    
-    setState(() => _isLoading = false);
-    if (success) {
-      if (mounted) {
+
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xuất hàng thành công!'), backgroundColor: StaffTheme.successGreen));
         if (widget.onSuccess != null) {
           widget.onSuccess!();
         } else {
-          Navigator.pop(context, true);
+           Navigator.pop(context, true);
         }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lỗi khi xuất hàng'), backgroundColor: StaffTheme.errorRed));
       }
-    } else {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lỗi khi xuất hàng'), backgroundColor: StaffTheme.errorRed));
     }
   }
 
