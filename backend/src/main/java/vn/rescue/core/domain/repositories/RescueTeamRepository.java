@@ -17,4 +17,6 @@ public interface RescueTeamRepository extends MongoRepository<RescueTeam, String
     long countByStatusIgnoreCase(String status);
 
     List<RescueTeam> findByStatusOrderByTeamNameAsc(String status);
-}
+
+    Optional<RescueTeam> findByWarehouseId(String warehouseId);
+}

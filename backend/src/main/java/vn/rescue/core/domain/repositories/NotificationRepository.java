@@ -14,8 +14,8 @@ public interface NotificationRepository extends MongoRepository<Notification, St
     // Tìm thông báo của 1 user hoặc thông báo chung toàn hệ thống, sắp xếp mới nhất
     List<Notification> findByUserIdOrUserIdIsNullOrderByCreatedAtDesc(String userId);
 
-    // Đếm số thông báo CHƯA ĐỌC của một user (Để hiện số Badge đỏ trên icon chuông)
-    long countByUserIdAndIsReadFalse(String userId);
+    // Đếm số thông báo CHƯA ĐỌC của một user bao gồm cả thông báo chung
+    long countByUserIdOrUserIdIsNullAndIsReadFalse(String userId);
 
     // Lấy danh sách thông báo chưa đọc (Để lọc nhanh trên UI)
     List<Notification> findByUserIdAndIsReadFalseOrderByCreatedAtDesc(String userId);
@@ -34,5 +34,10 @@ public interface NotificationRepository extends MongoRepository<Notification, St
     List<Notification> searchNotifications(String keyword);
 
     // Xóa tất cả thông báo của một user (Tính năng dọn dẹp)
+    // Tìm thông báo riêng cho 1 user và sắp xếp mới nhất lên đầu
+    List<Notification> findByUserIdOrderByCreatedAtDesc(String userId);
+
+    long countByUserIdAndIsReadFalse(String userId);
+
     void deleteByUserId(String userId);
 }

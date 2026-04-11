@@ -25,4 +25,21 @@ public class TeamController {
     public ResponseEntity<ApiResponse<List<RescueTeam>>> getAvailableTeams() {
         return ResponseEntity.ok(ApiResponse.success(rescueCoordinationService.getAvailableTeams(), "Danh sách đội cứu hộ sẵn sàng"));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<RescueTeam>> getTeamById(@PathVariable String id) {
+        return rescueCoordinationService.getTeamById(id)
+                .map(team -> ResponseEntity.ok(ApiResponse.success(team, "Thông tin đội cứu hộ")))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<RescueTeam>> updateTeam(@PathVariable String id, @RequestBody java.util.Map<String, String> body) {
+        String newName = body.get("teamName");
+        if (newName == null || newName.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Tên đội không được để trống"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(rescueCoordinationService.updateTeam(id, newName), "Cập nhật tên đội thành công"));
+    }
 }
+

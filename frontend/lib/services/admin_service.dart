@@ -247,5 +247,18 @@ class AdminService {
     
     throw Exception('Failed to load teams');
   }
+
+  Future<void> updateTeam(String teamId, String newName) async {
+    final url = Uri.parse('$baseUrl/v1/teams/$teamId');
+    final headers = await _getAuthHeaders();
+    final response = await http.put(
+      url,
+      headers: headers,
+      body: jsonEncode({'teamName': newName}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update team name');
+    }
+  }
 }
 

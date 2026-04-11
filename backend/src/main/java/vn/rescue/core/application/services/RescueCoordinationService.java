@@ -62,6 +62,9 @@ public class RescueCoordinationService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private SystemManagementService systemManagementService;
+
     public List<RescueRequest> getPendingRequests() {
         return rescueRequestRepository.findByStatus("PENDING");
     }
@@ -98,6 +101,61 @@ public class RescueCoordinationService {
     public List<RescueTeam> getAllTeams() {
         return rescueTeamRepository.findAll();
     }
+
+    public Optional<RescueTeam> getTeamById(String id) {
+        return rescueTeamRepository.findById(id);
+    }
+
+    @Transactional
+    public RescueTeam updateTeam(String id, String newName) {
+        Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(id);
+        if (teamOpt.isPresent()) {
+            RescueTeam team = teamOpt.get();
+            String oldName = team.getTeamName();
+            team.setTeamName(newName);
+            RescueTeam updated = rescueTeamRepository.save(team);
+            
+            // Thông báo cho toàn đội
+            notifyTeam(id, 
+                "Cập nhật Đội cứu hộ", 
+                "Tên đội đã được thay đổi từ \"" + oldName + "\" thành \"" + newName + "\".", 
+                "INFO");
+                
+            return updated;
+        }
+        throw new RuntimeException("Không tìm thấy đội cứu hộ với ID: " + id);
+    }
+
+    /**
+     * Thông báo cho toàn bộ nhân viên thuộc một Kho cụ thể
+     */
+    public void notifyWarehouse(String warehouseId, String title, String content, String type) {
+        try {
+            rescueTeamRepository.findByWarehouseId(warehouseId).ifPresent(team -> {
+                notifyTeam(team.getId(), title, content, type);
+            });
+        } catch (Exception e) {
+            logger.error("Lỗi khi gửi thông báo cho kho {}: {}", warehouseId, e.getMessage());
+        }
+    }
+
+    public void notifyTeam(String teamId, String title, String content, String type) {
+        try {
+            List<User> members = userRepository.findByTeamId(teamId);
+            for (User user : members) {
+                vn.rescue.core.application.dto.NotificationDto dto = new vn.rescue.core.application.dto.NotificationDto();
+                dto.setTitle(title);
+                dto.setContent(content);
+                dto.setType(type);
+                dto.setPriority("NORMAL");
+                dto.setUserId(user.getId());
+                systemManagementService.sendNotification(dto);
+            }
+        } catch (Exception e) {
+            logger.error("Lỗi khi gửi thông báo cho đội {}: {}", teamId, e.getMessage());
+        }
+    }
+
 
     public List<Vehicles> getAvailableVehicles() {
         List<Vehicles> vehicles = vehiclesRepository.findByStatusIgnoreCase("AVAILABLE");
@@ -152,7 +210,15 @@ public class RescueCoordinationService {
             assignment.setStatus("ASSIGNED");
             assignment.setMissionItems(missionItems);
 
-            return assignmentRepository.save(assignment);
+            Assignment saved = assignmentRepository.save(assignment);
+            
+            // Thông báo cho toàn đội về nhiệm vụ mới
+            notifyTeam(teamId, 
+                "Nhiệm vụ mới được phân công", 
+                "Đội có nhiệm vụ mới tại: " + request.getAddressText() + ". Vui lòng kiểm tra chi tiết.", 
+                "SOS");
+                
+            return saved;
         }
         return null;
     }
@@ -331,6 +397,22 @@ public class RescueCoordinationService {
             }
 
             assignmentRepository.save(assignment);
+
+            // THÔNG BÁO CHO ĐỘI (Nếu là hành động của Điều phối viên)
+            if ("REJECTED".equalsIgnoreCase(status)) {
+                notifyTeam(assignment.getTeamId(), 
+                    "Nhiệm vụ bị từ chối/hủy", 
+                    "Điều phối viên đã từ chối hoặc yêu cầu làm lại nhiệm vụ này: " + (note != null ? note : ""), 
+                    "WARNING");
+            } else if ("APPROVED".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
+                 // Nếu điều phối viên duyệt COMPLETED (không phải do Staff bấm)
+                 if (!user.getRoleId().contains("STAFF") && !user.getRoleId().contains("LEADER")) {
+                     notifyTeam(assignment.getTeamId(), 
+                        "Báo cáo đã được duyệt", 
+                        "Điều phối viên đã duyệt báo cáo cứu hộ của đội. Nhiệm vụ kết thúc thành công.", 
+                        "INFO");
+                 }
+            }
 
             // If RETURNING, COMPLETED or REJECTED or CANCELLED, release resources (Vấn đề 4)
             // Giải phóng sớm khi bắt đầu quay về hoặc hoàn thành

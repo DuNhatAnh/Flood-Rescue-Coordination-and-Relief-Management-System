@@ -15,6 +15,7 @@ import java.util.List;
 public class WarehouseService {
     private final WarehouseRepository warehouseRepository;
     private final RescueTeamRepository rescueTeamRepository;
+    private final RescueCoordinationService rescueCoordinationService;
 
     public List<Warehouse> getAllWarehouses() {
         return warehouseRepository.findAll();
@@ -63,8 +64,19 @@ public class WarehouseService {
     private void syncTeamWithWarehouse(String managerId, String warehouseId) {
         if (managerId != null) {
             rescueTeamRepository.findByLeaderId(managerId).ifPresent(team -> {
-                team.setWarehouseId(warehouseId);
-                rescueTeamRepository.save(team);
+                String oldWarehouseId = team.getWarehouseId();
+                if (warehouseId != null && !warehouseId.equals(oldWarehouseId)) {
+                    team.setWarehouseId(warehouseId);
+                    rescueTeamRepository.save(team);
+                    
+                    // Lấy tên kho mới để thông báo
+                    warehouseRepository.findById(warehouseId).ifPresent(w -> {
+                        rescueCoordinationService.notifyTeam(team.getId(), 
+                            "Cập nhật Kho quản lý", 
+                            "Đội đã được Admin gán quản lý kho mới: " + w.getWarehouseName() + ". Vui lòng kiểm tra lại sơ đồ kho.", 
+                            "INFO");
+                    });
+                }
             });
         }
     }

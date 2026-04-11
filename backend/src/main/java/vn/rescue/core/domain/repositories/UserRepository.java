@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByEmail(String email);
     List<User> findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(String name, String email);
+    List<User> findByTeamId(String teamId);
 }

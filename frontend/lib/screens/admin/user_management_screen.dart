@@ -137,6 +137,39 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
+  void _showEditTeamDialog(String teamId, String currentName) {
+    final nameController = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sửa tên đội cứu hộ'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(labelText: 'Tên đội mới'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.trim().isEmpty) return;
+              try {
+                await _adminService.updateTeam(teamId, nameController.text.trim());
+                if (!mounted) return;
+                Navigator.pop(context);
+                _loadInitialData(); // Refresh teams and users
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+              }
+            },
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -257,10 +290,34 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                             ),
                                           ),
                                         ),
+                                        if (user['teamId'] != null) ...[
+                                          const SizedBox(width: 8),
+                                          const Text('|', style: TextStyle(color: Colors.grey)),
+                                          const SizedBox(width: 8),
+                                          GestureDetector(
+                                            onTap: () {
+                                              final team = _teams.firstWhere((t) => t['id'] == user['teamId'], orElse: () => null);
+                                              if (team != null) {
+                                                _showEditTeamDialog(team['id'], team['teamName'] ?? '');
+                                              }
+                                            },
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                  _teams.firstWhere((t) => t['id'] == user['teamId'], orElse: () => {})['teamName'] ?? 'Đội không tên',
+                                                  style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.blueGrey),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                const Icon(Icons.edit, size: 14, color: Colors.blueGrey),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ],
                                 ),
+
                               ),
                               Switch(
                                 value: isActive,

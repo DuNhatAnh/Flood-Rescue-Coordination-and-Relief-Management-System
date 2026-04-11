@@ -39,25 +39,12 @@ public class SystemManagementService {
                 .build();
         systemLogRepository.save(logEntry);
 
-        // 2. Tự động tạo thông báo nếu đây là hành động quan trọng (RESCUE hoặc INVENTORY)
+        // 2. Tự động tạo thông báo (Đã vô hiệu hóa để tránh làm phiền, chuyển sang thông báo trúng đích trong Service)
+        /*
         if (module != null && (module.equals("RESCUE") || module.equals("INVENTORY"))) {
-            // Nâng cấp: Nếu là thiếu hụt hàng hóa thì dùng SOS (đỏ), còn lại dùng WARNING (vàng) hoặc SOS tùy module
-            String notificationType = "WARNING";
-            if (module.equals("RESCUE") || action.equals("INVENTORY_SHORTAGE")) {
-                notificationType = "SOS";
-            }
-
-            Notification autoNotice = Notification.builder()
-                    .title("Hệ thống: " + action)
-                    .content(details)
-                    .type(notificationType)
-                    .priority("HIGH")
-                    .isRead(false)
-                    .userId(null) // Thông báo chung cho các điều phối viên
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            notificationRepository.save(autoNotice);
+            ...
         }
+        */
     }
 
     // Overload cho các trường hợp log đơn giản hơn
@@ -134,7 +121,23 @@ public class SystemManagementService {
      * Lấy thông báo riêng cho từng User hoặc thông báo chung (UserId is Null)
      */
     public List<Notification> getUserNotifications(String userId) {
-        return notificationRepository.findByUserIdOrUserIdIsNullOrderByCreatedAtDesc(userId);
+        // Chỉ lấy thông báo đích danh cho User này để tránh nhiễu và cho phép xóa sạch hoàn toàn
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    /**
+     * Đếm số lượng thông báo chưa đọc (Bao gồm thông báo nặc danh/broadcast)
+     */
+    public long getUnreadNotificationCount(String userId) {
+        return notificationRepository.countByUserIdAndIsReadFalse(userId);
+    }
+
+    /**
+     * Xóa toàn bộ thông báo của 1 user
+     */
+    public void deleteAllNotifications(String userId) {
+        notificationRepository.deleteByUserId(userId);
+        log.info("All notifications for user {} have been deleted", userId);
     }
 
     // --- CẤU HÌNH & QUYỀN ---

@@ -39,9 +39,8 @@ public class DataInitializer implements CommandLineRunner {
         seedRescueRequests();
         seedWarehousesAndItems();
         seedRescueTeamsAndVehicles();
-        backfillManagerIds();
+        
         backfillRescueRequestIds();
-        backfillStaffTeamIds();
         seedAssignments();
 
         log.info("Hoàn tất quá trình dọn dẹp và khởi tạo.");
@@ -82,82 +81,6 @@ public class DataInitializer implements CommandLineRunner {
             roleRepository.saveAll(Arrays.asList(admin, coordinator, staff, user));
             log.info("Đã nạp 4 vai trò mẫu.");
         }
-    }
-
-    private void backfillStaffTeamIds() {
-        log.info("Đang kiểm tra và đồng bộ liên kết Staff - Đội cứu hộ...");
-
-        // Ensure staff@rescue.vn is linked to Team 1 if not already
-        syncStaffWithTeam("staff@rescue.vn", "Đội Cứu Hộ 1");
-        syncStaffWithTeam("staff2@rescue.vn", "Đội Cứu Hộ 2");
-        syncStaffWithTeam("staff3@rescue.vn", "Đội Cứu Hộ 3");
-
-        // General backfill for any other leader/staff links
-        List<RescueTeam> allTeams = rescueTeamRepository.findAll();
-        for (RescueTeam team : allTeams) {
-            if (team.getLeaderId() != null) {
-                userRepository.findById(team.getLeaderId()).ifPresent(user -> {
-                    if (user.getTeamId() == null) {
-                        user.setTeamId(team.getId());
-                        userRepository.save(user);
-                        log.info("Đã cập nhật teamId cho nhân viên {} dựa trên leaderId của đội {}",
-                                user.getEmail(), team.getTeamName());
-                    }
-                });
-            }
-        }
-    }
-
-    private void syncStaffWithTeam(String email, String teamName) {
-        userRepository.findByEmail(email).ifPresent(staff -> {
-            rescueTeamRepository.findAll().stream()
-                    .filter(t -> teamName.equals(t.getTeamName()))
-                    .findFirst()
-                    .ifPresent(team -> {
-                        boolean updated = false;
-                        if (team.getLeaderId() == null) {
-                            team.setLeaderId(staff.getId());
-                            rescueTeamRepository.save(team);
-                            updated = true;
-                        }
-                        if (staff.getTeamId() == null) {
-                            staff.setTeamId(team.getId());
-                            userRepository.save(staff);
-                            updated = true;
-                        }
-                        if (updated) {
-                            log.info("Đã đồng bộ kết nối cho {} và {}", email, teamName);
-                        }
-                    });
-        });
-    }
-
-    private void backfillManagerIds() {
-        log.info("Đang gán quyền quản lý kho cho nhân viên...");
-        syncWarehouseManager("staff@rescue.vn", "Kho Hòa Xuân");
-        syncWarehouseManager("staff2@rescue.vn", "Kho Liên Chiểu");
-        syncWarehouseManager("staff3@rescue.vn", "Kho Cẩm Lệ");
-    }
-
-    private void syncWarehouseManager(String email, String warehouseName) {
-        userRepository.findByEmail(email).ifPresent(staff -> {
-            warehouseRepository.findByWarehouseName(warehouseName).ifPresent(warehouse -> {
-                if (warehouse.getManagerId() == null) {
-                    warehouse.setManagerId(staff.getId());
-                    warehouseRepository.save(warehouse);
-                    log.info("Đã gán {} làm quản lý cho {} (ID: {})", email, warehouseName, warehouse.getId());
-                }
-                
-                // Đồng bộ Đội cứu hộ của Manager này với Kho (Nếu chưa gán)
-                rescueTeamRepository.findByLeaderId(staff.getId()).ifPresent(team -> {
-                    if (team.getWarehouseId() == null) {
-                        team.setWarehouseId(warehouse.getId());
-                        rescueTeamRepository.save(team);
-                        log.info("Đã tự động liên kết Đội '{}' với Kho '{}'", team.getTeamName(), warehouseName);
-                    }
-                });
-            });
-        });
     }
 
     private void backfillRescueRequestIds() {

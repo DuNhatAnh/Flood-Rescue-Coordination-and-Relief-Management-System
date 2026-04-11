@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin/system")
+@RequestMapping("/api/v1/admin/system")
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Quan trọng để Flutter gọi không bị chặn CORS

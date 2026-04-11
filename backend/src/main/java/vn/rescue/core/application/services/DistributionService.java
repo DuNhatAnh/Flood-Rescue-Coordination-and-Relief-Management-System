@@ -25,6 +25,7 @@ public class DistributionService {
     private final DistributionDetailRepository detailRepository;
     private final InventoryRepository inventoryRepository;
     private final AssignmentRepository assignmentRepository;
+    private final RescueCoordinationService rescueCoordinationService;
 
     @Transactional
     public Distribution createDistribution(DistributionRequest request, String userId) {
@@ -45,6 +46,16 @@ public class DistributionService {
         }
         
         Distribution savedDistribution = distributionRepository.save(distribution);
+
+        // Thông báo cho kho đích nếu là điều chuyển hàng
+        if ("TRANSFER".equals(distribution.getType()) && distribution.getDestinationWarehouseId() != null) {
+            rescueCoordinationService.notifyWarehouse(
+                distribution.getDestinationWarehouseId(), 
+                "Yêu cầu điều phối hàng", 
+                "Có yêu cầu điều phối hàng từ kho khác đến kho của bạn. Vui lòng kiểm tra mục 'Nhập kho'.", 
+                "WARNING"
+            );
+        }
 
         for (DistributionRequest.ItemQuantity itemReq : request.getItems()) {
             Inventory inventory = inventoryRepository.findByWarehouseIdAndItemId(

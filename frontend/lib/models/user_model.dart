@@ -5,14 +5,18 @@ class UserModel {
   final String fullName;
   final String email;
   final String? teamId;
+  final String? teamName;
   final UserRole role;
+
 
   UserModel({
     required this.id,
     required this.fullName,
     required this.email,
     this.teamId,
+    this.teamName,
     required this.role,
+
   });
 
   Map<String, dynamic> toJson() {
@@ -21,7 +25,9 @@ class UserModel {
       'fullName': fullName,
       'email': email,
       'teamId': teamId,
+      'teamName': teamName,
       'role': role.index,
+
     };
   }
 
@@ -31,7 +37,9 @@ class UserModel {
       fullName: json['fullName'],
       email: json['email'],
       teamId: json['teamId'],
+      teamName: json['teamName'],
       role: UserRole.values[json['role']],
+
     );
   }
 }

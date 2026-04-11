@@ -120,6 +120,24 @@ class RescueService {
     }
   }
 
+  // Lấy danh mục đội cứu hộ theo ID
+  Future<Map<String, dynamic>?> getTeamById(String id) async {
+    try {
+      final response = await _dio.get('/teams/$id');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData is Map && responseData['success'] == true) {
+          return responseData['data'];
+        }
+        return responseData;
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching team by id: $e');
+      return null;
+    }
+  }
+
   // Lấy phương tiện rảnh
   Future<List<Vehicle>> getAvailableVehicles() async {
     try {

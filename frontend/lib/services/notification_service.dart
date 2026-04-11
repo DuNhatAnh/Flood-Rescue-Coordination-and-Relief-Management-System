@@ -13,16 +13,14 @@ class NotificationService {
     'Accept': 'application/json',
   };
 
-  // 1. Lấy tất cả thông báo
+  // 0. Lấy TẤT CẢ thông báo (Dùng cho Admin/Coordinator)
   Future<List<NotificationModel>> getAllNotifications() async {
     try {
       final response = await http.get(Uri.parse(baseUrl), headers: _headers)
-          .timeout(const Duration(seconds: 10)); // Tránh treo app nếu server chết
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> body = json.decode(utf8.decode(response.bodyBytes));
-        
-        // Kiểm tra xem trường 'data' có tồn tại không
         if (body['data'] != null) {
           List<dynamic> data = body['data']; 
           return data.map((item) => NotificationModel.fromJson(item)).toList();
@@ -32,7 +30,28 @@ class NotificationService {
       throw Exception("Server trả về lỗi: ${response.statusCode}");
     } catch (e) {
       debugPrint("Chi tiết lỗi getAllNotifications: $e");
-      throw Exception("Không thể kết nối máy chủ. Vui lòng kiểm tra lại mạng hoặc Backend.");
+      throw Exception("Không thể kết nối máy chủ.");
+    }
+  }
+
+  // 1. Lấy tất cả thông báo của 1 User
+  Future<List<NotificationModel>> getUserNotifications(String userId) async {
+    try {
+      final response = await http.get(Uri.parse("$baseUrl/user/$userId"), headers: _headers)
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = json.decode(utf8.decode(response.bodyBytes));
+        if (body['data'] != null) {
+          List<dynamic> data = body['data']; 
+          return data.map((item) => NotificationModel.fromJson(item)).toList();
+        }
+        return [];
+      }
+      throw Exception("Server trả về lỗi: ${response.statusCode}");
+    } catch (e) {
+      debugPrint("Chi tiết lỗi getUserNotifications: $e");
+      throw Exception("Không thể kết nối máy chủ.");
     }
   }
 
@@ -57,7 +76,7 @@ class NotificationService {
   // 3. Đánh dấu đã đọc
   Future<void> markAsRead(String id) async {
     try {
-      final response = await http.put(
+      final response = await http.patch(
         Uri.parse("$baseUrl/$id/read"),
         headers: _headers,
       );
@@ -68,6 +87,22 @@ class NotificationService {
     } catch (e) {
       debugPrint("Lỗi markAsRead: $e");
       rethrow; // Ném lỗi để UI (NotificationScreen) có thể catch và hiện SnackBar
+    }
+  }
+
+  // 4. Xóa tất cả thông báo
+  Future<void> deleteAll(String userId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse("$baseUrl/user/$userId"),
+        headers: _headers,
+      );
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception("Xóa thất bại: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Lỗi deleteAll: $e");
+      rethrow;
     }
   }
 }

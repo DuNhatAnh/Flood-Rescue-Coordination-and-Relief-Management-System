@@ -17,5 +17,6 @@ public class AuthResponse {
     private String email;
     private String fullName;
     private String teamId;
+    private String teamName;
     private List<String> roles;
 }

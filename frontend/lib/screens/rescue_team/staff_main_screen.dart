@@ -7,6 +7,13 @@ import '../relief_item_screen.dart';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
 import '../../utils/staff_theme.dart';
+import '../../services/rescue_service.dart';
+import '../../models/user_model.dart';
+import '../../services/notification_service.dart';
+import '../../models/notification_model.dart';
+import 'notification_screen.dart';
+import 'dart:async';
+
 
 class StaffMainScreen extends StatefulWidget {
   const StaffMainScreen({Key? key}) : super(key: key);
@@ -23,6 +30,14 @@ class StaffMainScreenState extends State<StaffMainScreen> {
   final GlobalKey<StaffManagedWarehouseScreenState> _warehouseKey = GlobalKey();
   final GlobalKey<StaffVehicleManagementScreenState> _vehicleKey = GlobalKey();
   final GlobalKey<StaffReportScreenState> _reportKey = GlobalKey();
+  
+  final RescueService _rescueService = RescueService();
+  final NotificationService _notificationService = NotificationService();
+  String _teamName = AuthService.currentUser?.teamName ?? 'ĐỘI CỨU HỘ';
+  int _unreadNotifications = 0;
+  Timer? _notificationTimer;
+  String? _lastNotificationId;
+
 
   late List<Widget> _screens;
 
@@ -35,7 +50,119 @@ class StaffMainScreenState extends State<StaffMainScreen> {
       StaffVehicleManagementScreen(key: _vehicleKey), // Trang quản lý phương tiện mới
       StaffReportScreen(key: _reportKey),
     ];
+    _fetchTeamName();
+    _checkNotifications();
+    // Kiểm tra thông báo mới mỗi 30 giây
+    _notificationTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _checkNotifications();
+    });
   }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkNotifications() async {
+    final userId = AuthService.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      // 1. Lấy số lượng chưa đọc hiện tại
+      final count = await _notificationService.getUnreadCount(userId);
+      
+      // 2. Nếu có thông báo mới (count tăng)
+      if (count > _unreadNotifications) {
+        // Lấy danh sách để tìm thông báo mới nhất hiện Pop-up
+        final list = await _notificationService.getUserNotifications(userId);
+        if (list.isNotEmpty && list.first.id != _lastNotificationId) {
+          _lastNotificationId = list.first.id;
+          _showNotificationDialog(list.first);
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _unreadNotifications = count;
+        });
+      }
+    } catch (e) {
+      debugPrint('Lỗi check notifications: $e');
+    }
+  }
+
+  void _showNotificationDialog(NotificationModel notification) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.notifications_active, color: StaffTheme.primaryBlue),
+            const SizedBox(width: 8),
+            const Text('Thông báo mới'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(notification.title ?? 'Cập nhật hệ thống', 
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            Text(notification.content ?? ''),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const StaffNotificationScreen()))
+                .then((_) => _checkNotifications());
+            },
+            child: const Text('Xem danh sách'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: StaffTheme.primaryBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _fetchTeamName() async {
+    final teamId = AuthService.currentUser?.teamId;
+    if (teamId == null) return;
+    
+    final teamData = await _rescueService.getTeamById(teamId);
+    if (teamData != null && teamData['teamName'] != null) {
+      if (!mounted) return;
+      setState(() {
+        _teamName = teamData['teamName'];
+        // Cập nhật cả trong session để các tab khác có thể dùng
+        final current = AuthService.currentUser;
+        if (current != null) {
+          AuthService.currentUser = UserModel(
+            id: current.id,
+            fullName: current.fullName,
+            email: current.email,
+            teamId: current.teamId,
+            teamName: _teamName,
+            role: current.role,
+          );
+        }
+      });
+    }
+  }
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -60,6 +187,7 @@ class StaffMainScreenState extends State<StaffMainScreen> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: StaffTheme.primaryGradient,
@@ -69,22 +197,55 @@ class StaffMainScreenState extends State<StaffMainScreen> {
             ),
           ),
         ),
-        title: Container(
-          constraints: const BoxConstraints(maxWidth: 250),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('XIN CHÀO, ĐỘI CỨU HỘ', style: StaffTheme.subtitleSmall, overflow: TextOverflow.ellipsis),
-              Text(
-                _getTabTitle(),
-                style: StaffTheme.titleLarge,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('XIN CHÀO', style: StaffTheme.subtitleSmall),
+            Text(
+              _teamName.toUpperCase(),
+              style: StaffTheme.titleLarge.copyWith(fontSize: 24, letterSpacing: 1.2),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
         actions: [
+          // Nút Chuông Thông Báo
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_rounded, color: Colors.white, size: 28),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const StaffNotificationScreen()),
+                    ).then((_) => _checkNotifications());
+                  },
+                  tooltip: 'Thông báo',
+                ),
+                if (_unreadNotifications > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        '$_unreadNotifications',
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
             onPressed: () {
@@ -98,9 +259,13 @@ class StaffMainScreenState extends State<StaffMainScreen> {
               } else if (_selectedIndex == 3) {
                 _reportKey.currentState?.refreshData();
               }
+              _fetchTeamName();
+              _checkNotifications();
             },
             tooltip: 'Tải lại dữ liệu',
           ),
+
+
           Padding(
             padding: const EdgeInsets.only(right: 16, left: 8),
             child: PopupMenuButton<String>(

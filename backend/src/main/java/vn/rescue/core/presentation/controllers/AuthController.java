@@ -15,6 +15,9 @@ import vn.rescue.core.application.dto.AuthResponse;
 import vn.rescue.core.domain.entities.User;
 import vn.rescue.core.domain.repositories.UserRepository;
 import vn.rescue.core.infrastructure.security.JwtService;
+import vn.rescue.core.domain.entities.RescueTeam;
+import vn.rescue.core.domain.repositories.RescueTeamRepository;
+
 
 import java.util.stream.Collectors;
 import org.springframework.security.core.GrantedAuthority;
@@ -27,6 +30,8 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final RescueTeamRepository rescueTeamRepository;
+
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
@@ -38,15 +43,24 @@ public class AuthController {
 
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
 
+        String teamName = null;
+        if (user.getTeamId() != null) {
+            teamName = rescueTeamRepository.findById(user.getTeamId())
+                    .map(RescueTeam::getTeamName)
+                    .orElse(null);
+        }
+
         return ResponseEntity.ok(AuthResponse.builder()
                 .id(user.getId())
                 .token(token)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .teamId(user.getTeamId())
+                .teamName(teamName)
                 .roles(userDetails.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
                 .build());
     }
 }
+

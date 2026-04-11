@@ -73,6 +73,7 @@ class AuthService {
           email: data['email'] ?? email,
           fullName: data['fullName'] ?? 'Người dùng',
           teamId: data['teamId'],
+          teamName: data['teamName'],
           role: mappedRole,
         );
         

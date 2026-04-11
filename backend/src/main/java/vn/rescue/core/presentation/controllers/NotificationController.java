@@ -43,4 +43,18 @@ public class NotificationController {
         systemManagementService.markNotificationAsRead(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Notification marked as read"));
     }
+
+    // Đếm số thông báo chưa đọc
+    @GetMapping("/unread-count")
+    public ResponseEntity<ApiResponse<Long>> getUnreadCount(@RequestParam String userId) {
+        long count = systemManagementService.getUnreadNotificationCount(userId);
+        return ResponseEntity.ok(ApiResponse.success(count, "Unread count retrieved"));
+    }
+
+    // Xóa tất cả thông báo của User
+    @DeleteMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<Void>> deleteAll(@PathVariable String userId) {
+        systemManagementService.deleteAllNotifications(userId);
+        return ResponseEntity.ok(ApiResponse.success(null, "All notifications deleted"));
+    }
 }

@@ -13,6 +13,8 @@ import '../../models/relief_item.dart';
 import '../../utils/staff_theme.dart';
 import '../../models/vehicle.dart';
 import 'distribution_export_screen.dart';
+import '../../models/user_model.dart';
+
 
 class StaffManagedWarehouseScreen extends StatefulWidget {
   const StaffManagedWarehouseScreen({Key? key}) : super(key: key);
@@ -84,19 +86,12 @@ class StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScreen
       final managed = await _warehouseService.getByManagerId(userId);
       final all = await _warehouseService.getAll();
 
-      // SỬA LỖI (Hình 3): Tăng cường tìm kho cho Đội trưởng/Nhân viên đang làm nhiệm vụ
+      // Chỉ lấy kho được Admin gán trực tiếp (theo managerId)
       Warehouse? currentWarehouse = managed;
-      if (currentWarehouse == null) {
-        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-        if (args != null && args.containsKey('missionContext')) {
-          // 1. Thử tìm kho có Manager là Leader của mission (nếu có)
-          // 2. Thử tìm kho Xuân Hòa theo tên (User đặc biệt nhắc tới)
-          try {
-             currentWarehouse = all.firstWhere((w) => w.warehouseName.contains('Xuân Hòa'));
-          } catch (_) {
-             if (all.isNotEmpty) currentWarehouse = all.first;
-          }
-        }
+      
+      // Nếu không có kho gán riêng, nhưng là Admin thì mặc định lấy kho đầu tiên để xem
+      if (currentWarehouse == null && AuthService.currentUser?.role == UserRole.admin) {
+        if (all.isNotEmpty) currentWarehouse = all.first;
       }
 
       List<Vehicle> vehicles = [];
