@@ -8,4 +8,6 @@ public class WarehouseRequest {
     private String location;
     private String managerId;
     private String status;
+    private Double latitude;
+    private Double longitude;
 }

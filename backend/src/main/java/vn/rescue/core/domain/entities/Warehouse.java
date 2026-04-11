@@ -21,6 +21,9 @@ public class Warehouse {
     private String managerId;
 
     private String status = "ACTIVE";
+    
+    private Double latitude;
+    private Double longitude;
 
     @Field("created_at")
     private LocalDateTime createdAt;

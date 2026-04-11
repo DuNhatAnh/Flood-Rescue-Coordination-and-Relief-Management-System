@@ -373,12 +373,14 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
       children: [
         Icon(icon, size: 20, color: color ?? StaffTheme.primaryBlue),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: StaffTheme.textLight, fontWeight: FontWeight.bold)),
-            Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: StaffTheme.textDark)),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 11, color: StaffTheme.textLight, fontWeight: FontWeight.bold)),
+              Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: StaffTheme.textDark), overflow: TextOverflow.ellipsis),
+            ],
+          ),
         ),
       ],
     );

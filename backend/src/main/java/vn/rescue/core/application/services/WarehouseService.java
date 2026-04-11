@@ -29,6 +29,8 @@ public class WarehouseService {
         warehouse.setLocation(request.getLocation());
         warehouse.setManagerId(request.getManagerId());
         warehouse.setStatus(request.getStatus() != null ? request.getStatus() : "ACTIVE");
+        warehouse.setLatitude(request.getLatitude());
+        warehouse.setLongitude(request.getLongitude());
         warehouse.setCreatedAt(LocalDateTime.now());
         
         Warehouse saved = warehouseRepository.save(warehouse);
@@ -50,6 +52,8 @@ public class WarehouseService {
         if (request.getStatus() != null) {
             warehouse.setStatus(request.getStatus());
         }
+        warehouse.setLatitude(request.getLatitude());
+        warehouse.setLongitude(request.getLongitude());
         
         Warehouse saved = warehouseRepository.save(warehouse);
         syncTeamWithWarehouse(saved.getManagerId(), saved.getId());

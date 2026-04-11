@@ -28,12 +28,14 @@ class StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScreen
   final ReliefItemService _reliefItemService = ReliefItemService();
   
   late TabController _tabController;
-  Warehouse? _myWarehouse;
+  Warehouse? _myWarehouse; // Currently viewed warehouse
+  String? _managedWarehouseId; // ID of the warehouse officially managed by the user
   List<Warehouse> _allWarehouses = [];
   List<Inventory> _inventory = [];
   List<Vehicle> _vehicles = [];
   List<ReliefItem> _reliefItems = [];
   bool _isLoading = true;
+  final MapController _mapController = MapController();
 
   // Form state cho Nhập hàng
   String? _importSource;
@@ -48,6 +50,9 @@ class StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScreen
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     refreshData();
     
     // Kiểm tra xem có được mở từ màn hình Nhiệm vụ không
@@ -112,13 +117,22 @@ class StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScreen
 
       setState(() {
         _myWarehouse = currentWarehouse;
+        _managedWarehouseId = managed?.id;
         _allWarehouses = all;
-        _vehicles = vehicles;
       });
 
       if (currentWarehouse != null) {
-        final inv = await _inventoryService.getWarehouseInventory(currentWarehouse.id!);
-        setState(() => _inventory = inv);
+        final results = await Future.wait([
+          _inventoryService.getWarehouseInventory(currentWarehouse.id!),
+          _vehicleService.getAllVehicles(warehouseId: currentWarehouse.id!),
+        ]);
+        
+        setState(() {
+          _inventory = results[0] as List<Inventory>;
+          final vehicleResponse = results[1] as Map<String, dynamic>;
+          final List vehicleList = vehicleResponse['content'] ?? [];
+          _vehicles = vehicleList.map((v) => Vehicle.fromJson(v)).toList();
+        });
       }
     } catch (e) {
       print('Error in _loadData: $e');
@@ -405,13 +419,29 @@ Widget build(BuildContext context) {
     appBar: AppBar(
       automaticallyImplyLeading: true,
       iconTheme: const IconThemeData(color: Colors.white),
-      title: Text(
-        _myWarehouse?.warehouseName ?? 'Quản lý kho',
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
-          color: Colors.white,
-        ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${_myWarehouse?.warehouseName ?? 'Quản lý kho'} (${_myWarehouse?.location ?? 'Chưa có địa chỉ'})',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: (_myWarehouse?.id == _managedWarehouseId) ? Colors.orange : Colors.blue.shade800,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Text(
+              (_myWarehouse?.id == _managedWarehouseId) ? 'CỦA TÔI' : 'XEM LÂN CẬN',
+              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
       flexibleSpace: Container(
         decoration: BoxDecoration(gradient: StaffTheme.primaryGradient),
@@ -434,9 +464,8 @@ Widget build(BuildContext context) {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildWarehouseInfoCard(),
-                      const SizedBox(height: 20),
-                      _buildMapSection(height: 400),
+                      _buildViewingModeBanner(),
+                      _buildMapSection(height: 600),
                     ],
                   ),
                 ),
@@ -475,12 +504,8 @@ Widget build(BuildContext context) {
             children: [
               CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: _buildWarehouseInfoCard(),
-                    ),
-                  ),
+                  if (_myWarehouse?.id != _managedWarehouseId)
+                    SliverToBoxAdapter(child: _buildViewingModeBanner()),
                   SliverToBoxAdapter(child: _buildMapSection()),
                   SliverToBoxAdapter(child: _buildInventoryHeader()),
                   _buildInventoryList(isScrollable: false),
@@ -495,60 +520,51 @@ Widget build(BuildContext context) {
       },
     ),
 
-    // ✅🔥 NÚT THÊM PHƯƠNG TIỆN LUÔN HIỆN
-    floatingActionButton: _myWarehouse != null ? FloatingActionButton.extended(
-      onPressed: _showAddVehicleDialog,
-      backgroundColor: StaffTheme.primaryBlue,
-      icon: const Icon(Icons.local_shipping, color: Colors.white),
-      label: const Text(
-        "THÊM XE",
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ) : null,
-
     floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
   );
 }
 
-  Widget _buildWarehouseInfoCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: StaffTheme.softShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.location_on_rounded, color: StaffTheme.primaryBlue),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _myWarehouse!.location,
-                  style: StaffTheme.cardSubtitle,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Quản lý trực tiếp các hoạt động tại chỗ, điều phối hàng hóa cứu trợ khẩn cấp.',
-            style: TextStyle(fontSize: 12, color: StaffTheme.textLight),
-          ),
-        ],
-      ),
-    );
+
+  void _selectWarehouse(Warehouse w) async {
+    if (w.id == _myWarehouse?.id) return;
+    
+    setState(() {
+      _isLoading = true;
+      _myWarehouse = w;
+      _inventory = [];
+      _vehicles = [];
+    });
+
+    try {
+      final results = await Future.wait([
+        _inventoryService.getWarehouseInventory(w.id!),
+        _vehicleService.getAllVehicles(warehouseId: w.id!),
+      ]);
+
+      setState(() {
+        _inventory = results[0] as List<Inventory>;
+        final vehicleResponse = results[1] as Map<String, dynamic>;
+        final List vehicleList = vehicleResponse['content'] ?? [];
+        _vehicles = vehicleList.map((v) => Vehicle.fromJson(v)).toList();
+        _isLoading = false;
+      });
+      
+      // Di chuyển bản đồ tới kho mới
+      if (w.latitude != null && w.longitude != null) {
+        _mapController.move(LatLng(w.latitude!, w.longitude!), 14.5);
+      }
+    } catch (e) {
+      print('Error switching warehouse: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
-  Widget _buildMapSection({double height = 250}) {
-    final LatLng center = const LatLng(16.0544, 108.2023); 
+  Widget _buildMapSection({double height = 400}) {
+    // Tọa độ trung tâm mặc định (Đà Nẵng) nếu không có kho nào chọn
+    final LatLng defaultCenter = const LatLng(16.0544, 108.2023);
+    final LatLng center = (_myWarehouse?.latitude != null && _myWarehouse?.longitude != null)
+        ? LatLng(_myWarehouse!.latitude!, _myWarehouse!.longitude!)
+        : defaultCenter;
 
     return Container(
       height: height,
@@ -559,9 +575,10 @@ Widget build(BuildContext context) {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: FlutterMap(
+          mapController: _mapController,
           options: MapOptions(
             initialCenter: center,
-            initialZoom: 14.0,
+            initialZoom: 13.0,
           ),
           children: [
             TileLayer(
@@ -570,17 +587,40 @@ Widget build(BuildContext context) {
             ),
             MarkerLayer(
               markers: _allWarehouses.map((w) {
-                final isMine = w.id == _myWarehouse?.id;
+                final bool isSelected = w.id == _myWarehouse?.id;
+                final bool isManagedByMe = w.id == _managedWarehouseId;
+                
+                // Sử dụng tọa độ thật của kho, nếu không có thì xê dịch nhẹ quanh tâm để không bị đè lên nhau hoàn toàn
+                final LatLng point = (w.latitude != null && w.longitude != null)
+                    ? LatLng(w.latitude!, w.longitude!)
+                    : LatLng(
+                        defaultCenter.latitude + (int.parse(w.id?.substring(w.id!.length - 2) ?? '0', radix: 16) % 10 - 5) * 0.002,
+                        defaultCenter.longitude + (int.parse(w.id?.substring(w.id!.length - 4, w.id!.length - 2) ?? '0', radix: 16) % 10 - 5) * 0.002,
+                      );
+
                 return Marker(
-                  point: center,
-                  width: 40,
-                  height: 40,
+                  point: point,
+                  width: isSelected ? 100 : 40,
+                  height: isSelected ? 70 : 40,
+                  alignment: Alignment.topCenter,
                   child: GestureDetector(
-                    onTap: () => _showWarehouseQuickView(w),
-                    child: Icon(
-                      Icons.location_on_rounded,
-                      color: isMine ? Colors.orange : StaffTheme.primaryBlue,
-                      size: isMine ? 40 : 30,
+                    onTap: () => _selectWarehouse(w),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.location_on_rounded,
+                          color: isSelected 
+                              ? Colors.red // Kho đang chọn
+                              : (isManagedByMe ? Colors.orange : StaffTheme.primaryBlue), // Cam: Kho của mình, Xanh: Kho lân cận
+                          size: isSelected ? 40 : 30,
+                        ),
+                        if (isSelected) 
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.red, width: 0.5)),
+                            child: Text(w.warehouseName, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
                     ),
                   ),
                 );
@@ -613,12 +653,24 @@ Widget build(BuildContext context) {
                   fontSize: 13,
                 ),
               ),
+              const SizedBox(width: 12),
+              // Badge số lượng (Luôn hiển thị)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: StaffTheme.background,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_inventory.length} hàng, ${_vehicles.length} xe',
+                  style: const TextStyle(color: StaffTheme.textLight, fontSize: 10, fontWeight: FontWeight.w600),
+                ),
+              ),
               const Spacer(),
-              // Sử dụng AnimatedBuilder để nút phản ứng ngay khi chuyển Tab
+              // AnimatedBuilder cho nút THÊM XE (Chỉ hiện ở tab Phương tiện)
               AnimatedBuilder(
                 animation: _tabController,
                 builder: (context, child) {
-                  // Chỉ hiển thị nút THÊM XE khi đang ở Tab thứ 2 (index == 1)
                   if (_tabController.index == 1) {
                     return SizedBox(
                       height: 34,
@@ -638,18 +690,7 @@ Widget build(BuildContext context) {
                       ),
                     );
                   }
-                  // Khi ở Tab hàng hóa, hiển thị badge số lượng tổng quát
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: StaffTheme.background,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${_inventory.length} hàng, ${_vehicles.length} xe',
-                      style: const TextStyle(color: StaffTheme.textLight, fontSize: 10, fontWeight: FontWeight.w600),
-                    ),
-                  );
+                  return const SizedBox.shrink();
                 },
               ),
             ],
@@ -879,7 +920,50 @@ Widget build(BuildContext context) {
     return Icons.inventory_2_rounded;
   }
 
+  Widget _buildViewingModeBanner() {
+    if (_myWarehouse?.id == _managedWarehouseId) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A237E), // Deep indigo for viewing mode
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.visibility_rounded, color: Colors.white, size: 18),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('CHẾ ĐỘ XEM LÂN CẬN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                Text('Bạn đang xem thông tin kho của đội khác.', style: TextStyle(color: Colors.white70, fontSize: 10)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: refreshData, 
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white.withOpacity(0.2),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('QUAY LẠI KHO CỦA TÔI', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomActionButtons() {
+    // Chỉ hiển thị ở tab Hàng hóa (Index 0)
+    if (_tabController.index != 0) return const SizedBox.shrink();
+    
+    final bool isExternal = _myWarehouse?.id != _managedWarehouseId;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       color: Colors.white,
@@ -887,11 +971,11 @@ Widget build(BuildContext context) {
         children: [
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () => _showImportDialog(),
-              icon: const Icon(Icons.add_shopping_cart_rounded, color: Colors.white),
-              label: const Text('NHẬP HÀNG', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              onPressed: isExternal ? null : () => _showImportDialog(),
+              icon: Icon(Icons.add_shopping_cart_rounded, color: isExternal ? Colors.white54 : Colors.white),
+              label: Text('NHẬP HÀNG', style: TextStyle(fontWeight: FontWeight.bold, color: isExternal ? Colors.white54 : Colors.white)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: StaffTheme.primaryBlue,
+                backgroundColor: isExternal ? Colors.grey : StaffTheme.primaryBlue,
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               ),
@@ -900,11 +984,11 @@ Widget build(BuildContext context) {
           const SizedBox(width: 15),
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () => _showExportDialog(),
-              icon: const Icon(Icons.outbox_rounded, color: Colors.white),
-              label: const Text('XUẤT HÀNG', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              onPressed: isExternal ? null : () => _showExportDialog(),
+              icon: Icon(Icons.outbox_rounded, color: isExternal ? Colors.white54 : Colors.white),
+              label: Text('XUẤT HÀNG', style: TextStyle(fontWeight: FontWeight.bold, color: isExternal ? Colors.white54 : Colors.white)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A237E),
+                backgroundColor: isExternal ? Colors.grey : const Color(0xFF1A237E),
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               ),

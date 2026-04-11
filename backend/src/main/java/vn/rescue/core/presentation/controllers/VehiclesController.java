@@ -14,6 +14,7 @@ import vn.rescue.core.domain.entities.Vehicles;
 import vn.rescue.core.application.services.RescueCoordinationService;
 import vn.rescue.core.presentation.common.ApiResponse;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/vehicles")
@@ -24,7 +25,13 @@ public class VehiclesController {
     private final VehiclesService vehiclesService;
     private final RescueCoordinationService rescueCoordinationService;
 
-    // 1. Tạo mới: Thêm tham số userId để ghi log
+    // 1. Lấy dữ liệu thống kê tổng quát (Dùng cho Chart)
+    @GetMapping("/statistics-summary")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getStatistics() {
+        return ResponseEntity.ok(ApiResponse.success(vehiclesService.getVehicleStatistics(), "Thống kê phương tiện"));
+    }
+
+    // 2. Tạo mới: Thêm tham số userId để ghi log
     @PostMapping
     public ResponseEntity<ApiResponse<VehicleResponse>> create(
             @RequestBody VehicleRequest request,

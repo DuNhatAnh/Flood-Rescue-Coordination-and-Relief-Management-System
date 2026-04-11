@@ -4,6 +4,8 @@ class Warehouse {
   final String location;
   final String? managerId;
   final String status;
+  final double? latitude;
+  final double? longitude;
   final DateTime? createdAt;
 
   Warehouse({
@@ -12,6 +14,8 @@ class Warehouse {
     required this.location,
     this.managerId,
     this.status = 'ACTIVE',
+    this.latitude,
+    this.longitude,
     this.createdAt,
   });
 
@@ -32,6 +36,8 @@ class Warehouse {
       location: json['location']?.toString() ?? json['address']?.toString() ?? 'Chưa cập nhật',
       managerId: json['managerId']?.toString() ?? json['manager_id']?.toString(),
       status: json['status']?.toString() ?? 'ACTIVE',
+      latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
+      longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
       createdAt: parsedDate,
     );
   }
@@ -43,6 +49,8 @@ class Warehouse {
       'location': location,
       'managerId': managerId,
       'status': status,
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 }

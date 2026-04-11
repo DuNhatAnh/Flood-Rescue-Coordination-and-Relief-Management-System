@@ -11,7 +11,9 @@ import vn.rescue.core.domain.entities.Vehicles;
 import vn.rescue.core.domain.repositories.RescueRequestRepository;
 import vn.rescue.core.domain.repositories.VehiclesRepository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +34,17 @@ public class VehiclesService {
                 .map(this::mapToResponse);
     }
 
-    // --- 2. THÊM MỚI ---
+    // --- 2. THỐNG KÊ (Dùng cho Dashboard/Charts) ---
+    public Map<String, Long> getVehicleStatistics() {
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", vehiclesRepository.count());
+        stats.put("available", vehiclesRepository.countByStatusIgnoreCase("AVAILABLE"));
+        stats.put("in_use", vehiclesRepository.countByStatusIgnoreCase("IN_USE"));
+        stats.put("maintenance", vehiclesRepository.countByStatusIgnoreCase("MAINTENANCE"));
+        return stats;
+    }
+
+    // --- 3. THÊM MỚI ---
     @Transactional
     public VehicleResponse createVehicle(VehicleRequest request, String userId) {
         if (vehiclesRepository.existsByLicensePlate(request.getLicensePlate())) {
