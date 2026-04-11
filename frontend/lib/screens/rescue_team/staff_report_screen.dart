@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart'; // Thư viện biểu đồ
+import 'package:fl_chart/fl_chart.dart';
 import '../../models/distribution.dart';
 import '../../models/dashboard_stats_model.dart';
+import '../../models/vehicle.dart';
 import '../../services/distribution_service.dart';
 import '../../services/report_service.dart';
+import '../../services/vehicle_service.dart';
 import '../../utils/staff_theme.dart';
 
 class StaffReportScreen extends StatefulWidget {
@@ -17,10 +19,17 @@ class StaffReportScreen extends StatefulWidget {
 class StaffReportScreenState extends State<StaffReportScreen> {
   final DistributionService _distService = DistributionService();
   final ReportService _reportService = ReportService();
+  final VehicleService _vehicleService = VehicleService();
 
   List<Distribution> _history = [];
+  List<Vehicle> _vehicles = []; // Danh sách phương tiện chi tiết
   bool _isLoading = true;
   DashboardStats? _stats;
+  
+  // Dữ liệu thống kê phương tiện
+  Map<String, dynamic> _vehicleStats = {
+    'total': 0, 'available': 0, 'in_use': 0, 'maintenance': 0
+  };
 
   @override
   void initState() {
@@ -33,15 +42,25 @@ class StaffReportScreenState extends State<StaffReportScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Gọi đồng thời 4 API: Dashboard, Lịch sử, Thống kê xe và Danh sách xe
       final results = await Future.wait([
         _reportService.getStaffDashboard(),
         _distService.getHistory(),
+        _vehicleService.getVehicleStatistics(),
+        _vehicleService.getAllVehicles(size: 100), // Lấy danh sách để liệt kê
       ]);
 
       if (mounted) {
         setState(() {
           _stats = results[0] as DashboardStats?;
           _history = (results[1] as List<Distribution>?) ?? [];
+          _vehicleStats = results[2] as Map<String, dynamic>;
+          
+          // Xử lý dữ liệu danh sách xe từ kết quả thứ 4
+          final vehicleData = results[3] as Map<String, dynamic>;
+          final List content = vehicleData['content'] ?? [];
+          _vehicles = content.map((e) => Vehicle.fromJson(e)).toList();
+          
           _isLoading = false;
         });
       }
@@ -66,6 +85,7 @@ class StaffReportScreenState extends State<StaffReportScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: refreshData,
+        color: StaffTheme.primaryBlue,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
@@ -75,12 +95,22 @@ class StaffReportScreenState extends State<StaffReportScreen> {
                   children: [
                     _buildSectionTitle('TRẠNG THÁI NHIỆM VỤ'),
                     const SizedBox(height: 15),
-                    _buildPieChartCard(), // Biểu đồ tròn
+                    _buildPieChartCard(), 
+
+                    const SizedBox(height: 30),
+                    _buildSectionTitle('TRẠNG THÁI PHƯƠNG TIỆN'),
+                    const SizedBox(height: 15),
+                    _buildVehiclePieChart(),
+
+                    const SizedBox(height: 30),
+                    _buildSectionTitle('DANH SÁCH PHƯƠNG TIỆN CHI TIẾT'),
+                    const SizedBox(height: 15),
+                    _buildVehicleList(),
 
                     const SizedBox(height: 30),
                     _buildSectionTitle('THỐNG KÊ VẬT PHẨM TỒN KHO'),
                     const SizedBox(height: 15),
-                    _buildBarChartCard(), // Biểu đồ cột mới thêm
+                    _buildBarChartCard(), 
 
                     const SizedBox(height: 30),
                     _buildSectionTitle('CON SỐ TỔNG QUAN'),
@@ -105,6 +135,89 @@ class StaffReportScreenState extends State<StaffReportScreen> {
     );
   }
 
+  /// 🚗 DANH SÁCH PHƯƠNG TIỆN (Mới thêm)
+  Widget _buildVehicleList() {
+    if (_vehicles.isEmpty) return _buildNoDataCard();
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _vehicles.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final v = _vehicles[index];
+        final statusColor = _getVehicleStatusColor(v.status);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: StaffTheme.softShadow,
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: statusColor.withOpacity(0.1),
+              child: Icon(_getVehicleIcon(v.vehicleType), color: statusColor, size: 20),
+            ),
+            title: Text(v.licensePlate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            subtitle: Text("${v.vehicleType} • ${v.currentLocation ?? 'Kho trung tâm'}", style: const TextStyle(fontSize: 12)),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+              child: Text(_translateVehicleStatus(v.status), 
+                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 🚗 BIỂU ĐỒ TRÒN PHƯƠNG TIỆN
+  Widget _buildVehiclePieChart() {
+    int available = _vehicleStats['available'] ?? 0;
+    int inUse = _vehicleStats['in_use'] ?? 0;
+    int maintenance = _vehicleStats['maintenance'] ?? 0;
+    int total = available + inUse + maintenance;
+
+    if (total == 0) return _buildNoDataCard();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: StaffTheme.softShadow),
+      child: Row(
+        children: [
+          SizedBox(
+            height: 100, width: 100,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2, centerSpaceRadius: 20,
+                sections: [
+                  PieChartSectionData(value: available.toDouble(), color: Colors.green, title: '', radius: 30),
+                  PieChartSectionData(value: inUse.toDouble(), color: StaffTheme.primaryBlue, title: '', radius: 30),
+                  PieChartSectionData(value: maintenance.toDouble(), color: Colors.orange, title: '', radius: 30),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLegend(Colors.green, "Sẵn sàng: $available"),
+                _buildLegend(StaffTheme.primaryBlue, "Đang dùng: $inUse"),
+                _buildLegend(Colors.orange, "Bảo trì: $maintenance"),
+                const Divider(),
+                Text("Tổng cộng: $total xe", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
   /// 📊 BIỂU ĐỒ TRÒN: Tỷ lệ nhiệm vụ
   Widget _buildPieChartCard() {
     if (_stats == null) return const SizedBox.shrink();
@@ -117,14 +230,14 @@ class StaffReportScreenState extends State<StaffReportScreen> {
       child: Row(
         children: [
           SizedBox(
-            height: 120, width: 120,
+            height: 100, width: 100,
             child: PieChart(
               PieChartData(
-                sectionsSpace: 2, centerSpaceRadius: 30,
+                sectionsSpace: 2, centerSpaceRadius: 20,
                 sections: [
-                  PieChartSectionData(value: _stats!.completedTasks.toDouble(), color: Colors.green, title: '', radius: 40),
-                  PieChartSectionData(value: _stats!.activeTasks.toDouble(), color: StaffTheme.primaryBlue, title: '', radius: 40),
-                  PieChartSectionData(value: _stats!.pendingTasks.toDouble(), color: Colors.orange, title: '', radius: 40),
+                  PieChartSectionData(value: _stats!.completedTasks.toDouble(), color: Colors.green, title: '', radius: 30),
+                  PieChartSectionData(value: _stats!.activeTasks.toDouble(), color: StaffTheme.primaryBlue, title: '', radius: 30),
+                  PieChartSectionData(value: _stats!.pendingTasks.toDouble(), color: Colors.orange, title: '', radius: 30),
                 ],
               ),
             ),
@@ -134,9 +247,9 @@ class StaffReportScreenState extends State<StaffReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildLegend(Colors.green, "Xong: ${_stats!.completedTasks}"),
-                _buildLegend(StaffTheme.primaryBlue, "Làm: ${_stats!.activeTasks}"),
-                _buildLegend(Colors.orange, "Chờ: ${_stats!.pendingTasks}"),
+                _buildLegend(Colors.green, "Hoàn thành: ${_stats!.completedTasks}"),
+                _buildLegend(StaffTheme.primaryBlue, "Đang xử lý: ${_stats!.activeTasks}"),
+                _buildLegend(Colors.orange, "Đang chờ: ${_stats!.pendingTasks}"),
               ],
             ),
           )
@@ -145,18 +258,18 @@ class StaffReportScreenState extends State<StaffReportScreen> {
     );
   }
 
-  /// 📊 BIỂU ĐỒ CỘT: Thống kê vật phẩm (Sử dụng dữ liệu tồn kho thấp làm mẫu)
+  /// 📊 BIỂU ĐỒ CỘT: Thống kê vật phẩm
   Widget _buildBarChartCard() {
     if (_stats == null || _stats!.lowStockAlerts.isEmpty) return _buildNoDataCard();
 
     return Container(
-      height: 250,
+      height: 220,
       padding: const EdgeInsets.fromLTRB(15, 25, 15, 10),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: StaffTheme.softShadow),
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
-          maxY: _stats!.lowStockAlerts.map((e) => e.quantity).reduce((a, b) => a > b ? a : b).toDouble() + 50,
+          maxY: _stats!.lowStockAlerts.map((e) => e.quantity).reduce((a, b) => a > b ? a : b).toDouble() + 10,
           barTouchData: BarTouchData(enabled: true),
           titlesData: FlTitlesData(
             show: true,
@@ -189,9 +302,8 @@ class StaffReportScreenState extends State<StaffReportScreen> {
                 BarChartRodData(
                   toY: entry.value.quantity.toDouble(),
                   color: StaffTheme.primaryBlue,
-                  width: 18,
+                  width: 16,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                  backDrawRodData: BackgroundBarChartRodData(show: true, toY: 100, color: Colors.grey.shade100),
                 ),
               ],
             );
@@ -201,14 +313,41 @@ class StaffReportScreenState extends State<StaffReportScreen> {
     );
   }
 
+  // --- Helper Methods ---
+
+  IconData _getVehicleIcon(String type) {
+    String t = type.toLowerCase();
+    if (t.contains('tải')) return Icons.local_shipping;
+    if (t.contains('cano') || t.contains('thuyền')) return Icons.directions_boat;
+    return Icons.directions_car;
+  }
+
+  Color _getVehicleStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'AVAILABLE': return Colors.green;
+      case 'IN_USE': return StaffTheme.primaryBlue;
+      case 'MAINTENANCE': return Colors.orange;
+      default: return Colors.grey;
+    }
+  }
+
+  String _translateVehicleStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'AVAILABLE': return 'Sẵn sàng';
+      case 'IN_USE': return 'Đang dùng';
+      case 'MAINTENANCE': return 'Bảo trì';
+      default: return 'Khác';
+    }
+  }
+
   Widget _buildLegend(Color color, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 8),
-          Text(text, style: const TextStyle(fontSize: 13, color: StaffTheme.textMedium, fontWeight: FontWeight.bold)),
+          Text(text, style: const TextStyle(fontSize: 12, color: StaffTheme.textMedium)),
         ],
       ),
     );
@@ -216,26 +355,24 @@ class StaffReportScreenState extends State<StaffReportScreen> {
 
   Widget _buildNoDataCard() {
     return Container(
-      width: double.infinity, padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      width: double.infinity, padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: StaffTheme.softShadow),
       child: const Center(child: Text("Không có dữ liệu hiển thị", style: TextStyle(color: Colors.grey))),
     );
   }
-
-  /// --- Các Widget cũ được giữ nguyên và tối ưu hóa ---
 
   Widget _buildStatsGrid() {
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _buildStatCard('HOÀN THÀNH', (_stats?.completedTasks ?? 0).toString(), Colors.green, Icons.check_circle_outline)),
+            Expanded(child: _buildStatCard('NHIỆM VỤ XONG', (_stats?.completedTasks ?? 0).toString(), Colors.green, Icons.check_circle_outline)),
             const SizedBox(width: 15),
-            Expanded(child: _buildStatCard('ĐANG LÀM', (_stats?.activeTasks ?? 0).toString(), StaffTheme.primaryBlue, Icons.pending_actions_rounded)),
+            Expanded(child: _buildStatCard('TỔNG XE', (_vehicleStats['total'] ?? 0).toString(), Colors.blue, Icons.directions_car)),
           ],
         ),
         const SizedBox(height: 15),
-        _buildStatCard('CHƯA XỬ LÝ', (_stats?.pendingTasks ?? 0).toString(), Colors.orange, Icons.warning_amber_rounded, isWide: true),
+        _buildStatCard('NHIỆM VỤ ĐANG CHỜ', (_stats?.pendingTasks ?? 0).toString(), Colors.orange, Icons.warning_amber_rounded, isWide: true),
       ],
     );
   }
@@ -255,8 +392,8 @@ class StaffReportScreenState extends State<StaffReportScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)),
-              Text(label, style: const TextStyle(fontSize: 10, color: StaffTheme.textLight, fontWeight: FontWeight.bold)),
+              Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
+              Text(label, style: const TextStyle(fontSize: 9, color: StaffTheme.textLight, fontWeight: FontWeight.bold)),
             ],
           ),
         ],
@@ -280,7 +417,7 @@ class StaffReportScreenState extends State<StaffReportScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(alert.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text("Còn: ${alert.quantity} ${alert.unit}", style: TextStyle(color: Colors.red.shade800, fontSize: 12)),
+                    Text("Còn lại: ${alert.quantity} ${alert.unit}", style: TextStyle(color: Colors.red.shade800, fontSize: 12)),
                   ],
                 ),
               ),
@@ -301,7 +438,7 @@ class StaffReportScreenState extends State<StaffReportScreen> {
         final isExport = dist.type == 'EXPORT';
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))]),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: StaffTheme.softShadow),
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: (isExport ? StaffTheme.primaryBlue : Colors.indigo).withOpacity(0.1),

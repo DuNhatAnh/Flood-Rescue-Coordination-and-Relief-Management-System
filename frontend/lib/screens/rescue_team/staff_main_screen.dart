@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'team_tasks_screen.dart';
 import 'staff_managed_warehouse_screen.dart';
 import 'staff_report_screen.dart';
-import 'staff_vehicle_management_screen.dart'; // Import trang mới
+// Đã loại bỏ import trang phương tiện
 import '../relief_item_screen.dart';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
@@ -28,7 +28,6 @@ class StaffMainScreenState extends State<StaffMainScreen> {
   // Khai báo các Key để có thể gọi hàm refresh từ bên ngoài
   final GlobalKey<TeamTasksScreenState> _tasksKey = GlobalKey();
   final GlobalKey<StaffManagedWarehouseScreenState> _warehouseKey = GlobalKey();
-  final GlobalKey<StaffVehicleManagementScreenState> _vehicleKey = GlobalKey();
   final GlobalKey<StaffReportScreenState> _reportKey = GlobalKey();
   
   final RescueService _rescueService = RescueService();
@@ -44,10 +43,10 @@ class StaffMainScreenState extends State<StaffMainScreen> {
   @override
   void initState() {
     super.initState();
+    // Danh sách màn hình đã loại bỏ StaffVehicleManagementScreen
     _screens = [
       TeamTasksScreen(key: _tasksKey),
       StaffManagedWarehouseScreen(key: _warehouseKey),
-      StaffVehicleManagementScreen(key: _vehicleKey), // Trang quản lý phương tiện mới
       StaffReportScreen(key: _reportKey),
     ];
     _fetchTeamName();
@@ -69,12 +68,9 @@ class StaffMainScreenState extends State<StaffMainScreen> {
     if (userId == null) return;
 
     try {
-      // 1. Lấy số lượng chưa đọc hiện tại
       final count = await _notificationService.getUnreadCount(userId);
       
-      // 2. Nếu có thông báo mới (count tăng)
       if (count > _unreadNotifications) {
-        // Lấy danh sách để tìm thông báo mới nhất hiện Pop-up
         final list = await _notificationService.getUserNotifications(userId);
         if (list.isNotEmpty && list.first.id != _lastNotificationId) {
           _lastNotificationId = list.first.id;
@@ -147,7 +143,6 @@ class StaffMainScreenState extends State<StaffMainScreen> {
       if (!mounted) return;
       setState(() {
         _teamName = teamData['teamName'];
-        // Cập nhật cả trong session để các tab khác có thể dùng
         final current = AuthService.currentUser;
         if (current != null) {
           AuthService.currentUser = UserModel(
@@ -209,7 +204,6 @@ class StaffMainScreenState extends State<StaffMainScreen> {
           ],
         ),
         actions: [
-          // Nút Chuông Thông Báo
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Stack(
@@ -249,14 +243,12 @@ class StaffMainScreenState extends State<StaffMainScreen> {
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
             onPressed: () {
-              // Xử lý làm mới dữ liệu cho từng tab tương ứng
+              // Cập nhật logic refresh cho 3 tab
               if (_selectedIndex == 0) {
                 _tasksKey.currentState?.refreshTasks();
               } else if (_selectedIndex == 1) {
                 _warehouseKey.currentState?.refreshData();
               } else if (_selectedIndex == 2) {
-                _vehicleKey.currentState?.refreshData(); // Refresh trang phương tiện
-              } else if (_selectedIndex == 3) {
                 _reportKey.currentState?.refreshData();
               }
               _fetchTeamName();
@@ -337,7 +329,7 @@ class StaffMainScreenState extends State<StaffMainScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        height: 85, // Tăng nhẹ chiều cao để chứa 4 item
+        height: 80, // Điều chỉnh chiều cao cho 3 mục
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -349,22 +341,11 @@ class StaffMainScreenState extends State<StaffMainScreen> {
           children: [
             _buildNavItem(0, Icons.assignment_rounded, 'Nhiệm vụ'),
             _buildNavItem(1, Icons.warehouse_rounded, 'Kho bãi'),
-            _buildNavItem(2, Icons.local_shipping_rounded, 'Phương tiện'), // Tab mới
-            _buildNavItem(3, Icons.analytics_rounded, 'Thống kê'),
+            _buildNavItem(2, Icons.analytics_rounded, 'Thống kê'),
           ],
         ),
       ),
     );
-  }
-
-  String _getTabTitle() {
-    switch (_selectedIndex) {
-      case 0: return 'Nhiệm vụ được giao';
-      case 1: return 'Quản lý Kho bãi';
-      case 2: return 'Quản lý Phương tiện';
-      case 3: return 'Thống kê & Lịch sử';
-      default: return 'Staff Dashboard';
-    }
   }
 
   Widget _buildNavItem(int index, IconData icon, String label) {
@@ -379,19 +360,19 @@ class StaffMainScreenState extends State<StaffMainScreen> {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             decoration: BoxDecoration(
               color: isSelected ? StaffTheme.primaryBlue.withOpacity(0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 26),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             ),
           ),
