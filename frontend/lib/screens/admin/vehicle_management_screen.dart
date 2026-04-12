@@ -117,7 +117,7 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
                   _buildDialogField(teamController, 'ID Đội cứu hộ', Icons.group, 'Để trống nếu chưa gán'),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    initialValue: currentStatus,
+                    value: currentStatus,
                     decoration: InputDecoration(
                       labelText: 'Trạng thái',
                       prefixIcon: const Icon(Icons.info_outline),

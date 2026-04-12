@@ -87,7 +87,7 @@ class _WarehouseManagementScreenState extends State<WarehouseManagementScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedManager,
+                      value: selectedManager,
 
                       items: [
                         const DropdownMenuItem<String>(value: null, child: Text('Chưa gán quản lý')),

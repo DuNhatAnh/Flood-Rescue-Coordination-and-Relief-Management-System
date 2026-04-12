@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../models/distribution.dart';
-import '../../models/dashboard_stats_model.dart';
-import '../../models/vehicle.dart';
-import '../../services/distribution_service.dart';
 import '../../services/report_service.dart';
-import '../../services/vehicle_service.dart';
 import '../../utils/staff_theme.dart';
 
 class StaffReportScreen extends StatefulWidget {
@@ -17,12 +12,9 @@ class StaffReportScreen extends StatefulWidget {
 }
 
 class StaffReportScreenState extends State<StaffReportScreen> {
-  final DistributionService _distService = DistributionService();
   final ReportService _reportService = ReportService();
-  final VehicleService _vehicleService = VehicleService();
 
   bool _isLoading = true;
-  DashboardStats? _stats;
   
   // Dữ liệu mới
   List<dynamic> _warehouseTrend = [];
@@ -78,16 +70,16 @@ class StaffReportScreenState extends State<StaffReportScreen> {
 
       if (mounted) {
         setState(() {
-          _stats = results[0] as DashboardStats?;
-          _availableItems = results[1] as List<dynamic>;
-          final trendResult = results[2] as Map<String, dynamic>;
+          // _stats assignment removed
+          _availableItems = (results[1] as List<dynamic>?) ?? [];
+          final trendResult = (results[2] as Map<String, dynamic>?) ?? {'trend': [], 'unit': 'Đơn vị'};
           _warehouseTrend = trendResult['trend'] ?? [];
-          _currentUnit = trendResult['unit'] ?? 'đơn vị';
-          _extendedStats = results[3] as Map<String, dynamic>;
-          _rescueHistory = results[4] as List<dynamic>;
-          _exportHistory = results[5] as List<dynamic>;
-          _importHistory = results[6] as List<dynamic>;
-          _vehicleHistory = results[7] as List<dynamic>;
+          _currentUnit = trendResult['unit'] ?? 'Đơn vị';
+          _extendedStats = (results[3] as Map<String, dynamic>?) ?? {};
+          _rescueHistory = (results[4] as List<dynamic>?) ?? [];
+          _exportHistory = (results[5] as List<dynamic>?) ?? [];
+          _importHistory = (results[6] as List<dynamic>?) ?? [];
+          _vehicleHistory = (results[7] as List<dynamic>?) ?? [];
           _isLoading = false;
         });
       }
@@ -129,14 +121,42 @@ class StaffReportScreenState extends State<StaffReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // PHẦN 1: TỔNG QUAN & BIỂU ĐỒ (Đã có card riêng bên trong)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 3, child: _buildWarehouseTrendCard()),
-                const SizedBox(width: 15),
-                Expanded(flex: 2, child: _buildMissionSummaryCard()),
-              ],
+            // PHẦN 1: TỔNG QUAN & BIỂU ĐỒ (Đáp ứng Web & Mobile)
+            LayoutBuilder(
+              builder: (context, constraints) {
+                bool isMobile = constraints.maxWidth < 650;
+                
+                if (isMobile) {
+                  return Column(
+                    children: [
+                      _buildWarehouseTrendCard(),
+                      const SizedBox(height: 15),
+                      _buildMissionSummaryCard(),
+                    ],
+                  );
+                }
+                
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3, 
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 280),
+                        child: _buildWarehouseTrendCard()
+                      )
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      flex: 2, 
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 280),
+                        child: _buildMissionSummaryCard()
+                      )
+                    ),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 25),
@@ -188,45 +208,49 @@ class StaffReportScreenState extends State<StaffReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("BIỂU ĐỒ XUẤT NHẬP HÀNG HÓA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
-                  const SizedBox(height: 4),
-                  // Dropdown chọn vật phẩm
-                  Container(
-                    height: 35,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String?>(
-                        value: _selectedItemId,
-                        hint: const Text("Tất cả vật phẩm", style: TextStyle(fontSize: 12)),
-                        items: [
-                          const DropdownMenuItem(value: null, child: Text("Tất cả hàng hóa", style: TextStyle(fontSize: 12))),
-                          ..._availableItems.map((item) => DropdownMenuItem(
-                            value: item['id'].toString(),
-                            child: Text(item['name'], style: const TextStyle(fontSize: 12)),
-                          )).toList(),
-                        ],
-                        onChanged: (val) {
-                          setState(() {
-                            _selectedItemId = val;
-                          });
-                          _fetchTrendData();
-                        },
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("BIỂU ĐỒ XUẤT NHẬP HÀNG HÓA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
+                      const SizedBox(height: 4),
+                      // Dropdown chọn vật phẩm
+                      Container(
+                        height: 35,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButtonFormField<String?>(
+                            value: _selectedItemId,
+                            decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
+                            hint: const Text("Tất cả vật phẩm", style: TextStyle(fontSize: 12)),
+                            items: [
+                              const DropdownMenuItem(value: null, child: Text("Tất cả hàng hóa", style: TextStyle(fontSize: 12))),
+                              ..._availableItems.map((item) => DropdownMenuItem(
+                                value: item['id'].toString(),
+                                child: Text(item['name'], style: const TextStyle(fontSize: 12)),
+                              )).toList(),
+                            ],
+                            onChanged: (val) {
+                              setState(() {
+                                _selectedItemId = val;
+                              });
+                              _fetchTrendData();
+                            },
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
               // Nút đổi thời gian
               Container(
                 decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min, // Luôn thu gọn nút thời gian
                   children: [
                     _buildTimeButton('Tuần', 'week'),
                     _buildTimeButton('Tháng', 'month'),
@@ -255,8 +279,11 @@ class StaffReportScreenState extends State<StaffReportScreen> {
                           getTitlesWidget: (value, meta) {
                             int index = value.toInt();
                             if (index >= 0 && index < _warehouseTrend.length && index % (_trendPeriod == 'week' ? 1 : 5) == 0) {
-                              String date = _warehouseTrend[index]['date'].toString();
-                              return Text(date.substring(5), style: const TextStyle(fontSize: 10, color: Colors.grey));
+                              String date = _warehouseTrend[index]['date']?.toString() ?? "";
+                              if (date.length >= 10) {
+                                return Text(date.substring(5, 10), style: const TextStyle(fontSize: 10, color: Colors.grey));
+                              }
+                              return Text(date, style: const TextStyle(fontSize: 10, color: Colors.grey));
                             }
                             return const Text('');
                           },
@@ -267,14 +294,26 @@ class StaffReportScreenState extends State<StaffReportScreen> {
                     lineBarsData: [
                       // Xuất kho (Xanh dương)
                       LineChartBarData(
-                        spots: _warehouseTrend.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value['export'].toDouble())).toList(),
+                        spots: _warehouseTrend.asMap().entries.map((e) {
+                          double val = 0;
+                          if (e.value is Map && e.value['export'] != null) {
+                            val = (e.value['export'] as num).toDouble();
+                          }
+                          return FlSpot(e.key.toDouble(), val);
+                        }).toList(),
                         isCurved: true, color: StaffTheme.primaryBlue, barWidth: 3, dotData: const FlDotData(show: false),
                         preventCurveOverShooting: true,
                         belowBarData: BarAreaData(show: true, color: StaffTheme.primaryBlue.withOpacity(0.1)),
                       ),
                       // Nhập kho (Xanh lá)
                       LineChartBarData(
-                        spots: _warehouseTrend.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value['import'].toDouble())).toList(),
+                        spots: _warehouseTrend.asMap().entries.map((e) {
+                          double val = 0;
+                          if (e.value is Map && e.value['import'] != null) {
+                            val = (e.value['import'] as num).toDouble();
+                          }
+                          return FlSpot(e.key.toDouble(), val);
+                        }).toList(),
                         isCurved: true, color: Colors.green, barWidth: 3, dotData: const FlDotData(show: false),
                         preventCurveOverShooting: true,
                         belowBarData: BarAreaData(show: true, color: Colors.green.withOpacity(0.1)),
@@ -331,7 +370,7 @@ class StaffReportScreenState extends State<StaffReportScreen> {
 
   Widget _buildStatBox(String title, String value, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(15),
         boxShadow: StaffTheme.softShadow,
@@ -339,15 +378,18 @@ class StaffReportScreenState extends State<StaffReportScreen> {
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-              Text(title, style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
-            ],
-          )
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+                Text(title, style: const TextStyle(fontSize: 8, color: Colors.grey, fontWeight: FontWeight.bold), maxLines: 1),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -468,10 +510,15 @@ class StaffReportScreenState extends State<StaffReportScreen> {
           itemBuilder: (context, index) {
             final item = _vehicleHistory[index];
             final List vehicles = item['vehicles'] ?? [];
+            
+            // Safe display ID
+            String rawId = item['assignmentId']?.toString() ?? "";
+            String displayId = rawId.length > 5 ? rawId.substring(0, 5) : rawId;
+            
             return _buildHistoryCard(
               icon: Icons.directions_boat,
               color: Colors.indigo,
-              title: item['location'] ?? "Nhiệm vụ #${item['assignmentId'].toString().substring(0, 5)}",
+              title: item['location'] ?? "Nhiệm vụ #$displayId",
               subtitle: vehicles.isEmpty ? "Không rõ phương tiện" : "Xe: ${vehicles.map((v) => v['licensePlate']).join(', ')}",
               time: _formatDateTime(item['time']),
               trailing: _buildStatusBadge(item['status']),

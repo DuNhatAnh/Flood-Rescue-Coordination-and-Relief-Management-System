@@ -328,20 +328,6 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
     );
   }
 
-  Widget _prepButton(String label, IconData icon, Color bg, Color text, VoidCallback onTap) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 18, color: text),
-      label: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: text)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: bg,
-        foregroundColor: text,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: StaffTheme.primaryBlue)),
-        elevation: 0,
-      ),
-    );
-  }
 
   void _navigateToWarehouse(Assignment task, {required bool manual}) {
     // Chuyển hướng trực tiếp đến màn hình kho quản lý

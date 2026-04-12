@@ -94,14 +94,6 @@ class StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScreen
         if (all.isNotEmpty) currentWarehouse = all.first;
       }
 
-      List<Vehicle> vehicles = [];
-      try {
-        // Lấy tất cả xe để lọc theo kho sau này nếu cần
-        final vehicleData = await _vehicleService.getAvailableVehicles();
-        vehicles = vehicleData.map((v) => Vehicle.fromJson(v)).toList();
-      } catch (e) {
-        print('Error fetching vehicles: $e');
-      }
 
       try {
         final itemData = await _reliefItemService.getAll();
@@ -482,7 +474,7 @@ Widget build(BuildContext context) {
                   ),
                   SliverToBoxAdapter(
                     child: Container(
-                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -497,12 +489,20 @@ Widget build(BuildContext context) {
                       ),
                     ),
                   ),
-                  _buildInventoryList(isScrollable: false),
-                  _buildVehicleList(isScrollable: false),
+                  // Hiển thị danh sách dựa theo tab đang chọn (0: Hàng hóa, 1: Phương tiện)
+                  _tabController.index == 0 
+                    ? _buildInventoryList(isScrollable: false)
+                    : _buildVehicleList(isScrollable: false),
                   const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               ),
-              _buildBottomActionButtons(),
+              // Đưa nút hành động xuống dưới cùng màn hình trong Stack
+              Positioned(
+                bottom: 0, 
+                left: 0, 
+                right: 0, 
+                child: _buildBottomActionButtons()
+              ),
             ],
           );
         }
@@ -1281,26 +1281,6 @@ Widget build(BuildContext context) {
           const Text('Bạn chưa được gán quản lý kho nào!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const Text('Vui lòng liên hệ Điều động viên.', style: TextStyle(color: Colors.grey)),
         ],
-      ),
-    );
-  }
-
-  void _showWarehouseQuickView(Warehouse w) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(w.warehouseName, style: StaffTheme.titleLarge.copyWith(color: StaffTheme.textDark)),
-            Text(w.location, style: StaffTheme.cardSubtitle),
-            const Divider(height: 30),
-            const Text('Gợi ý: Nhấp để xem chi tiết tồn kho kho lân cận (Đang phát triển)'),
-          ],
-        ),
       ),
     );
   }
