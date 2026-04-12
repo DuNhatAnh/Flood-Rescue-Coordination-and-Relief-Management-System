@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:flood_rescue_app/models/assignment.dart';
 import 'package:flood_rescue_app/services/rescue_service.dart';
 import 'package:flood_rescue_app/services/auth_service.dart';
+import 'package:flood_rescue_app/utils/constants.dart';
 
 class TrackingScreen extends StatefulWidget {
   const TrackingScreen({Key? key}) : super(key: key);
@@ -229,7 +230,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 ),
               ],
             ),
-            if (task.rescuedCount != null || task.reportNote != null) ...[
+            if (task.rescuedCount != null || task.reportNote != null || (task.imageUrls != null && task.imageUrls!.isNotEmpty)) ...[
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
@@ -267,10 +268,49 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         ),
                       ),
                     if (task.reportNote != null && task.reportNote!.isNotEmpty)
-                      Text(
-                        '• Ghi chú: ${task.reportNote}',
-                        style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: (task.imageUrls != null && task.imageUrls!.isNotEmpty) ? 8 : 0),
+                        child: Text(
+                          '• Ghi chú: ${task.reportNote}',
+                          style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic),
+                        ),
                       ),
+                    
+                    // HIỂN THỊ HÌNH ẢNH BÁO CÁO
+                    if (task.imageUrls != null && task.imageUrls!.isNotEmpty) ...[
+                      const Text('• Hình ảnh hiện trường:', style: TextStyle(fontSize: 13)),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: task.imageUrls!.length,
+                          itemBuilder: (context, imgIndex) {
+                            final imageUrl = task.imageUrls![imgIndex];
+                            return GestureDetector(
+                              onTap: () => _showImageLightBox(imageUrl),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                width: 100,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    _formatImageUrl(imageUrl),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => 
+                                      const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -311,6 +351,60 @@ class _TrackingScreenState extends State<TrackingScreen> {
       case 'ASSIGNED': return Colors.indigo;
       default: return Colors.blueGrey;
     }
+  }
+
+  String _formatImageUrl(String url) {
+    if (url.isEmpty) return '';
+    if (url.startsWith('http')) return url;
+    
+    // Lấy domain host từ apiV1 (VD: http://localhost:8080/api/v1 -> http://localhost:8080)
+    final baseUrlHost = Constants.apiV1.replaceAll('/api/v1', '');
+    return '$baseUrlHost$url';
+  }
+
+  void _showImageLightBox(String url) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              child: Image.network(
+                _formatImageUrl(url),
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                },
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      SizedBox(height: 10),
+                      Text('Không thể tải hình ảnh'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _getStatusLabel(String status) {

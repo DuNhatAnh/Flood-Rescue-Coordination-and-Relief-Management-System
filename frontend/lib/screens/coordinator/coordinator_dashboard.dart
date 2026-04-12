@@ -20,9 +20,11 @@ class CoordinatorDashboard extends StatefulWidget {
 
 class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
   final RescueService _rescueService = RescueService();
+  final MapController _mapController = MapController();
   List<RescueRequest> _requests = [];
   List<SafetyReport> _safetyReports = [];
   bool _isLoading = true;
+  bool _isDescending = true; // Mặc định: Cao xuống Thấp (Ưu tiên khẩn cấp)
 
   @override
   void initState() {
@@ -296,8 +298,20 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
   }
 
   Widget _buildRequestList(List<RescueRequest> requests) {
-    final unverifiedRequests = requests.where((r) => !r.isVerified).toList();
-    final verifiedRequests = requests.where((r) => r.isVerified).toList();
+    // Chỉ hiển thị các yêu cầu đang chờ xử lý (loại bỏ đã từ chối, đã điều phối, v.v...)
+    final pendingRequests = requests.where((r) => r.status == RequestStatus.pending).toList();
+
+    // SẮP XẾP THEO ĐỘ KHẨN CẤP
+    pendingRequests.sort((a, b) {
+      if (_isDescending) {
+        return b.urgency.index.compareTo(a.urgency.index); // Cao -> Thấp
+      } else {
+        return a.urgency.index.compareTo(b.urgency.index); // Thấp -> Cao
+      }
+    });
+
+    final unverifiedRequests = pendingRequests.where((r) => !r.isVerified).toList();
+    final verifiedRequests = pendingRequests.where((r) => r.isVerified).toList();
 
     return DefaultTabController(
       length: 2,
@@ -309,13 +323,36 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
         ),
         child: Column(
           children: [
-            TabBar(
-              labelColor: const Color(0xFF0288D1),
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFF0288D1),
-              tabs: [
-                Tab(child: Text('Chờ xác minh (${unverifiedRequests.length})', style: const TextStyle(fontSize: 13))),
-                Tab(child: Text('Đã xác minh (${verifiedRequests.length})', style: const TextStyle(fontSize: 13))),
+            Row(
+              children: [
+                Expanded(
+                  child: TabBar(
+                    labelColor: const Color(0xFF0288D1),
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: const Color(0xFF0288D1),
+                    tabs: [
+                      Tab(child: Text('Chờ xác minh (${unverifiedRequests.length})', style: const TextStyle(fontSize: 13))),
+                      Tab(child: Text('Đã xác minh (${verifiedRequests.length})', style: const TextStyle(fontSize: 13))),
+                    ],
+                  ),
+                ),
+                // NÚT LỌC ĐỘ KHẨN CẤP
+                Tooltip(
+                  message: _isDescending ? 'Sắp xếp: Cao -> Thấp' : 'Sắp xếp: Thấp -> Cao',
+                  child: IconButton(
+                    icon: Icon(
+                      _isDescending ? Icons.sort_rounded : Icons.filter_list_rounded,
+                      color: const Color(0xFF0288D1),
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isDescending = !_isDescending;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
               ],
             ),
             Expanded(
@@ -516,10 +553,11 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
 
   Widget _buildMap(List<RescueRequest> requests) {
     return FlutterMap(
+      mapController: _mapController,
       options: const MapOptions(
-        initialCenter: const LatLng(15.6, 108.5), // Nhóm đô thị ven biển
+        initialCenter: LatLng(15.6, 108.5), // Nhóm đô thị ven biển
         initialZoom: 11.5,
-        interactionOptions: const InteractionOptions(
+        interactionOptions: InteractionOptions(
           flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
       ),
@@ -572,6 +610,67 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
           }).toList(),
         ),
       ],
+    );
+  }
+
+  void _showRejectDialog(BuildContext parentContext, RescueRequest request) {
+    final noteController = TextEditingController();
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Từ chối Yêu cầu', style: TextStyle(color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Vui lòng nhập lý do từ chối yêu cầu. Hành động này không thể hoàn tác.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: noteController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Nhập lý do từ chối (bắt buộc)...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              if (noteController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(parentContext).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng nhập lý do từ chối')),
+                );
+                return;
+              }
+              
+              Navigator.pop(dialogContext); // Đóng dialog
+              
+              final success = await _rescueService.updateRequestStatus(
+                request.id, 
+                'REJECTED', 
+                note: noteController.text.trim()
+              );
+              
+              if (!mounted) return;
+              if (success) {
+                Navigator.pop(parentContext); // Đóng BottomSheet
+                _refreshData();
+                ScaffoldMessenger.of(parentContext).showSnackBar(
+                  const SnackBar(content: Text('Đã từ chối yêu cầu thành công')),
+                );
+              }
+            },
+            child: const Text('Xác nhận Từ chối'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -635,7 +734,48 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                   children: [
                     _buildDetailRow(Icons.person, 'Người gửi', currentRequest.citizenName),
                     _buildDetailRow(Icons.phone, 'Số điện thoại', currentRequest.phone, isLink: true),
-                    _buildDetailRow(Icons.location_on, 'Địa chỉ', currentRequest.address),
+                    _buildDetailRow(
+                      Icons.location_on, 
+                      'Địa chỉ', 
+                      currentRequest.address,
+                      trailing: InkWell(
+                        onTap: () {
+                          _mapController.move(LatLng(currentRequest.lat, currentRequest.lng), 15.0);
+                          Navigator.pop(context); // Đóng modal để xem bản đồ
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Đang di chuyển tới vị trí của ${currentRequest.citizenName}'),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.gps_fixed, size: 14, color: Colors.blue),
+                              SizedBox(width: 4),
+                              Text(
+                                'Xem bản đồ',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                     _buildDetailRow(Icons.people, 'Số người cần cứu', '${currentRequest.numberOfPeople} người'),
                     _buildDetailRow(Icons.priority_high, 'Mức độ khẩn cấp', currentRequest.urgencyLabel, color: currentRequest.urgencyColor),
                     _buildDetailRow(Icons.access_time, 'Thời gian gửi', DateFormat('dd/MM/yyyy HH:mm').format(currentRequest.createdAt)),
@@ -652,6 +792,46 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                         currentRequest.description.isEmpty ? 'Không có mô tả' : currentRequest.description,
                         style: const TextStyle(fontSize: 15, height: 1.4),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Hình ảnh đính kèm:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    FutureBuilder<List<String>>(
+                      future: _rescueService.getAttachments(currentRequest.id),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Text('Không có hình ảnh đính kèm', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey));
+                        }
+                        final images = snapshot.data!;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 1,
+                          ),
+                          itemCount: images.length,
+                          itemBuilder: (context, index) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                images[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                                  ),
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
                     
                     // HIỂN THỊ THÔNG TIN BÁO AN TOÀN ĐỐI SOÁT
@@ -693,7 +873,8 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    if (!currentRequest.isVerified)
+                    if (!currentRequest.isVerified && currentRequest.status == RequestStatus.pending) ...[
+                      // Nút Xác minh
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () async {
@@ -710,7 +891,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                             }
                           },
                           icon: const Icon(Icons.verified),
-                          label: const Text('Xác minh'),
+                          label: const Text('Xác nhận'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
@@ -718,28 +899,44 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                           ),
                         ),
                       ),
-                    if (!currentRequest.isVerified) const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: !currentRequest.isVerified ? null : () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AssignmentScreen(request: currentRequest),
-                            ),
-                          ).then((_) => _refreshData());
-                        },
-                        icon: const Icon(Icons.send),
-                        label: const Text('Điều phối'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: currentRequest.isVerified ? Colors.red : Colors.grey[300],
-                          foregroundColor: currentRequest.isVerified ? Colors.white : Colors.grey[600],
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          elevation: currentRequest.isVerified ? 2 : 0,
+                      const SizedBox(width: 8),
+                      // Nút Từ chối
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showRejectDialog(context, currentRequest),
+                          icon: const Icon(Icons.cancel, color: Colors.red),
+                          label: const Text('Từ chối', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                    ],
+                    // Nút Điều phối (Chỉ hiện nếu ko bị từ chối)
+                    if (currentRequest.status != RequestStatus.rejected)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: !currentRequest.isVerified ? null : () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AssignmentScreen(request: currentRequest),
+                              ),
+                            ).then((_) => _refreshData());
+                          },
+                          icon: const Icon(Icons.send),
+                          label: const Text('Điều phối n.lực'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: currentRequest.isVerified ? Colors.red : Colors.grey[300],
+                            foregroundColor: currentRequest.isVerified ? Colors.white : Colors.grey[600],
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: currentRequest.isVerified ? 2 : 0,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -750,7 +947,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value, {bool isLink = false, Color? color}) {
+  Widget _buildDetailRow(IconData icon, String label, String value, {bool isLink = false, Color? color, Widget? trailing}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -775,6 +972,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
               ],
             ),
           ),
+          if (trailing != null) trailing,
         ],
       ),
     );

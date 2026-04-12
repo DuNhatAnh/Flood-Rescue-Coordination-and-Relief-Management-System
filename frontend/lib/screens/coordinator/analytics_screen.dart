@@ -31,7 +31,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi tải dữ liệu: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Lỗi tải dữ liệu: $e')));
     }
   }
 
@@ -39,7 +40,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thống Kê & Báo Cáo', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Thống Kê & Báo Cáo',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF0288D1),
         foregroundColor: Colors.white,
         actions: [
@@ -60,7 +62,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _buildContent(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     int crossAxisCount = screenWidth > 900 ? 3 : (screenWidth > 600 ? 2 : 1);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -75,13 +77,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
             children: [
-              _buildKpiCard('Tổng yêu cầu', _analytics?['totalRequests']?.toString() ?? '0', Icons.assignment, Colors.blue),
-              _buildKpiCard('Đội cứu hộ', _analytics?['totalTeams']?.toString() ?? '0', Icons.security, Colors.orange),
-              _buildKpiCard('Đã cứu hộ (Dự kiến)', _analytics?['totalPeopleRescued']?.toString() ?? '0', Icons.people, Colors.green),
+              _buildKpiCard(
+                  'Tổng yêu cầu',
+                  _analytics?['totalRequests']?.toString() ?? '0',
+                  Icons.assignment,
+                  Colors.blue),
+              _buildKpiCard(
+                  'Đội cứu hộ',
+                  _analytics?['totalTeams']?.toString() ?? '0',
+                  Icons.security,
+                  Colors.orange),
+              _buildKpiCard(
+                  'Đã cứu hộ (Dự kiến)',
+                  _analytics?['totalPeopleRescued']?.toString() ?? '0',
+                  Icons.people,
+                  Colors.green),
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Charts Section
           if (screenWidth > 900)
             Row(
@@ -100,7 +114,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 _buildLineChartSection(),
               ],
             ),
-            
+
           const SizedBox(height: 16),
           _buildItemsListSection(),
         ],
@@ -130,9 +144,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(title, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                  Text(title,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14)),
                   const SizedBox(height: 4),
-                  Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+                  Text(value,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 24)),
                 ],
               ),
             ),
@@ -143,8 +160,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildPieChartSection() {
-    final statusData = _analytics?['statusDistribution'] as Map<String, dynamic>? ?? {};
-    
+    final statusData =
+        _analytics?['statusDistribution'] as Map<String, dynamic>? ?? {};
+
     // Define exact colors for statuses to match request urgency
     final Map<String, Color> statusColors = {
       'PENDING': Colors.orange,
@@ -154,7 +172,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       'COMPLETED': Colors.green,
       'CANCELLED': Colors.red,
     };
-    
+
     final Map<String, String> statusNames = {
       'PENDING': 'Chờ xử lý',
       'VERIFIED': 'Đã xác minh',
@@ -172,13 +190,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           value: value.toDouble(),
           title: '${value.toInt()}',
           radius: 50,
-          titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+          titleStyle: const TextStyle(
+              fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
         ));
       }
     });
 
     if (sections.isEmpty) {
-      sections.add(PieChartSectionData(color: Colors.grey[300]!, value: 1, title: '0', radius: 50));
+      sections.add(PieChartSectionData(
+          color: Colors.grey[300]!, value: 1, title: '0', radius: 50));
     }
 
     return Card(
@@ -189,7 +209,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Trạng Thái Yêu Cầu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Trạng Thái Yêu Cầu',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
             SizedBox(
               height: 200,
@@ -205,14 +226,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Wrap(
               spacing: 12,
               runSpacing: 8,
-              children: statusData.entries.where((e) => e.value > 0).map((e) => Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(width: 12, height: 12, color: statusColors[e.key] ?? Colors.grey),
-                  const SizedBox(width: 4),
-                  Text('${statusNames[e.key] ?? e.key} (${e.value})', style: const TextStyle(fontSize: 12)),
-                ],
-              )).toList(),
+              children: statusData.entries
+                  .where((e) => e.value > 0)
+                  .map((e) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                              width: 12,
+                              height: 12,
+                              color: statusColors[e.key] ?? Colors.grey),
+                          const SizedBox(width: 4),
+                          Text('${statusNames[e.key] ?? e.key} (${e.value})',
+                              style: const TextStyle(fontSize: 12)),
+                        ],
+                      ))
+                  .toList(),
             ),
           ],
         ),
@@ -222,17 +250,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget _buildLineChartSection() {
     final trendData = _analytics?['requestTrend'] as List<dynamic>? ?? [];
-    
+
     List<FlSpot> spots = [];
     List<String> dates = [];
-    
+
     double maxY = 5.0; // minimum scale
 
     for (int i = 0; i < trendData.length; i++) {
       double value = (trendData[i]['count'] as num).toDouble();
       if (value > maxY) maxY = value;
       spots.add(FlSpot(i.toDouble(), value));
-      
+
       String rawDate = trendData[i]['date'] as String;
       List<String> parts = rawDate.split('-');
       if (parts.length == 3) {
@@ -250,17 +278,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Xu Hướng Yêu Cầu (7 ngày qua)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Xu Hướng Yêu Cầu (7 ngày qua)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
             SizedBox(
               height: 250,
               child: LineChart(
                 LineChartData(
-                  gridData: const FlGridData(show: true, drawVerticalLine: false),
+                  gridData:
+                      const FlGridData(show: true, drawVerticalLine: false),
                   titlesData: FlTitlesData(
                     show: true,
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -270,7 +302,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           if (index >= 0 && index < dates.length) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(dates[index], style: const TextStyle(fontSize: 10)),
+                              child: Text(dates[index],
+                                  style: const TextStyle(fontSize: 10)),
                             );
                           }
                           return const Text('');
@@ -280,7 +313,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   borderData: FlBorderData(show: false),
                   minX: 0,
-                  maxX: spots.length > 0 ? (spots.length - 1).toDouble() : 0,
+                  maxX: spots.isNotEmpty ? (spots.length - 1).toDouble() : 0,
                   minY: 0,
                   maxY: maxY * 1.2,
                   lineBarsData: [
@@ -326,19 +359,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Số Lượng Hàng Hóa Điều Phối', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Số Lượng Hàng Hóa Điều Phối',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ...topItems.map((item) {
               String name = item['name'] as String;
               double val = (item['value'] as num).toDouble();
-              
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: Row(
                   children: [
                     Expanded(
                       flex: 3,
-                      child: Text(name, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      child: Text(name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w500, fontSize: 13),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -347,13 +385,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         children: [
                           Container(
                             height: 12,
-                            decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                            decoration: BoxDecoration(
+                                color: Colors.teal.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6)),
                           ),
                           FractionallySizedBox(
                             widthFactor: val / maxVal,
                             child: Container(
                               height: 12,
-                              decoration: BoxDecoration(color: Colors.teal, borderRadius: BorderRadius.circular(6)),
+                              decoration: BoxDecoration(
+                                  color: Colors.teal,
+                                  borderRadius: BorderRadius.circular(6)),
                             ),
                           ),
                         ],
@@ -362,7 +404,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(width: 8),
                     SizedBox(
                       width: 40,
-                      child: Text('${val.toInt()}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal.shade700)),
+                      child: Text('${val.toInt()}',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.teal.shade700)),
                     ),
                   ],
                 ),
