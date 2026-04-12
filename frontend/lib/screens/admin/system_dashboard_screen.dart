@@ -28,11 +28,13 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
     try {
       final stats = await _adminService.fetchSystemStats();
       final logs = await _adminService.fetchSystemLogs();
-      setState(() {
-        _stats = stats;
-        _logs = logs;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _logs = logs;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -139,21 +141,23 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                         ),
                       ],
                     ),
+                    
                   const SizedBox(height: 36),
-                  const Text('Quản lý', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+                  const Text('Quản lý hệ thống', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
                   const SizedBox(height: 16),
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: navCrossAxisCount,
+                    crossAxisCount: screenWidth > 1200 ? 5 : (screenWidth > 800 ? 3 : 2),
                     childAspectRatio: navAspectRatio,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
                     children: [
+                      _buildNavBtn(context, 'Báo cáo', Icons.analytics, '/admin/analytics', Colors.pink),
                       _buildNavBtn(context, 'Người dùng', Icons.manage_accounts, '/admin/users', Colors.indigo),
                       _buildNavBtn(context, 'Phân quyền', Icons.admin_panel_settings, '/admin/roles', Colors.deepPurple),
-                      _buildNavBtn(context, 'Thông báo', Icons.notifications_active, '/admin/notifications', Colors.teal),
                       _buildNavBtn(context, 'Kho bãi', Icons.warehouse, '/admin/warehouses', Colors.orange),
+                      _buildNavBtn(context, 'Thông báo', Icons.notifications_active, '/admin/notifications', Colors.teal),
                     ],
                   ),
                   const SizedBox(height: 36),

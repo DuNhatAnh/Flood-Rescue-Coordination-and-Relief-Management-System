@@ -11,6 +11,7 @@ import 'screens/admin/vehicle_location_screen.dart';
 import 'screens/admin/role_management_screen.dart';
 import 'screens/admin/warehouse_management_screen.dart';
 import 'package:flood_rescue_app/screens/coordinator/analytics_screen.dart';
+import 'screens/admin/admin_analytics_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,6 +51,7 @@ class FloodRescueApp extends StatelessWidget {
         '/admin/vehicles': (context) => const VehicleManagementScreen(),
         '/admin/vehicle_locations': (context) => const VehicleLocationScreen(),
         '/admin/warehouses': (context) => const WarehouseManagementScreen(),
+        '/admin/analytics': (context) => const AdminAnalyticsScreen(),
       },
     );
   }

@@ -13,9 +13,9 @@ public interface DistributionDetailRepository extends MongoRepository<Distributi
 
     List<DistributionDetail> findAllByDistributionId(String distributionId);
 
-    // Sửa lại pipeline để chắc chắn mapping đúng
+    // Sửa lại pipeline để chắc chắn mapping đúng với cấu trúc DB (item_id)
     @Aggregation(pipeline = {
-            "{ '$group': { '_id': '$itemId', 'totalQuantity': { '$sum': '$quantity' } } }",
+            "{ '$group': { '_id': '$item_id', 'totalQuantity': { '$sum': '$quantity' } } }",
             "{ '$sort': { 'totalQuantity': -1 } }",
             "{ '$limit': 10 }"
     })
