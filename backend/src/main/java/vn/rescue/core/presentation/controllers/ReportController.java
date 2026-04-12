@@ -77,4 +77,78 @@ public class ReportController {
                     .body(ApiResponse.error(500, "Lỗi hệ thống: " + e.getMessage()));
         }
     }
+
+    /**
+     * API Lấy xu hướng kho (Biểu đồ đường)
+     */
+    @GetMapping("/warehouse-trend")
+    public ResponseEntity<ApiResponse<Object>> getWarehouseTrend(
+            @RequestParam(defaultValue = "week") String period,
+            @RequestParam(required = false) String itemId) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(reportService.getWarehouseTrend(period, itemId), "Dữ liệu xu hướng kho đã được tải"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error(500, e.getMessage()));
+        }
+    }
+
+    /**
+     * API Lấy danh sách vật phẩm có sẵn trong kho của đội
+     */
+    @GetMapping("/available-items")
+    public ResponseEntity<ApiResponse<Object>> getAvailableItems() {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(reportService.getAvailableItems(), "Danh sách vật phẩm đã được tải"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error(500, e.getMessage()));
+        }
+    }
+
+    /**
+     * API Lấy thống kê chi tiết (Nhiệm vụ xong, Người cứu được)
+     */
+    @GetMapping("/extended-stats")
+    public ResponseEntity<ApiResponse<Object>> getExtendedStats() {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(reportService.getExtendedStats(), "Thống kê mở rộng đã được tải"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error(500, e.getMessage()));
+        }
+    }
+
+    /**
+     * API Lấy lịch sử cứu hộ
+     */
+    @GetMapping("/rescue-history")
+    public ResponseEntity<ApiResponse<Object>> getRescueHistory() {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(reportService.getRescueHistory(), "Lịch sử cứu hộ đã được tải"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error(500, e.getMessage()));
+        }
+    }
+
+    /**
+     * API Lấy lịch sử kho
+     */
+    @GetMapping("/warehouse-history")
+    public ResponseEntity<ApiResponse<Object>> getWarehouseHistory(@RequestParam String type) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(reportService.getWarehouseHistory(type), "Lịch sử kho đã được tải"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error(500, e.getMessage()));
+        }
+    }
+
+    /**
+     * API Lấy lịch sử sử dụng phương tiện
+     */
+    @GetMapping("/vehicle-history")
+    public ResponseEntity<ApiResponse<Object>> getVehicleHistory() {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(reportService.getVehicleUsageHistory(), "Lịch sử phương tiện đã được tải"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error(500, e.getMessage()));
+        }
+    }
 }

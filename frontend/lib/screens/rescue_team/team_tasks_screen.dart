@@ -60,7 +60,9 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
             );
           }
 
-          final tasks = snapshot.data ?? [];
+          final allTasks = snapshot.data ?? [];
+          // Chỉ hiển thị các nhiệm vụ chưa hoàn thành (vì đã có trang Lịch sử/Thống kê)
+          final tasks = allTasks.where((t) => t.status.toUpperCase() != 'COMPLETED').toList();
           
           // Tìm nhiệm vụ đang hoạt động
           Assignment? activeTask;
@@ -131,14 +133,25 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
               children: [
                 _buildHeader(task),
                 const SizedBox(height: 16),
-                MissionStepper(currentStatus: task.status),
+                
+                // Khối trạng thái (SCRUM-61)
+                _buildSectionCard(
+                  title: 'TRẠNG THÁI NHIỆM VỤ',
+                  icon: Icons.track_changes_rounded,
+                  child: MissionStepper(currentStatus: task.status),
+                ),
+                
                 const SizedBox(height: 16),
                 
                 // NẾU ĐANG CHUẨN BỊ - HIỆN FORM LOGISTICS (PHẦN 2 NÂNG CẤP)
                 if (task.status.toUpperCase() == 'PREPARING')
                   _buildPreparationOptions(task)
                 else
-                  _buildDetailsCard(task),
+                  _buildSectionCard(
+                    title: 'THÔNG TIN CHI TIẾT',
+                    icon: Icons.info_outline_rounded,
+                    child: _buildDetailsCardContent(task),
+                  ),
                   
                 const SizedBox(height: 24),
                 _buildActionButtons(task),
@@ -370,6 +383,63 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
           child: Text(
             _getStatusLabel(task.status),
             style: TextStyle(color: _getStatusColor(task.status), fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionCard({required String title, required IconData icon, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: StaffTheme.border),
+        boxShadow: StaffTheme.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: StaffTheme.primaryBlue),
+              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: StaffTheme.primaryBlue)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailsCardContent(Assignment task) {
+    return Column(
+      children: [
+        _buildDetailItem(Icons.person, 'Người cần cứu', task.citizenName ?? 'N/A'),
+        const Divider(height: 30),
+        _buildDetailItem(Icons.location_on, 'Địa chỉ', task.addressText ?? 'N/A', color: StaffTheme.errorRed),
+        const Divider(height: 30),
+        Row(
+          children: [
+            Expanded(child: _buildDetailItem(Icons.people, 'Số người', '${task.numberOfPeople ?? 0} người')),
+            Expanded(child: _buildDetailItem(Icons.priority_high, 'Khẩn cấp', task.urgencyLevel ?? 'BÌNH THƯỜNG', 
+                color: task.urgencyLevel == 'HIGH' ? StaffTheme.errorRed : StaffTheme.warningOrange)),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            task.description ?? 'Không có mô tả chi tiết.',
+            style: const TextStyle(fontSize: 14, height: 1.5, color: StaffTheme.textMedium),
           ),
         ),
       ],

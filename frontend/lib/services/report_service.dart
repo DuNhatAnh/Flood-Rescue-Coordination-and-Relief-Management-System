@@ -69,4 +69,90 @@ class ReportService {
       return null;
     }
   }
+
+  /// Lấy xu hướng kho (Biểu đồ đường)
+  Future<Map<String, dynamic>> getWarehouseTrend(String period, {String? itemId}) async {
+    try {
+      final queryParams = {'period': period};
+      if (itemId != null) queryParams['itemId'] = itemId;
+      final url = Uri.parse('$baseUrl/warehouse-trend').replace(queryParameters: queryParams);
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        return decoded['data'] ?? {'trend': [], 'unit': 'đơn vị'};
+      }
+    } catch (e) { debugPrint("⚠️ Lỗi warehouse-trend: $e"); }
+    return {'trend': [], 'unit': 'đơn vị'};
+  }
+
+  /// Lấy danh sách vật phẩm có sẵn
+  Future<List<dynamic>> getAvailableItems() async {
+    try {
+      final url = Uri.parse('$baseUrl/available-items');
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        return decoded['data'] ?? [];
+      }
+    } catch (e) { debugPrint("⚠️ Lỗi available-items: $e"); }
+    return [];
+  }
+
+  /// Lấy thống kê mở rộng (Nhiệm vụ xong, Người cứu được)
+  Future<Map<String, dynamic>> getExtendedStats() async {
+    try {
+      final url = Uri.parse('$baseUrl/extended-stats');
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        return decoded['data'] ?? {};
+      }
+    } catch (e) { debugPrint("⚠️ Lỗi extended-stats: $e"); }
+    return {};
+  }
+
+  /// Lấy lịch sử cứu hộ
+  Future<List<dynamic>> getRescueHistory() async {
+    try {
+      final url = Uri.parse('$baseUrl/rescue-history');
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        return decoded['data'] ?? [];
+      }
+    } catch (e) { debugPrint("⚠️ Lỗi rescue-history: $e"); }
+    return [];
+  }
+
+  /// Lấy lịch sử kho
+  Future<List<dynamic>> getWarehouseHistory(String type) async {
+    try {
+      final url = Uri.parse('$baseUrl/warehouse-history?type=$type');
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        return decoded['data'] ?? [];
+      }
+    } catch (e) { debugPrint("⚠️ Lỗi warehouse-history: $e"); }
+    return [];
+  }
+
+  /// Lấy lịch sử phương tiện
+  Future<List<dynamic>> getVehicleHistory() async {
+    try {
+      final url = Uri.parse('$baseUrl/vehicle-history');
+      final headers = await _getHeaders();
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        return decoded['data'] ?? [];
+      }
+    } catch (e) { debugPrint("⚠️ Lỗi vehicle-history: $e"); }
+    return [];
+  }
 }

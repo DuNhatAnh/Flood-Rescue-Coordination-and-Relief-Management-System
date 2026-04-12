@@ -21,46 +21,73 @@ class StaffReportScreenState extends State<StaffReportScreen> {
   final ReportService _reportService = ReportService();
   final VehicleService _vehicleService = VehicleService();
 
-  List<Distribution> _history = [];
-  List<Vehicle> _vehicles = []; // Danh sách phương tiện chi tiết
   bool _isLoading = true;
   DashboardStats? _stats;
   
-  // Dữ liệu thống kê phương tiện
-  Map<String, dynamic> _vehicleStats = {
-    'total': 0, 'available': 0, 'in_use': 0, 'maintenance': 0
-  };
+  // Dữ liệu mới
+  List<dynamic> _warehouseTrend = [];
+  Map<String, dynamic> _extendedStats = {};
+  List<dynamic> _rescueHistory = [];
+  List<dynamic> _exportHistory = [];
+  List<dynamic> _importHistory = [];
+  List<dynamic> _vehicleHistory = [];
+  
+  String _trendPeriod = 'week';
+  int _warehouseTab = 0; // 0: Xuất, 1: Nhập
+
+  // Lọc theo vật phẩm
+  List<dynamic> _availableItems = [];
+  String? _selectedItemId;
+  String _currentUnit = 'đơn vị';
+
+  final ScrollController _rescueScrollController = ScrollController();
+  final ScrollController _exportScrollController = ScrollController();
+  final ScrollController _importScrollController = ScrollController();
+  final ScrollController _vehicleScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    refreshData();
+    _loadInitialData();
   }
 
-  Future<void> refreshData() async {
+  @override
+  void dispose() {
+    _rescueScrollController.dispose();
+    _exportScrollController.dispose();
+    _importScrollController.dispose();
+    _vehicleScrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInitialData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
-      // Gọi đồng thời 4 API: Dashboard, Lịch sử, Thống kê xe và Danh sách xe
       final results = await Future.wait([
         _reportService.getStaffDashboard(),
-        _distService.getHistory(),
-        _vehicleService.getVehicleStatistics(),
-        _vehicleService.getAllVehicles(size: 100), // Lấy danh sách để liệt kê
+        _reportService.getAvailableItems(),
+        _reportService.getWarehouseTrend(_trendPeriod),
+        _reportService.getExtendedStats(),
+        _reportService.getRescueHistory(),
+        _reportService.getWarehouseHistory('EXPORT'),
+        _reportService.getWarehouseHistory('IMPORT'),
+        _reportService.getVehicleHistory(),
       ]);
 
       if (mounted) {
         setState(() {
           _stats = results[0] as DashboardStats?;
-          _history = (results[1] as List<Distribution>?) ?? [];
-          _vehicleStats = results[2] as Map<String, dynamic>;
-          
-          // Xử lý dữ liệu danh sách xe từ kết quả thứ 4
-          final vehicleData = results[3] as Map<String, dynamic>;
-          final List content = vehicleData['content'] ?? [];
-          _vehicles = content.map((e) => Vehicle.fromJson(e)).toList();
-          
+          _availableItems = results[1] as List<dynamic>;
+          final trendResult = results[2] as Map<String, dynamic>;
+          _warehouseTrend = trendResult['trend'] ?? [];
+          _currentUnit = trendResult['unit'] ?? 'đơn vị';
+          _extendedStats = results[3] as Map<String, dynamic>;
+          _rescueHistory = results[4] as List<dynamic>;
+          _exportHistory = results[5] as List<dynamic>;
+          _importHistory = results[6] as List<dynamic>;
+          _vehicleHistory = results[7] as List<dynamic>;
           _isLoading = false;
         });
       }
@@ -70,64 +97,79 @@ class StaffReportScreenState extends State<StaffReportScreen> {
     }
   }
 
+  Future<void> _fetchTrendData() async {
+    try {
+      final result = await _reportService.getWarehouseTrend(_trendPeriod, itemId: _selectedItemId);
+      if (mounted) {
+        setState(() {
+          _warehouseTrend = result['trend'] ?? [];
+          _currentUnit = result['unit'] ?? 'đơn vị';
+        });
+      }
+    } catch (e) {
+      debugPrint("Lỗi tải xu hướng kho: $e");
+    }
+  }
+
+  Future<void> refreshData() async {
+    await _loadInitialData();
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
     return Scaffold(
       backgroundColor: StaffTheme.background,
-      appBar: AppBar(
-        title: const Text('THỐNG KÊ CHI TIẾT',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-        flexibleSpace: Container(decoration: BoxDecoration(gradient: StaffTheme.primaryGradient)),
-        elevation: 0,
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: refreshData)
-        ],
-      ),
       body: RefreshIndicator(
         onRefresh: refreshData,
         color: StaffTheme.primaryBlue,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('TRẠNG THÁI NHIỆM VỤ'),
-                    const SizedBox(height: 15),
-                    _buildPieChartCard(), 
+        child: SingleChildScrollView(
+        padding: const EdgeInsets.all(15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // PHẦN 1: TỔNG QUAN & BIỂU ĐỒ (Đã có card riêng bên trong)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: _buildWarehouseTrendCard()),
+                const SizedBox(width: 15),
+                Expanded(flex: 2, child: _buildMissionSummaryCard()),
+              ],
+            ),
 
+            const SizedBox(height: 25),
+
+            // PHẦN 2: LỊCH SỬ CỨU HỘ
+            _buildGroupedSection(
+              title: 'LỊCH SỬ CỨU HỘ',
+              icon: Icons.health_and_safety_rounded,
+              iconColor: Colors.red,
+              child: _buildRescueHistoryList(),
+            ),
+
+                    const SizedBox(height: 25),
+
+                    // PHẦN 3: LỊCH SỬ XUẤT NHẬP HÀNG HÓA
+                    _buildGroupedSection(
+                      title: 'LỊCH SỬ XUẤT NHẬP HÀNG HÓA',
+                      icon: Icons.inventory_2_rounded,
+                      iconColor: StaffTheme.primaryBlue,
+                      child: _buildWarehouseHistorySection(),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // PHẦN 4: LỊCH SỬ SỬ DỤNG PHƯƠNG TIỆN
+                    _buildGroupedSection(
+                      title: 'LỊCH SỬ SỬ DỤNG PHƯƠNG TIỆN',
+                      icon: Icons.directions_boat_filled_rounded,
+                      iconColor: Colors.indigo,
+                      child: _buildVehicleUsageHistoryList(),
+                    ),
+                    
                     const SizedBox(height: 30),
-                    _buildSectionTitle('TRẠNG THÁI PHƯƠNG TIỆN'),
-                    const SizedBox(height: 15),
-                    _buildVehiclePieChart(),
-
-                    const SizedBox(height: 30),
-                    _buildSectionTitle('DANH SÁCH PHƯƠNG TIỆN CHI TIẾT'),
-                    const SizedBox(height: 15),
-                    _buildVehicleList(),
-
-                    const SizedBox(height: 30),
-                    _buildSectionTitle('THỐNG KÊ VẬT PHẨM TỒN KHO'),
-                    const SizedBox(height: 15),
-                    _buildBarChartCard(), 
-
-                    const SizedBox(height: 30),
-                    _buildSectionTitle('CON SỐ TỔNG QUAN'),
-                    const SizedBox(height: 15),
-                    _buildStatsGrid(),
-
-                    if (_stats != null && _stats!.lowStockAlerts.isNotEmpty) ...[
-                      const SizedBox(height: 30),
-                      _buildSectionTitle('CẢNH BÁO TỒN KHO THẤP'),
-                      const SizedBox(height: 15),
-                      _buildLowStockAlerts(),
-                    ],
-
-                    const SizedBox(height: 30),
-                    _buildSectionTitle('LỊCH SỬ BIẾN ĐỘNG'),
-                    const SizedBox(height: 15),
-                    _history.isEmpty ? _buildEmptyHistory() : _buildHistoryList(),
                   ],
                 ),
               ),
@@ -135,405 +177,546 @@ class StaffReportScreenState extends State<StaffReportScreen> {
     );
   }
 
-  /// 🚗 DANH SÁCH PHƯƠNG TIỆN (Mới thêm)
-  Widget _buildVehicleList() {
-    if (_vehicles.isEmpty) return _buildNoDataCard();
-
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _vehicles.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final v = _vehicles[index];
-        final statusColor = _getVehicleStatusColor(v.status);
-
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: StaffTheme.softShadow,
-          ),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: statusColor.withOpacity(0.1),
-              child: Icon(_getVehicleIcon(v.vehicleType), color: statusColor, size: 20),
-            ),
-            title: Text(v.licensePlate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text("${v.vehicleType} • ${v.currentLocation ?? 'Kho trung tâm'}", style: const TextStyle(fontSize: 12)),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-              child: Text(_translateVehicleStatus(v.status), 
-                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// 🚗 BIỂU ĐỒ TRÒN PHƯƠNG TIỆN
-  Widget _buildVehiclePieChart() {
-    int available = _vehicleStats['available'] ?? 0;
-    int inUse = _vehicleStats['in_use'] ?? 0;
-    int maintenance = _vehicleStats['maintenance'] ?? 0;
-    int total = available + inUse + maintenance;
-
-    if (total == 0) return _buildNoDataCard();
-
+  /// 📊 BIỂU ĐỒ ĐƯỜNG: XU HƯỚNG KHO BÃI (3/5)
+  Widget _buildWarehouseTrendCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: StaffTheme.softShadow),
-      child: Row(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: StaffTheme.softShadow),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 100, width: 100,
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 2, centerSpaceRadius: 20,
-                sections: [
-                  PieChartSectionData(value: available.toDouble(), color: Colors.green, title: '', radius: 30),
-                  PieChartSectionData(value: inUse.toDouble(), color: StaffTheme.primaryBlue, title: '', radius: 30),
-                  PieChartSectionData(value: maintenance.toDouble(), color: Colors.orange, title: '', radius: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("BIỂU ĐỒ XUẤT NHẬP HÀNG HÓA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
+                  const SizedBox(height: 4),
+                  // Dropdown chọn vật phẩm
+                  Container(
+                    height: 35,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String?>(
+                        value: _selectedItemId,
+                        hint: const Text("Tất cả vật phẩm", style: TextStyle(fontSize: 12)),
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text("Tất cả hàng hóa", style: TextStyle(fontSize: 12))),
+                          ..._availableItems.map((item) => DropdownMenuItem(
+                            value: item['id'].toString(),
+                            child: Text(item['name'], style: const TextStyle(fontSize: 12)),
+                          )).toList(),
+                        ],
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedItemId = val;
+                          });
+                          _fetchTrendData();
+                        },
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLegend(Colors.green, "Sẵn sàng: $available"),
-                _buildLegend(StaffTheme.primaryBlue, "Đang dùng: $inUse"),
-                _buildLegend(Colors.orange, "Bảo trì: $maintenance"),
-                const Divider(),
-                Text("Tổng cộng: $total xe", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  /// 📊 BIỂU ĐỒ TRÒN: Tỷ lệ nhiệm vụ
-  Widget _buildPieChartCard() {
-    if (_stats == null) return const SizedBox.shrink();
-    int total = _stats!.completedTasks + _stats!.activeTasks + _stats!.pendingTasks;
-    if (total == 0) return _buildNoDataCard();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: StaffTheme.softShadow),
-      child: Row(
-        children: [
-          SizedBox(
-            height: 100, width: 100,
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 2, centerSpaceRadius: 20,
-                sections: [
-                  PieChartSectionData(value: _stats!.completedTasks.toDouble(), color: Colors.green, title: '', radius: 30),
-                  PieChartSectionData(value: _stats!.activeTasks.toDouble(), color: StaffTheme.primaryBlue, title: '', radius: 30),
-                  PieChartSectionData(value: _stats!.pendingTasks.toDouble(), color: Colors.orange, title: '', radius: 30),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLegend(Colors.green, "Hoàn thành: ${_stats!.completedTasks}"),
-                _buildLegend(StaffTheme.primaryBlue, "Đang xử lý: ${_stats!.activeTasks}"),
-                _buildLegend(Colors.orange, "Đang chờ: ${_stats!.pendingTasks}"),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  /// 📊 BIỂU ĐỒ CỘT: Thống kê vật phẩm
-  Widget _buildBarChartCard() {
-    if (_stats == null || _stats!.lowStockAlerts.isEmpty) return _buildNoDataCard();
-
-    return Container(
-      height: 220,
-      padding: const EdgeInsets.fromLTRB(15, 25, 15, 10),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: StaffTheme.softShadow),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: _stats!.lowStockAlerts.map((e) => e.quantity).reduce((a, b) => a > b ? a : b).toDouble() + 10,
-          barTouchData: BarTouchData(enabled: true),
-          titlesData: FlTitlesData(
-            show: true,
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  int index = value.toInt();
-                  if (index >= 0 && index < _stats!.lowStockAlerts.length) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(_stats!.lowStockAlerts[index].itemName.substring(0, 3), 
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                    );
-                  }
-                  return const Text('');
-                },
-              ),
-            ),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barGroups: _stats!.lowStockAlerts.asMap().entries.map((entry) {
-            return BarChartGroupData(
-              x: entry.key,
-              barRods: [
-                BarChartRodData(
-                  toY: entry.value.quantity.toDouble(),
-                  color: StaffTheme.primaryBlue,
-                  width: 16,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+              // Nút đổi thời gian
+              Container(
+                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  children: [
+                    _buildTimeButton('Tuần', 'week'),
+                    _buildTimeButton('Tháng', 'month'),
+                  ],
                 ),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  // --- Helper Methods ---
-
-  IconData _getVehicleIcon(String type) {
-    String t = type.toLowerCase();
-    if (t.contains('tải')) return Icons.local_shipping;
-    if (t.contains('cano') || t.contains('thuyền')) return Icons.directions_boat;
-    return Icons.directions_car;
-  }
-
-  Color _getVehicleStatusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'AVAILABLE': return Colors.green;
-      case 'IN_USE': return StaffTheme.primaryBlue;
-      case 'MAINTENANCE': return Colors.orange;
-      default: return Colors.grey;
-    }
-  }
-
-  String _translateVehicleStatus(String status) {
-    switch (status.toUpperCase()) {
-      case 'AVAILABLE': return 'Sẵn sàng';
-      case 'IN_USE': return 'Đang dùng';
-      case 'MAINTENANCE': return 'Bảo trì';
-      default: return 'Khác';
-    }
-  }
-
-  Widget _buildLegend(Color color, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 8),
-          Text(text, style: const TextStyle(fontSize: 12, color: StaffTheme.textMedium)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 200,
+            child: _warehouseTrend.isEmpty 
+              ? const Center(child: Text("Đang tải dữ liệu..."))
+              : LineChart(
+                  LineChartData(
+                    minY: 0,
+                    maxY: 5000,
+                    gridData: const FlGridData(show: true, drawVerticalLine: false),
+                    titlesData: FlTitlesData(
+                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 22,
+                          getTitlesWidget: (value, meta) {
+                            int index = value.toInt();
+                            if (index >= 0 && index < _warehouseTrend.length && index % (_trendPeriod == 'week' ? 1 : 5) == 0) {
+                              String date = _warehouseTrend[index]['date'].toString();
+                              return Text(date.substring(5), style: const TextStyle(fontSize: 10, color: Colors.grey));
+                            }
+                            return const Text('');
+                          },
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      // Xuất kho (Xanh dương)
+                      LineChartBarData(
+                        spots: _warehouseTrend.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value['export'].toDouble())).toList(),
+                        isCurved: true, color: StaffTheme.primaryBlue, barWidth: 3, dotData: const FlDotData(show: false),
+                        preventCurveOverShooting: true,
+                        belowBarData: BarAreaData(show: true, color: StaffTheme.primaryBlue.withOpacity(0.1)),
+                      ),
+                      // Nhập kho (Xanh lá)
+                      LineChartBarData(
+                        spots: _warehouseTrend.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value['import'].toDouble())).toList(),
+                        isCurved: true, color: Colors.green, barWidth: 3, dotData: const FlDotData(show: false),
+                        preventCurveOverShooting: true,
+                        belowBarData: BarAreaData(show: true, color: Colors.green.withOpacity(0.1)),
+                      ),
+                    ],
+                  ),
+                ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildSimpleLegend(StaffTheme.primaryBlue, "Xuất kho ($_currentUnit)"),
+              const SizedBox(width: 20),
+              _buildSimpleLegend(Colors.green, "Nhập kho ($_currentUnit)"),
+            ],
+          )
         ],
       ),
     );
   }
 
-  Widget _buildNoDataCard() {
-    return Container(
-      width: double.infinity, padding: const EdgeInsets.all(30),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: StaffTheme.softShadow),
-      child: const Center(child: Text("Không có dữ liệu hiển thị", style: TextStyle(color: Colors.grey))),
+  Widget _buildTimeButton(String label, String value) {
+    bool isSelected = _trendPeriod == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _trendPeriod = value);
+        refreshData();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? StaffTheme.primaryBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(label, style: TextStyle(
+          color: isSelected ? Colors.white : Colors.grey,
+          fontSize: 10, fontWeight: FontWeight.bold
+        )),
+      ),
     );
   }
 
-  Widget _buildStatsGrid() {
+  /// 📦 Ô THỐNG KÊ TỔNG QUAN (2/5)
+  Widget _buildMissionSummaryCard() {
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(child: _buildStatCard('NHIỆM VỤ XONG', (_stats?.completedTasks ?? 0).toString(), Colors.green, Icons.check_circle_outline)),
-            const SizedBox(width: 15),
-            Expanded(child: _buildStatCard('TỔNG XE', (_vehicleStats['total'] ?? 0).toString(), Colors.blue, Icons.directions_car)),
-          ],
-        ),
+        _buildStatBox("TỔNG NHIỆM VỤ", _extendedStats['totalCompletedMissions']?.toString() ?? "0", Colors.purple, Icons.assignment_turned_in),
         const SizedBox(height: 15),
-        _buildStatCard('NHIỆM VỤ ĐANG CHỜ', (_stats?.pendingTasks ?? 0).toString(), Colors.orange, Icons.warning_amber_rounded, isWide: true),
+        _buildStatBox("NGƯỜI ĐÃ CỨU", _extendedStats['totalPeopleRescued']?.toString() ?? "0", Colors.orange, Icons.people),
       ],
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon, {bool isWide = false}) {
+  Widget _buildStatBox(String title, String value, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white, borderRadius: BorderRadius.circular(20),
+        color: Colors.white, borderRadius: BorderRadius.circular(15),
         boxShadow: StaffTheme.softShadow,
-        border: Border(left: BorderSide(color: color, width: 5)),
+        border: Border(left: BorderSide(color: color, width: 4)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 30),
-          const SizedBox(width: 15),
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
-              Text(label, style: const TextStyle(fontSize: 9, color: StaffTheme.textLight, fontWeight: FontWeight.bold)),
+              Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+              Text(title, style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
             ],
-          ),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildLowStockAlerts() {
+  /// ⛑️ LỊCH SỬ CỨU HỘ
+  Widget _buildRescueHistoryList() {
+    if (_rescueHistory.isEmpty) return _buildNoDataCard();
+    return SizedBox(
+      height: 300,
+      child: Scrollbar(
+        controller: _rescueScrollController,
+        child: ListView.builder(
+          controller: _rescueScrollController,
+          primary: false,
+          padding: const EdgeInsets.only(right: 10),
+          itemCount: _rescueHistory.length,
+          itemBuilder: (context, index) {
+            final item = _rescueHistory[index];
+            return _buildHistoryCard(
+              icon: Icons.health_and_safety,
+              color: Colors.red,
+              title: "Nhiệm vụ: ${item['citizenName'] ?? 'Không tên'}",
+              subtitle: "${item['location'] ?? 'N/A'} • ${item['peopleCount']} người",
+              time: _formatDateTime(item['time']),
+              trailing: _buildCompletionBadge(item['completionLevel']),
+              onTap: () => _showRescueDetail(item),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 📦 LỊCH SỬ XUẤT NHẬP HÀNG HÓA
+  Widget _buildWarehouseHistorySection() {
     return Column(
-      children: _stats!.lowStockAlerts.map((alert) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.red.shade100)),
+      children: [
+        Row(
+          children: [
+            _buildTabButton("XUẤT KHO", 0, Icons.outbox),
+            const SizedBox(width: 10),
+            _buildTabButton("NHẬP KHO", 1, Icons.move_to_inbox),
+          ],
+        ),
+        const SizedBox(height: 15),
+        _warehouseTab == 0 ? _buildExportList() : _buildImportList(),
+      ],
+    );
+  }
+
+  Widget _buildExportList() {
+    if (_exportHistory.isEmpty) return _buildNoDataCard();
+    return SizedBox(
+      height: 300,
+      child: Scrollbar(
+        controller: _exportScrollController,
+        child: ListView.builder(
+          controller: _exportScrollController,
+          primary: false,
+          padding: const EdgeInsets.only(right: 10),
+          itemCount: _exportHistory.length,
+          itemBuilder: (context, index) {
+            final item = _exportHistory[index];
+            return _buildHistoryCard(
+              icon: Icons.upload,
+              color: StaffTheme.primaryBlue,
+              title: "Xuất: ${item['itemName']}",
+              subtitle: "SL: ${item['quantity']} • ${item['reason'] ?? 'Cứu hộ'}",
+              time: _formatDateTime(item['time']),
+              onTap: () => _showWarehouseDetail(item, 'EXPORT'),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImportList() {
+    if (_importHistory.isEmpty) return _buildNoDataCard();
+    return SizedBox(
+      height: 300,
+      child: Scrollbar(
+        controller: _importScrollController,
+        child: ListView.builder(
+          controller: _importScrollController,
+          primary: false,
+          padding: const EdgeInsets.only(right: 10),
+          itemCount: _importHistory.length,
+          itemBuilder: (context, index) {
+            final item = _importHistory[index];
+            return _buildHistoryCard(
+              icon: Icons.download,
+              color: Colors.green,
+              title: "Nhập: ${item['itemName']}",
+              subtitle: "SL: ${item['quantity']} • ${item['source'] ?? 'N/A'}",
+              time: _formatDateTime(item['time']),
+              onTap: () => _showWarehouseDetail(item, 'IMPORT'),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 🛥️ LỊCH SỬ SỬ DỤNG PHƯƠNG TIỆN
+  Widget _buildVehicleUsageHistoryList() {
+    if (_vehicleHistory.isEmpty) return _buildNoDataCard();
+    return SizedBox(
+      height: 300,
+      child: Scrollbar(
+        controller: _vehicleScrollController,
+        child: ListView.builder(
+          controller: _vehicleScrollController,
+          primary: false,
+          padding: const EdgeInsets.only(right: 10),
+          itemCount: _vehicleHistory.length,
+          itemBuilder: (context, index) {
+            final item = _vehicleHistory[index];
+            final List vehicles = item['vehicles'] ?? [];
+            return _buildHistoryCard(
+              icon: Icons.directions_boat,
+              color: Colors.indigo,
+              title: item['location'] ?? "Nhiệm vụ #${item['assignmentId'].toString().substring(0, 5)}",
+              subtitle: vehicles.isEmpty ? "Không rõ phương tiện" : "Xe: ${vehicles.map((v) => v['licensePlate']).join(', ')}",
+              time: _formatDateTime(item['time']),
+              trailing: _buildStatusBadge(item['status']),
+              onTap: () => _showVehicleDetail(item),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // --- MODALS CHI TIẾT ---
+
+  void _showRescueDetail(Map<String, dynamic> item) {
+    _showAppModal("Chi tiết Nhiệm vụ", Column(
+      children: [
+        _buildDetailRow("Tên hộ dân:", item['citizenName'] ?? 'N/A'),
+        _buildDetailRow("Địa chỉ:", item['location'] ?? 'N/A'),
+        _buildDetailRow("Số người:", item['peopleCount'].toString()),
+        _buildDetailRow("Trạng thái:", item['status']),
+        const Divider(),
+        _buildDetailRow("Mức độ hoàn thành:", "${item['completionLevel']}%", valueColor: Colors.blue),
+      ],
+    ));
+  }
+
+  void _showWarehouseDetail(Map<String, dynamic> item, String type) {
+    _showAppModal("Chi tiết ${type == 'EXPORT' ? 'Xuất kho' : 'Nhập hàng'}", Column(
+      children: [
+        _buildDetailRow("Vật phẩm:", item['itemName']),
+        _buildDetailRow("Số lượng:", item['quantity'].toString()),
+        _buildDetailRow("Thời gian:", _formatDateTime(item['time'])),
+        _buildDetailRow("Mã tham chiếu:", item['reference'] ?? 'N/A'),
+        if (type == 'EXPORT') _buildDetailRow("Lý do xuất:", item['reason'] ?? 'Cứu hộ'),
+        if (type == 'IMPORT') _buildDetailRow("Nguồn nhập:", item['source'] ?? 'N/A'),
+      ],
+    ));
+  }
+
+  void _showVehicleDetail(Map<String, dynamic> item) {
+    final List vehicles = item['vehicles'] ?? [];
+    _showAppModal("Chi tiết Sử dụng Xe", Column(
+      children: [
+        _buildDetailRow("Vị trí:", item['location'] ?? 'N/A'),
+        _buildDetailRow("Thời gian bắt đầu:", _formatDateTime(item['time'])),
+        _buildDetailRow("Trạng thái nhiệm vụ:", item['status']),
+        _buildDetailRow("Tình trạng:", _getReturnStatus(item['status']), valueColor: Colors.green),
+        const SizedBox(height: 15),
+        const Align(alignment: Alignment.centerLeft, child: Text("PHƯƠNG TIỆN SỬ DỤNG", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+        const SizedBox(height: 10),
+        ...vehicles.map((v) => Container(
+          margin: const EdgeInsets.only(bottom: 5),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(alert.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text("Còn lại: ${alert.quantity} ${alert.unit}", style: TextStyle(color: Colors.red.shade800, fontSize: 12)),
-                  ],
-                ),
-              ),
+              Text("${v['licensePlate']} (${v['type']})", style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(v['vStatus'], style: const TextStyle(color: Colors.blue, fontSize: 12)),
             ],
           ),
-        );
-      }).toList(),
-    );
+        )).toList(),
+      ],
+    ));
   }
 
-  Widget _buildHistoryList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _history.length,
-      itemBuilder: (context, index) {
-        final dist = _history[index];
-        final isExport = dist.type == 'EXPORT';
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: StaffTheme.softShadow),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: (isExport ? StaffTheme.primaryBlue : Colors.indigo).withOpacity(0.1),
-              child: Icon(isExport ? Icons.outbox_rounded : Icons.local_shipping_rounded, color: isExport ? StaffTheme.primaryBlue : Colors.indigo),
-            ),
-            title: Text(isExport ? 'Xuất cứu trợ #${_formatId(dist.id)}' : 'Điều chuyển #${_formatId(dist.id)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text(DateFormat('dd/MM HH:mm').format(dist.distributedAt), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            trailing: _buildStatusBadge(dist.status),
-            onTap: () => _showHistoryDetail(dist),
+  // --- UI COMPONENTS ---
+
+  Widget _buildTabButton(String label, int index, IconData icon) {
+    bool isSelected = _warehouseTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _warehouseTab = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? StaffTheme.primaryBlue : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: isSelected ? StaffTheme.primaryBlue : Colors.grey[300]!),
+            boxShadow: isSelected ? StaffTheme.softShadow : null,
           ),
-        );
-      },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: isSelected ? Colors.white : Colors.grey, size: 16),
+              const SizedBox(width: 8),
+              Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 11)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color color = _getStatusColor(status);
+  Widget _buildHistoryCard({required IconData icon, required Color color, required String title, required String subtitle, required String time, Widget? trailing, VoidCallback? onTap}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-      child: Text(status, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  String _formatId(String? id) => (id == null || id.length < 4) ? "...." : id.substring(id.length - 4).toUpperCase();
-
-  Color _getStatusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'COMPLETED': return Colors.green;
-      case 'IN_TRANSIT': return Colors.blue;
-      case 'PENDING': return Colors.orange;
-      default: return Colors.grey;
-    }
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: StaffTheme.textMedium, letterSpacing: 0.5));
-  }
-
-  Widget _buildEmptyHistory() => const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('Chưa có lịch sử')));
-
-  void _showHistoryDetail(Distribution dist) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
-        padding: const EdgeInsets.fromLTRB(30, 12, 30, 30),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: StaffTheme.softShadow),
+      child: ListTile(
+        onTap: onTap,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 20),
-            Text('Chi tiết giao dịch', style: StaffTheme.titleLarge),
-            const Divider(height: 30),
-            _buildDetailRow('Mã vận đơn:', dist.id ?? 'N/A'),
-            _buildDetailRow('Loại hình:', dist.type == 'EXPORT' ? 'Xuất cứu trợ' : 'Điều chuyển kho'),
-            _buildDetailRow('Trạng thái:', dist.status),
-            const SizedBox(height: 20),
-            const Text('DANH SÁCH VẬT PHẨM', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 10),
-            ...dist.items.map((item) => _buildDetailItem(item.itemName, "${item.quantity} ${item.unit}")).toList(),
+            Text(time, style: const TextStyle(fontSize: 12, color: StaffTheme.textMedium, fontWeight: FontWeight.bold)),
+            if (trailing != null) ...[const SizedBox(height: 6), trailing],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildCompletionBadge(int level) {
+    Color c = level == 100 ? Colors.green : (level > 40 ? Colors.blue : Colors.orange);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text("$level%", style: TextStyle(color: c, fontSize: 9, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color c = status == 'COMPLETED' ? Colors.green : Colors.blue;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: c.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text(status == 'COMPLETED' ? 'Đã xong' : 'Đang đi', style: TextStyle(color: c, fontSize: 9, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildSimpleLegend(Color color, String text) {
+    return Row(
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 5),
+        Text(text, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: StaffTheme.textLight)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: valueColor),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailItem(String name, String qty) {
+  void _showAppModal(String title, Widget content) {
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(25),
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Divider(height: 30),
+            content,
+            const SizedBox(height: 20),
+            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: StaffTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))), child: const Text("Đóng", style: TextStyle(color: Colors.white)))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDateTime(dynamic time) {
+    if (time == null) return "N/A";
+    try {
+      DateTime dt = DateTime.parse(time.toString());
+      return DateFormat('dd/MM HH:mm').format(dt);
+    } catch (e) { return time.toString(); }
+  }
+
+  String _getReturnStatus(String status) {
+    if (status == 'COMPLETED') return "Đã trả xe về kho";
+    return "Đang hoạt động";
+  }
+
+  Widget _buildGroupedSection({required String title, required IconData icon, required Color iconColor, required Widget child}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: StaffTheme.background, borderRadius: BorderRadius.circular(10)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: StaffTheme.border),
+        boxShadow: StaffTheme.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-          Text(qty, style: const TextStyle(color: StaffTheme.primaryBlue, fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              _buildSectionTitle(title),
+            ],
+          ),
+          const SizedBox(height: 15),
+          const Divider(height: 1, color: StaffTheme.border),
+          const SizedBox(height: 20),
+          child,
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: StaffTheme.textDark, letterSpacing: 0.8));
+  }
+
+  Widget _buildNoDataCard() {
+    return Container(
+      width: double.infinity, padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: StaffTheme.softShadow),
+      child: const Center(child: Text("Không có dữ liệu hiển thị", style: TextStyle(color: Colors.grey, fontSize: 12))),
     );
   }
 }

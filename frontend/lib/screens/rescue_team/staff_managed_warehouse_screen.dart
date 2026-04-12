@@ -410,40 +410,6 @@ Widget build(BuildContext context) {
   
   return Scaffold(
     backgroundColor: StaffTheme.background,
-
-    appBar: AppBar(
-      automaticallyImplyLeading: false,
-      iconTheme: const IconThemeData(color: Colors.white),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              '${_myWarehouse?.warehouseName ?? 'Quản lý kho'} (${_myWarehouse?.location ?? 'Chưa có địa chỉ'})',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: (_myWarehouse?.id == _managedWarehouseId) ? Colors.orange : Colors.blue.shade800,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Text(
-              (_myWarehouse?.id == _managedWarehouseId) ? 'CỦA TÔI' : 'XEM LÂN CẬN',
-              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-      flexibleSpace: Container(
-        decoration: BoxDecoration(gradient: StaffTheme.primaryGradient),
-      ),
-      elevation: 0,
-    ),
-
     body: _myWarehouse == null 
       ? _buildNoWarehouseState()
       : LayoutBuilder(
@@ -502,9 +468,35 @@ Widget build(BuildContext context) {
                 slivers: [
                   if (_myWarehouse?.id != _managedWarehouseId)
                     SliverToBoxAdapter(child: _buildViewingModeBanner()),
-                  SliverToBoxAdapter(child: _buildLowStockAlert()), // Thêm cảnh báo hàng sắp hết
-                  SliverToBoxAdapter(child: _buildMapSection()),
-                  SliverToBoxAdapter(child: _buildInventoryHeader()),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: [
+                          _buildLowStockAlert(),
+                          const SizedBox(height: 10),
+                          _buildMapSection(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: StaffTheme.border),
+                        boxShadow: StaffTheme.softShadow,
+                      ),
+                      child: Column(
+                        children: [
+                          _buildInventoryHeader(),
+                          const Divider(height: 1),
+                        ],
+                      ),
+                    ),
+                  ),
                   _buildInventoryList(isScrollable: false),
                   _buildVehicleList(isScrollable: false),
                   const SliverToBoxAdapter(child: SizedBox(height: 120)),
@@ -564,67 +556,93 @@ Widget build(BuildContext context) {
         : defaultCenter;
 
     return Container(
-      height: height,
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: StaffTheme.border),
         boxShadow: StaffTheme.softShadow,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: center,
-            initialZoom: 13.0,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'vn.rescue.core',
-            ),
-            MarkerLayer(
-              markers: _allWarehouses.map((w) {
-                final bool isSelected = w.id == _myWarehouse?.id;
-                final bool isManagedByMe = w.id == _managedWarehouseId;
-                
-                // Sử dụng tọa độ thật của kho, nếu không có thì xê dịch nhẹ quanh tâm để không bị đè lên nhau hoàn toàn
-                final LatLng point = (w.latitude != null && w.longitude != null)
-                    ? LatLng(w.latitude!, w.longitude!)
-                    : LatLng(
-                        defaultCenter.latitude + (int.parse(w.id?.substring(w.id!.length - 2) ?? '0', radix: 16) % 10 - 5) * 0.002,
-                        defaultCenter.longitude + (int.parse(w.id?.substring(w.id!.length - 4, w.id!.length - 2) ?? '0', radix: 16) % 10 - 5) * 0.002,
-                      );
-
-                return Marker(
-                  point: point,
-                  width: isSelected ? 100 : 40,
-                  height: isSelected ? 70 : 40,
-                  alignment: Alignment.topCenter,
-                  child: GestureDetector(
-                    onTap: () => _selectWarehouse(w),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.location_on_rounded,
-                          color: isSelected 
-                              ? Colors.red // Kho đang chọn
-                              : (isManagedByMe ? Colors.orange : StaffTheme.primaryBlue), // Cam: Kho của mình, Xanh: Kho lân cận
-                          size: isSelected ? 40 : 30,
-                        ),
-                        if (isSelected) 
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.red, width: 0.5)),
-                            child: Text(w.warehouseName, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                          ),
-                      ],
-                    ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Icon(Icons.location_on_rounded, color: StaffTheme.primaryBlue, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${_myWarehouse?.warehouseName ?? 'Kho'} - ${_myWarehouse?.location ?? 'Đang xác định vị trí...'}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: StaffTheme.primaryBlue),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          SizedBox(
+            height: height,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: 13.0,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'vn.rescue.core',
+                  ),
+                  MarkerLayer(
+                    markers: _allWarehouses.map((w) {
+                      final bool isSelected = w.id == _myWarehouse?.id;
+                      final bool isManagedByMe = w.id == _managedWarehouseId;
+                      
+                      // Sử dụng tọa độ thật của kho, nếu không có thì xê dịch nhẹ quanh tâm để không bị đè lên nhau hoàn toàn
+                      final LatLng point = (w.latitude != null && w.longitude != null)
+                          ? LatLng(w.latitude!, w.longitude!)
+                          : LatLng(
+                              defaultCenter.latitude + (int.parse(w.id?.substring(w.id!.length - 2) ?? '0', radix: 16) % 10 - 5) * 0.002,
+                              defaultCenter.longitude + (int.parse(w.id?.substring(w.id!.length - 4, w.id!.length - 2) ?? '0', radix: 16) % 10 - 5) * 0.002,
+                            );
+
+                      return Marker(
+                        point: point,
+                        width: isSelected ? 100 : 40,
+                        height: isSelected ? 70 : 40,
+                        alignment: Alignment.topCenter,
+                        child: GestureDetector(
+                          onTap: () => _selectWarehouse(w),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.location_on_rounded,
+                                color: isSelected 
+                                    ? Colors.red // Kho đang chọn
+                                    : (isManagedByMe ? Colors.orange : StaffTheme.primaryBlue), // Cam: Kho của mình, Xanh: Kho lân cận
+                                size: isSelected ? 40 : 30,
+                              ),
+                              if (isSelected) 
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.red, width: 0.5)),
+                                  child: Text(w.warehouseName, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
