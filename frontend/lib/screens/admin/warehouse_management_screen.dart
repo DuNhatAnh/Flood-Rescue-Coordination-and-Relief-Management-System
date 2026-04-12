@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/admin_service.dart';
 import '../../models/warehouse.dart';
+import '../../services/warehouse_service.dart';
+import '../../widgets/location_picker_dialog.dart';
+import 'package:latlong2/latlong.dart' as ll;
 
 class WarehouseManagementScreen extends StatefulWidget {
   const WarehouseManagementScreen({Key? key}) : super(key: key);
@@ -11,6 +14,7 @@ class WarehouseManagementScreen extends StatefulWidget {
 
 class _WarehouseManagementScreenState extends State<WarehouseManagementScreen> {
   final AdminService _adminService = AdminService();
+  final WarehouseService _warehouseService = WarehouseService();
   List<Warehouse> _warehouses = [];
   List<dynamic> _allStaff = [];
   bool _isLoading = true;
@@ -58,6 +62,8 @@ class _WarehouseManagementScreenState extends State<WarehouseManagementScreen> {
   void _showWarehouseDialog([Warehouse? warehouse]) {
     final nameController = TextEditingController(text: warehouse?.warehouseName);
     final locationController = TextEditingController(text: warehouse?.location);
+    final latController = TextEditingController(text: warehouse?.latitude?.toString() ?? '');
+    final lngController = TextEditingController(text: warehouse?.longitude?.toString() ?? '');
     String? selectedManager = warehouse?.managerId;
     
     // Ensure selectedManager is in the _allStaff list
@@ -101,6 +107,59 @@ class _WarehouseManagementScreenState extends State<WarehouseManagementScreen> {
                       },
                       decoration: const InputDecoration(labelText: 'Người quản lý (Staff)'),
                     ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              TextField(
+                                controller: latController,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                decoration: const InputDecoration(labelText: 'Vĩ độ (Lat)', hintText: '16.0'),
+                              ),
+                              TextField(
+                                controller: lngController,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                decoration: const InputDecoration(labelText: 'Kinh độ (Lng)', hintText: '108.2'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.travel_explore, color: Colors.blue),
+                          tooltip: 'Tìm từ địa chỉ',
+                          onPressed: () async {
+                            final coords = await _warehouseService.searchCoordinates(locationController.text);
+                            if (coords != null) {
+                              latController.text = coords['lat'].toString();
+                              lngController.text = coords['lng'].toString();
+                            }
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.map_outlined, color: Colors.blue),
+                          tooltip: 'Chọn trên bản đồ',
+                          onPressed: () async {
+                            final ll.LatLng? result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LocationPickerDialog(
+                                  initialPosition: double.tryParse(latController.text) != null && double.tryParse(lngController.text) != null
+                                    ? ll.LatLng(double.parse(latController.text), double.parse(lngController.text))
+                                    : null,
+                                ),
+                              ),
+                            );
+                            if (result != null) {
+                              latController.text = result.latitude.toStringAsFixed(6);
+                              lngController.text = result.longitude.toStringAsFixed(6);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -115,6 +174,8 @@ class _WarehouseManagementScreenState extends State<WarehouseManagementScreen> {
                       'location': locationController.text,
                       'managerId': selectedManager,
                       'status': 'ACTIVE',
+                      'latitude': double.tryParse(latController.text),
+                      'longitude': double.tryParse(lngController.text),
                     };
 
                     try {

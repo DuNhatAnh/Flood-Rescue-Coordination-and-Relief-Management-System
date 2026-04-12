@@ -7,6 +7,8 @@ import 'distribution_history_screen.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../../utils/staff_theme.dart';
+import 'package:latlong2/latlong.dart' as ll;
+import '../../widgets/location_picker_dialog.dart';
 
 class WarehouseScreen extends StatefulWidget {
   const WarehouseScreen({Key? key}) : super(key: key);
@@ -56,6 +58,8 @@ class WarehouseScreenState extends State<WarehouseScreen> {
   void showAddDialog() {
     final nameController = TextEditingController();
     final locationController = TextEditingController();
+    final latController = TextEditingController();
+    final lngController = TextEditingController();
     String selectedStatus = 'ACTIVE';
 
     showDialog(
@@ -104,6 +108,76 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                   if (val != null) setDialogState(() => selectedStatus = val);
                 },
               ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                   Expanded(
+                    child: TextField(
+                      controller: latController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Vĩ độ (Lat)',
+                        hintText: '16.0',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: lngController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Kinh độ (Lng)',
+                        hintText: '108.2',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Nút Tìm tọa độ từ địa chỉ
+                  IconButton(
+                    icon: Icon(Icons.travel_explore, color: StaffTheme.primaryBlue),
+                    tooltip: 'Tìm từ địa chỉ',
+                    onPressed: () async {
+                      if (locationController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập địa chỉ trước')));
+                        return;
+                      }
+                      final coords = await _service.searchCoordinates(locationController.text);
+                      if (coords != null) {
+                        latController.text = coords['lat'].toString();
+                        lngController.text = coords['lng'].toString();
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Không tìm thấy tọa độ cho địa chỉ này')));
+                        }
+                      }
+                    },
+                  ),
+                  // Nút Chọn trên bản đồ
+                  IconButton(
+                    icon: const Icon(Icons.map_outlined, color: StaffTheme.primaryBlue),
+                    tooltip: 'Chọn trên bản đồ',
+                    onPressed: () async {
+                      final ll.LatLng? result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LocationPickerDialog(
+                            initialPosition: double.tryParse(latController.text) != null && double.tryParse(lngController.text) != null
+                              ? ll.LatLng(double.parse(latController.text), double.parse(lngController.text))
+                              : null,
+                          ),
+                        ),
+                      );
+                      if (result != null) {
+                        latController.text = result.latitude.toStringAsFixed(6);
+                        lngController.text = result.longitude.toStringAsFixed(6);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
           actions: [
@@ -121,6 +195,8 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                   warehouseName: nameController.text,
                   location: locationController.text,
                   status: selectedStatus,
+                  latitude: double.tryParse(latController.text),
+                  longitude: double.tryParse(lngController.text),
                 );
                 
                 final result = await _service.create(newWarehouse);
@@ -141,6 +217,8 @@ class WarehouseScreenState extends State<WarehouseScreen> {
   void showEditDialog(Warehouse warehouse) {
     final nameController = TextEditingController(text: warehouse.warehouseName);
     final locationController = TextEditingController(text: warehouse.location);
+    final latController = TextEditingController(text: warehouse.latitude?.toString() ?? '');
+    final lngController = TextEditingController(text: warehouse.longitude?.toString() ?? '');
     String currentStatus = warehouse.status;
 
     showDialog(
@@ -187,6 +265,62 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                   if (val != null) setDialogState(() => currentStatus = val);
                 },
               ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                   Expanded(
+                    child: TextField(
+                      controller: latController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Vĩ độ (Lat)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: lngController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Kinh độ (Lng)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(Icons.travel_explore, color: StaffTheme.primaryBlue),
+                    onPressed: () async {
+                      final coords = await _service.searchCoordinates(locationController.text);
+                      if (coords != null) {
+                        latController.text = coords['lat'].toString();
+                        lngController.text = coords['lng'].toString();
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.map_outlined, color: StaffTheme.primaryBlue),
+                    onPressed: () async {
+                      final ll.LatLng? result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LocationPickerDialog(
+                            initialPosition: double.tryParse(latController.text) != null && double.tryParse(lngController.text) != null
+                              ? ll.LatLng(double.parse(latController.text), double.parse(lngController.text))
+                              : null,
+                          ),
+                        ),
+                      );
+                      if (result != null) {
+                        latController.text = result.latitude.toStringAsFixed(6);
+                        lngController.text = result.longitude.toStringAsFixed(6);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
           actions: [
@@ -206,6 +340,8 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                   location: locationController.text,
                   status: currentStatus,
                   managerId: warehouse.managerId,
+                  latitude: double.tryParse(latController.text),
+                  longitude: double.tryParse(lngController.text),
                 );
                 
                 final result = await _service.update(warehouse.id!, updated);
@@ -474,6 +610,7 @@ class WarehouseScreenState extends State<WarehouseScreen> {
                 ),
                 // Action Menu - Only for Manager or Admin
                 if (AuthService.currentUser?.role == UserRole.admin || 
+                    AuthService.currentUser?.role == UserRole.coordinator ||
                     AuthService.currentUser?.id == warehouse.managerId)
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert_rounded, color: StaffTheme.textLight),

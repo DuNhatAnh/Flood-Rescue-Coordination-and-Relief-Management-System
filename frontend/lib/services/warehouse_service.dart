@@ -94,4 +94,41 @@ class WarehouseService {
       return false;
     }
   }
+
+  // --- SMART LOCATION UTILITIES ---
+  
+  /// Tìm tọa độ từ địa chỉ văn bản sử dụng OpenStreetMap Nominatim API
+  Future<Map<String, double>?> searchCoordinates(String address) async {
+    try {
+      if (address.isEmpty) return null;
+      
+      final response = await dio.get(
+        'https://nominatim.openstreetmap.org/search',
+        queryParameters: {
+          'q': address,
+          'format': 'json',
+          'limit': 1,
+        },
+        options: Options(
+          headers: {
+            'User-Agent': 'FloodRescueApp/1.0', // Yêu cầu của Nominatim policy
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data is List && (response.data as List).isNotEmpty) {
+        final first = response.data[0];
+        return {
+          'lat': double.parse(first['lat']),
+          'lng': double.parse(first['lon']),
+        };
+      }
+      return null;
+    } catch (e) {
+      print('Geocoding error: $e');
+      return null;
+    }
+  }
+
+  Dio get dio => _dio;
 }
