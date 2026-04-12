@@ -80,9 +80,20 @@ class AuthService {
         await _saveSession(user, token);
         return user;
       } else {
-        throw Exception('Status ${response.statusCode}: ${response.body}');
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData['message'] != null) {
+            throw Exception(errorData['message']);
+          }
+        } catch (e) {
+          // If body is not JSON, it will just drop down and throw default
+        }
+        throw Exception('Đăng nhập thất bại. Mã: ${response.statusCode}');
       }
     } catch (e) {
+      if (e.toString().contains('Exception: ')) {
+        rethrow;
+      }
       throw Exception('Lỗi mạng/Kết nối: $e');
     }
   }

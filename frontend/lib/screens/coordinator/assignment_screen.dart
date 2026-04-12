@@ -5,6 +5,10 @@ import 'package:flood_rescue_app/models/vehicle.dart';
 import 'package:flood_rescue_app/models/inventory.dart';
 import 'package:flood_rescue_app/services/rescue_service.dart';
 import 'package:flood_rescue_app/services/inventory_service.dart';
+import 'package:flood_rescue_app/services/warehouse_service.dart';
+import 'package:flood_rescue_app/models/warehouse.dart';
+import 'dart:math';
+
 
 class AssignmentScreen extends StatefulWidget {
   final RescueRequest request;
@@ -18,6 +22,8 @@ class AssignmentScreen extends StatefulWidget {
 class _AssignmentScreenState extends State<AssignmentScreen> {
   final RescueService _rescueService = RescueService();
   final InventoryService _inventoryService = InventoryService();
+  final WarehouseService _warehouseService = WarehouseService();
+
   
   RescueTeam? _selectedTeam;
   List<String> _selectedVehicleIds = [];
@@ -43,7 +49,34 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
     try {
       final teams = await _rescueService.getAvailableTeams();
       final vehicles = await _rescueService.getAvailableVehicles();
+      final List<Warehouse> warehouses = await _warehouseService.getAll();
       
+      // Map warehouseId to Warehouse for quick lookup
+      final warehouseMap = {for (var w in warehouses) w.id: w};
+
+      // Calculate distance for each team
+      for (var team in teams) {
+        if (team.warehouseId != null && warehouseMap.containsKey(team.warehouseId)) {
+          final warehouse = warehouseMap[team.warehouseId]!;
+          if (warehouse.latitude != null && warehouse.longitude != null) {
+            team.distance = _calculateDistance(
+              widget.request.lat, 
+              widget.request.lng, 
+              warehouse.latitude!, 
+              warehouse.longitude!
+            );
+          }
+        }
+      }
+
+      // Sort teams by distance (null distances go to the end)
+      teams.sort((a, b) {
+        if (a.distance == null && b.distance == null) return 0;
+        if (a.distance == null) return 1;
+        if (b.distance == null) return -1;
+        return a.distance!.compareTo(b.distance!);
+      });
+
       setState(() {
         _availableTeams = teams;
         _availableVehicles = vehicles;
@@ -56,6 +89,14 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       );
       setState(() => _isLoading = false);
     }
+  }
+
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const p = 0.017453292519943295; // Math.PI / 180
+    final a = 0.5 - cos((lat2 - lat1) * p) / 2 + 
+        cos(lat1 * p) * cos(lat2 * p) * 
+        (1 - cos((lon2 - lon1) * p)) / 2;
+    return 12742 * asin(sqrt(a)); // 2 * R; R = 6371 km
   }
 
   Future<void> _onTeamSelected(RescueTeam team) async {
@@ -341,15 +382,39 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                     child: Icon(Icons.group, color: isSelected ? Colors.white : Colors.grey[600]),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(team.teamName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                        Text('Trạng thái: Sẵn sàng', style: TextStyle(color: Colors.green[600], fontSize: 12)),
-                      ],
-                    ),
-                  ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(team.teamName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on, size: 12, color: Colors.grey[600]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  team.distance != null 
+                                    ? '${team.distance!.toStringAsFixed(1)} km' 
+                                    : 'N/A', 
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 12)
+                                ),
+                                const SizedBox(width: 8),
+                                Text('•', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                                const SizedBox(width: 8),
+                                Text('Sẵn sàng', style: TextStyle(color: Colors.green[600], fontSize: 12)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (team.distance != null && team.id == _availableTeams.first.id && _availableTeams.first.distance != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('GẦN NHẤT', style: TextStyle(color: Colors.green, fontSize: 9, fontWeight: FontWeight.bold)),
+                        ),
                   if (isSelected) const Icon(Icons.check_circle, color: Colors.blue),
                 ],
               ),

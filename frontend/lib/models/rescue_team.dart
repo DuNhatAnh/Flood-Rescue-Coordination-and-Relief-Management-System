@@ -4,6 +4,7 @@ class RescueTeam {
   final String status; // 'AVAILABLE', 'BUSY'
   final String leaderId;
   final String? warehouseId;
+  double? distance; // Temporary field for sorting
 
   RescueTeam({
     required this.id,
@@ -11,6 +12,7 @@ class RescueTeam {
     required this.status,
     required this.leaderId,
     this.warehouseId,
+    this.distance,
   });
 
   factory RescueTeam.fromJson(Map<String, dynamic> json) {
