@@ -260,5 +260,56 @@ class AdminService {
       throw Exception('Failed to update team name');
     }
   }
+
+  // --- Danger Point Management ---
+  Future<List<dynamic>> getDangerPoints() async {
+    final url = Uri.parse('$baseUrl/v1/danger-points');
+    final headers = await _getAuthHeaders();
+    final response = await http.get(url, headers: headers);
+    if (response.statusCode == 200) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body['data'];
+    }
+    throw Exception('Failed to load danger points');
+  }
+
+  Future<Map<String, dynamic>> createDangerPoint(Map<String, dynamic> data) async {
+    final url = Uri.parse('$baseUrl/v1/danger-points');
+    final headers = await _getAuthHeaders();
+    final response = await http.post(url, headers: headers, body: jsonEncode(data));
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body['data'];
+    }
+    throw Exception('Failed to create danger point');
+  }
+
+  Future<void> deleteDangerPoint(String id) async {
+    final url = Uri.parse('$baseUrl/v1/danger-points/$id');
+    final headers = await _getAuthHeaders();
+    final response = await http.delete(url, headers: headers);
+    if (response.statusCode != 200) throw Exception('Failed to delete danger point');
+  }
+
+  // --- System Configuration ---
+  Future<void> updateSystemConfig(String key, String value, String adminId) async {
+    final url = Uri.parse('$baseUrl/v1/admin/system/config?key=$key&value=$value&adminId=$adminId');
+    final headers = await _getAuthHeaders();
+    final response = await http.put(url, headers: headers);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update system config');
+    }
+  }
+
+  Future<List<dynamic>> getSystemConfigs() async {
+    final url = Uri.parse('$baseUrl/v1/admin/system/config'); // Giả định endpoint này tồn tại
+    final headers = await _getAuthHeaders();
+    final response = await http.get(url, headers: headers);
+    if (response.statusCode == 200) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body['data'];
+    }
+    return [];
+  }
 }
 

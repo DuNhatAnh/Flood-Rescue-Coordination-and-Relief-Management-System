@@ -148,6 +148,10 @@ public class SystemManagementService {
         return systemConfigRepository.save(config);
     }
 
+    public List<SystemConfig> getAllConfigs() {
+        return systemConfigRepository.findAll();
+    }
+
     public List<Role> getAllRoles() {
         return roleRepository.findAll();
     }

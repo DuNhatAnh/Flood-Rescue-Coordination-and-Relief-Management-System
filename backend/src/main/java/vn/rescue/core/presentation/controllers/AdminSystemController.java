@@ -39,6 +39,11 @@ public class AdminSystemController {
     }
 
     // --- CẤU HÌNH HỆ THỐNG ---
+    @GetMapping("/config")
+    public ResponseEntity<ApiResponse<List<SystemConfig>>> getAllConfigs() {
+        return ResponseEntity.ok(ApiResponse.success(systemManagementService.getAllConfigs(), "All system configurations retrieved"));
+    }
+
     @PutMapping("/config")
     public ResponseEntity<ApiResponse<SystemConfig>> updateConfig(
             @RequestParam String key,
