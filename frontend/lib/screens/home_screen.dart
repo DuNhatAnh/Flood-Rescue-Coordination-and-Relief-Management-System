@@ -15,6 +15,8 @@ import 'package:flood_rescue_app/services/rescue_service.dart';
 import 'package:flood_rescue_app/models/rescue_request.dart';
 import 'package:flood_rescue_app/models/safety_report.dart';
 import 'package:flood_rescue_app/models/user_model.dart';
+import 'package:flood_rescue_app/models/danger_point.dart';
+import 'package:flood_rescue_app/services/admin_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -223,23 +225,65 @@ class SOSSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RescueRequestScreen()),
+          FutureBuilder<bool>(
+            future: _checkMaintenanceMode(),
+            builder: (context, snapshot) {
+              final isMaintenance = snapshot.data ?? false;
+              return Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: isMaintenance 
+                      ? () => _showMaintenanceNotice(context)
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const RescueRequestScreen()),
+                          );
+                        },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isMaintenance ? Colors.grey[300] : Colors.white,
+                      foregroundColor: isMaintenance ? Colors.grey[600] : const Color(0xFFD32F2F),
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      isMaintenance ? 'HỆ THỐNG ĐANG BẢO TRÌ' : 'GỬI YÊU CẦU NGAY', 
+                      style: const TextStyle(fontWeight: FontWeight.bold)
+                    ),
+                  ),
+                  if (isMaintenance)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Tính năng gửi yêu cầu SOS tạm thời đóng.',
+                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11),
+                      ),
+                    ),
+                ],
               );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFFD32F2F),
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-            child: const Text('GỬI YÊU CẦU NGAY', style: TextStyle(fontWeight: FontWeight.bold)),
+            }
           ),
         ],
+      ),
+    );
+  }
+
+  Future<bool> _checkMaintenanceMode() async {
+    try {
+      final configs = await AdminService().getSystemConfigs();
+      final config = configs.firstWhere((c) => c['key'] == 'MAINTENANCE_MODE', orElse: () => null);
+      return config != null && config['value'] == 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _showMaintenanceNotice(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Hệ thống đang bảo trì chức năng gửi yêu cầu. Vui lòng gọi Hotline khẩn cấp!'),
+        backgroundColor: Colors.orange,
       ),
     );
   }
@@ -329,6 +373,8 @@ class _MapTabState extends State<MapTab> {
   final MapController _mapController = MapController();
   List<RescueRequest> _requests = [];
   List<SafetyReport> _safetyReports = [];
+  List<DangerPoint> _dangerPoints = [];
+  final AdminService _adminService = AdminService();
   bool _isLoading = true;
 
   @override
@@ -340,17 +386,42 @@ class _MapTabState extends State<MapTab> {
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
-      final requests = await _rescueService.getAllRequests();
-      final reports = await _rescueService.getSafetyReports();
-      if (mounted) {
-        setState(() {
-          _requests = requests;
-          _safetyReports = reports;
-          _isLoading = false;
-        });
-      }
+        final requests = await _rescueService.getAllRequests();
+        final reports = await _rescueService.getSafetyReports();
+        final dangerPointsData = await _adminService.getDangerPoints();
+        final configs = await _adminService.getSystemConfigs();
+        
+        if (mounted) {
+          setState(() {
+            _requests = requests;
+            _safetyReports = reports;
+            _dangerPoints = dangerPointsData.map((json) => DangerPoint.fromJson(json)).toList();
+            
+            // Apply Map Focus if available
+            _applyMapConfig(configs);
+            
+            _isLoading = false;
+          });
+        }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _applyMapConfig(List<dynamic> configs) {
+    try {
+      final latConfig = configs.firstWhere((c) => c['key'] == 'MAP_CENTER_LAT', orElse: () => null);
+      final lngConfig = configs.firstWhere((c) => c['key'] == 'MAP_CENTER_LNG', orElse: () => null);
+      final zoomConfig = configs.firstWhere((c) => c['key'] == 'MAP_DEFAULT_ZOOM', orElse: () => null);
+
+      if (latConfig != null && lngConfig != null) {
+        final lat = double.parse(latConfig['value']);
+        final lng = double.parse(lngConfig['value']);
+        final zoom = zoomConfig != null ? double.parse(zoomConfig['value']) : 11.0;
+        _mapController.move(LatLng(lat, lng), zoom);
+      }
+    } catch (e) {
+      print('Error applying map config: $e');
     }
   }
 
@@ -545,6 +616,13 @@ class _MapTabState extends State<MapTab> {
                     ),
                   ),
                 )),
+                // Markers for Danger Points (Glowing Dots)
+                ..._dangerPoints.map((dp) => Marker(
+                  point: LatLng(dp.latitude, dp.longitude),
+                  width: _getMarkerSize(dp.depth) + 20,
+                  height: _getMarkerSize(dp.depth) + 20,
+                  child: _buildGlowingMarker(dp),
+                )),
               ],
             ),
           ],
@@ -589,6 +667,54 @@ class _MapTabState extends State<MapTab> {
         _buildMapLegend(),
       ],
     );
+  }
+
+  double _getMarkerSize(double depth) {
+    if (depth < 0.5) return 15.0;
+    if (depth <= 2.0) return 25.0;
+    return 40.0;
+  }
+
+  Widget _buildGlowingMarker(DangerPoint dp) {
+    final color = _getRiskColor(dp.depth);
+    final size = _getMarkerSize(dp.depth);
+    
+    return RepaintBoundary(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: size + 20,
+            height: size + 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.4),
+                  blurRadius: 15,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getRiskColor(double depth) {
+    if (depth < 0.5) return Colors.green;
+    if (depth <= 2.0) return Colors.orange;
+    return Colors.red;
   }
 }
 
@@ -690,6 +816,16 @@ class EmergencyHotline extends StatelessWidget {
     }
   }
 
+  Future<String> _getHotline() async {
+    try {
+      final configs = await AdminService().getSystemConfigs();
+      final config = configs.firstWhere((c) => c['key'] == 'HOTLINE_NUMBER', orElse: () => null);
+      return config != null ? config['value'] : '086.777.9427';
+    } catch (e) {
+      return '086.777.9427';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -717,11 +853,17 @@ class EmergencyHotline extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _hotlineItem(
-                  '086.777.9427', 
-                  'Hotline Cứu hộ khẩn cấp 24/7', 
-                  const Color(0xFF673AB7), 
-                  () => _makeCall('0867779427')
+                FutureBuilder<String>(
+                  future: _getHotline(),
+                  builder: (context, snapshot) {
+                    final hotline = snapshot.data ?? '086.777.9427';
+                    return _hotlineItem(
+                      hotline, 
+                      'Hotline Cứu hộ khẩn cấp 24/7', 
+                      const Color(0xFF673AB7), 
+                      () => _makeCall(hotline.replaceAll('.', ''))
+                    );
+                  }
                 ),
                 const Divider(height: 24),
                 _hotlineItem(

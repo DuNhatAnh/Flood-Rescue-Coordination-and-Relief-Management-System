@@ -141,8 +141,10 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen> {
                     children: [
                       _buildNavBtn(context, 'Báo cáo', Icons.analytics, '/admin/analytics', Colors.pink, screenWidth),
                       _buildNavBtn(context, 'Người dùng', Icons.manage_accounts, '/admin/users', Colors.indigo, screenWidth),
+                      _buildNavBtn(context, 'Điểm nguy hiểm', Icons.add_location_alt, '/admin/danger-points', Colors.redAccent, screenWidth),
                       _buildNavBtn(context, 'Kho bãi', Icons.warehouse, '/admin/warehouses', Colors.orange, screenWidth),
                       _buildNavBtn(context, 'Thông báo', Icons.notifications_active, '/admin/notifications', Colors.teal, screenWidth),
+                      _buildNavBtn(context, 'Cài đặt', Icons.settings, '/admin/settings', Colors.blueGrey, screenWidth),
                     ],
                   ),
                   const SizedBox(height: 36),
