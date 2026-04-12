@@ -255,9 +255,10 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddEditDialog(),
-        label: const Text('Thêm mới', style: TextStyle(fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.add),
+        label: const Text('Thêm mới', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        icon: const Icon(Icons.add, color: Colors.white),
         backgroundColor: const Color(0xFF2555D4),
+        foregroundColor: Colors.white,
       ),
     );
   }
@@ -275,7 +276,7 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: 'Tìm theo loại phương tiện...',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              hintStyle: const TextStyle(color: Colors.white),
               prefixIcon: const Icon(Icons.search, color: Colors.white),
               filled: true,
               fillColor: Colors.white.withOpacity(0.15),
@@ -308,16 +309,26 @@ class _VehicleManagementScreenState extends State<VehicleManagementScreen> {
   Widget _buildFilterChip(String label, String? value) {
     bool isSelected = _statusFilter == value;
     return ChoiceChip(
-      label: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 12)),
+      showCheckmark: isSelected,
+      label: Text(
+        label, 
+        style: TextStyle(
+          color: const Color(0xFF2555D4), // Luôn dùng chữ xanh để nét trên nền trắng
+          fontSize: 13,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500
+        ),
+      ),
       selected: isSelected,
       onSelected: (selected) {
         setState(() => _statusFilter = selected ? value : null);
         _loadVehicles();
       },
-      selectedColor: Colors.white.withOpacity(0.3),
-      backgroundColor: Colors.transparent,
-      side: BorderSide(color: isSelected ? Colors.white : Colors.white24),
-      checkmarkColor: Colors.white,
+      selectedColor: Colors.white,
+      backgroundColor: Colors.white.withOpacity(0.85), // Nền chưa chọn là trắng trong suốt nhẹ
+      surfaceTintColor: Colors.transparent, // Fix lỗi M3 tự tô màu
+      elevation: 0,
+      side: const BorderSide(color: Colors.white), // Viền trắng
+      checkmarkColor: const Color(0xFF2555D4),
     );
   }
 
