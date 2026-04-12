@@ -111,7 +111,7 @@ class _VehicleLocationScreenState extends State<VehicleLocationScreen> {
             options: const MapOptions(
               initialCenter: _defaultCenter,
               initialZoom: 11.5,
-              interactionOptions: const InteractionOptions(
+              interactionOptions: InteractionOptions(
                 flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
             ),

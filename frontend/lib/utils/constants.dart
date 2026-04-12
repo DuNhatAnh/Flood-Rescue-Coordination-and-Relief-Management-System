@@ -4,13 +4,16 @@ class Constants {
   // 1. Base URL - Tự động nhận diện môi trường chạy
   static String get _host {
     if (kIsWeb) {
-      return "http://localhost:8080";
+      // Tự động lấy Host hiện tại của trình duyệt, giữ nguyên Scheme (http/https)
+      // Thường Backend chạy port 8080
+      final String currentHost = Uri.base.host;
+      final String currentScheme = Uri.base.scheme;
+      
+      // Nếu là localhost, giữ nguyên localhost, nếu là IP thì dùng IP đó
+      return "$currentScheme://$currentHost:8080";
     }
     // Đối với giả lập Android, sử dụng 10.0.2.2
     return "http://10.0.2.2:8080";
-    
-    // Nếu dùng máy thật, bạn nên dùng IP nội bộ, VD:
-    // return "http://192.168.1.5:8080";
   }
 
   static String get apiBaseUrl => "$_host/api";

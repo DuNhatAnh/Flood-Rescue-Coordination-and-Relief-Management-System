@@ -46,7 +46,7 @@ class _StaffNotificationScreenState extends State<StaffNotificationScreen> {
       await _notificationService.markAsRead(id);
       _loadNotifications();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Không thể đánh dấu đã đọc')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Không thể đánh dấu đã đọc')));
     }
   }
 
@@ -124,7 +124,7 @@ class _StaffNotificationScreenState extends State<StaffNotificationScreen> {
     Color iconColor;
     IconData iconData;
 
-    switch (item.type?.toUpperCase()) {
+    switch (item.type.toUpperCase()) {
       case 'SOS':
         iconColor = StaffTheme.errorRed;
         iconData = Icons.emergency_rounded;
@@ -145,7 +145,7 @@ class _StaffNotificationScreenState extends State<StaffNotificationScreen> {
       color: isUnread ? Colors.white : Colors.grey.shade50,
       child: InkWell(
         onTap: () {
-          if (isUnread) _markAsRead(item.id!);
+          if (isUnread) _markAsRead(item.id);
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(

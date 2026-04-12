@@ -40,8 +40,8 @@ class StaffVehicleManagementScreenState extends State<StaffVehicleManagementScre
         _vehicleService.getVehicleStatistics(),
       ]);
 
-      final vehicleData = results[0] as Map<String, dynamic>;
-      final statsData = results[1] as Map<String, dynamic>;
+      final vehicleData = results[0];
+      final statsData = results[1];
 
       if (mounted) {
         setState(() {
