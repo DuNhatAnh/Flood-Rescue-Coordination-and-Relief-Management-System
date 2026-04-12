@@ -142,9 +142,10 @@ class StaffManagedWarehouseScreenState extends State<StaffManagedWarehouseScreen
       // Giả sử API yêu cầu object: { vehicleType: string, licensePlate: string, status: "AVAILABLE" }
       await _vehicleService.createVehicle({
         'vehicleType': _selectedVehicleType,
-        'licensePlate': _plateController.text.trim(),
+        'licensePlate': _plateController.text.trim().toUpperCase(),
         'status': 'AVAILABLE',
-        'warehouseId': _myWarehouse?.id
+        'warehouseId': _myWarehouse?.id,
+        'teamId': AuthService.currentUser?.teamId, // Tự động gán cho đội của nhân viên đang tạo
       }, userId: AuthService.currentUser?.id ?? 'STAFF');
       
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thêm phương tiện thành công!'), backgroundColor: StaffTheme.successGreen));

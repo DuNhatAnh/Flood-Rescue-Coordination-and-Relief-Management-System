@@ -111,54 +111,83 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
   }
 
   Widget _buildDetailedTaskView(Assignment task) {
-    return Row(
-      children: [
-        // Nửa trái: Bản đồ (SCRUM-61)
-        Expanded(
-          flex: 1,
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(right: BorderSide(color: Colors.grey.shade300, width: 2)),
-            ),
-            child: _buildMap(task),
-          ),
-        ),
-        // Nửa phải: Thông tin chi tiết (SCRUM-61)
-        Expanded(
-          flex: 1,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isWide = constraints.maxWidth > 900;
+
+        if (isWide) {
+          return Row(
+            children: [
+              // Nửa trái: Bản đồ
+              Expanded(
+                flex: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border(right: BorderSide(color: Colors.grey.shade300, width: 2)),
+                  ),
+                  child: _buildMap(task),
+                ),
+              ),
+              // Nửa phải: Thông tin chi tiết
+              Expanded(
+                flex: 1,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: _buildTaskInfoColumn(task),
+                ),
+              ),
+            ],
+          );
+        } else {
+          // Giao diện Mobile: Xếp chồng dọc
+          return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(task),
-                const SizedBox(height: 16),
-                
-                // Khối trạng thái (SCRUM-61)
-                _buildSectionCard(
-                  title: 'TRẠNG THÁI NHIỆM VỤ',
-                  icon: Icons.track_changes_rounded,
-                  child: MissionStepper(currentStatus: task.status),
+                SizedBox(
+                  height: 350,
+                  child: _buildMap(task),
                 ),
-                
-                const SizedBox(height: 16),
-                
-                // NẾU ĐANG CHUẨN BỊ - HIỆN FORM LOGISTICS (PHẦN 2 NÂNG CẤP)
-                if (task.status.toUpperCase() == 'PREPARING')
-                  _buildPreparationOptions(task)
-                else
-                  _buildSectionCard(
-                    title: 'THÔNG TIN CHI TIẾT',
-                    icon: Icons.info_outline_rounded,
-                    child: _buildDetailsCardContent(task),
-                  ),
-                  
-                const SizedBox(height: 24),
-                _buildActionButtons(task),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildTaskInfoColumn(task),
+                ),
               ],
             ),
-          ),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildTaskInfoColumn(Assignment task) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(task),
+        const SizedBox(height: 16),
+        
+        // Khối trạng thái (SCRUM-61)
+        _buildSectionCard(
+          title: 'TRẠNG THÁI NHIỆM VỤ',
+          icon: Icons.track_changes_rounded,
+          child: MissionStepper(currentStatus: task.status),
         ),
+        
+        const SizedBox(height: 16),
+        
+        // NẾU ĐANG CHUẨN BỊ - HIỆN FORM LOGISTICS (PHẦN 2 NÂNG CẤP)
+        if (task.status.toUpperCase() == 'PREPARING')
+          _buildPreparationOptions(task)
+        else
+          _buildSectionCard(
+            title: 'THÔNG TIN CHI TIẾT',
+            icon: Icons.info_outline_rounded,
+            child: _buildDetailsCardContent(task),
+          ),
+          
+        const SizedBox(height: 24),
+        _buildActionButtons(task),
       ],
     );
   }

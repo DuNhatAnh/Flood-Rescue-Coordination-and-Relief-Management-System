@@ -395,12 +395,16 @@ public class ReportService {
                         m.put("peopleCount", request.getNumberOfPeople());
                     }
                     
-                    // Mức độ hoàn thành (%)
+                    // Mức độ hoàn thành (%) - Cập nhật đầy đủ các trạng thái
                     int completion = 0;
-                    if ("COMPLETED".equalsIgnoreCase(a.getStatus())) completion = 100;
-                    else if ("RESCUING".equalsIgnoreCase(a.getStatus())) completion = 70;
-                    else if ("MOVING".equalsIgnoreCase(a.getStatus())) completion = 40;
-                    else if ("ASSIGNED".equalsIgnoreCase(a.getStatus())) completion = 20;
+                    String s = a.getStatus() != null ? a.getStatus().toUpperCase() : "";
+                    if (s.equals("COMPLETED") || s.equals("APPROVED")) completion = 100;
+                    else if (s.equals("REPORTED")) completion = 95;
+                    else if (s.equals("RETURNING")) completion = 90;
+                    else if (s.equals("RESCUING")) completion = 75;
+                    else if (s.equals("MOVING")) completion = 50;
+                    else if (s.equals("PREPARING") || s.equals("IN_PROGRESS")) completion = 30;
+                    else if (s.equals("ASSIGNED")) completion = 20;
                     m.put("completionLevel", completion);
                     
                     return m;
