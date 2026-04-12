@@ -412,7 +412,7 @@ Widget build(BuildContext context) {
     backgroundColor: StaffTheme.background,
 
     appBar: AppBar(
-      automaticallyImplyLeading: true,
+      automaticallyImplyLeading: false,
       iconTheme: const IconThemeData(color: Colors.white),
       title: Row(
         children: [
@@ -460,6 +460,7 @@ Widget build(BuildContext context) {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildViewingModeBanner(),
+                      _buildLowStockAlert(), // Thêm cảnh báo hàng sắp hết
                       _buildMapSection(height: 600),
                     ],
                   ),
@@ -501,6 +502,7 @@ Widget build(BuildContext context) {
                 slivers: [
                   if (_myWarehouse?.id != _managedWarehouseId)
                     SliverToBoxAdapter(child: _buildViewingModeBanner()),
+                  SliverToBoxAdapter(child: _buildLowStockAlert()), // Thêm cảnh báo hàng sắp hết
                   SliverToBoxAdapter(child: _buildMapSection()),
                   SliverToBoxAdapter(child: _buildInventoryHeader()),
                   _buildInventoryList(isScrollable: false),
@@ -825,7 +827,8 @@ Widget build(BuildContext context) {
   dynamic _buildInventoryList({required bool isScrollable}) {
     final content = (context, index) {
       final item = _inventory[index];
-      final bool isLowStock = item.quantity < 100; 
+      final bool isLowStock = item.status == 'LOW_STOCK'; 
+      final int threshold = item.minThreshold ?? 100;
       
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -833,7 +836,7 @@ Widget build(BuildContext context) {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: isLowStock ? Colors.red.withOpacity(0.3) : StaffTheme.border),
+          border: Border.all(color: isLowStock ? StaffTheme.errorRed.withOpacity(0.5) : StaffTheme.border),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5)],
         ),
         child: Row(
@@ -873,15 +876,15 @@ Widget build(BuildContext context) {
                     children: [
                       Expanded(
                         child: LinearProgressIndicator(
-                          value: (item.quantity / 1000).clamp(0.0, 1.0),
+                          value: (item.quantity / (threshold * 2)).clamp(0.0, 1.0),
                           backgroundColor: Colors.grey.shade100,
-                          color: isLowStock ? Colors.red : StaffTheme.successGreen,
+                          color: isLowStock ? StaffTheme.errorRed : StaffTheme.successGreen,
                           minHeight: 6,
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text('${item.quantity}', style: TextStyle(fontWeight: FontWeight.w900, color: isLowStock ? Colors.red : StaffTheme.textMedium)),
+                      Text('${item.quantity}', style: TextStyle(fontWeight: FontWeight.w900, color: isLowStock ? StaffTheme.errorRed : StaffTheme.textMedium)),
                     ],
                   ),
                 ],
@@ -915,11 +918,12 @@ Widget build(BuildContext context) {
     return Icons.inventory_2_rounded;
   }
 
+
   Widget _buildViewingModeBanner() {
     if (_myWarehouse?.id == _managedWarehouseId) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFF1A237E), // Deep indigo for viewing mode
@@ -948,6 +952,56 @@ Widget build(BuildContext context) {
             ),
             child: const Text('QUAY LẠI KHO CỦA TÔI', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLowStockAlert() {
+    final lowStockItems = _inventory.where((it) => it.status == 'LOW_STOCK').toList();
+    if (lowStockItems.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16, top: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: StaffTheme.errorRed.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: StaffTheme.errorRed.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: StaffTheme.errorRed, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'CẢNH BÁO: CÓ ${lowStockItems.length} MẶT HÀNG SẮP HẾT!',
+                style: const TextStyle(color: StaffTheme.errorRed, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: lowStockItems.take(3).map((it) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: StaffTheme.errorRed,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${it.itemName}: ${it.quantity}',
+                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            )).toList(),
+          ),
+          if (lowStockItems.length > 3)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text('... và ${lowStockItems.length - 3} mặt hàng khác', style: const TextStyle(color: StaffTheme.errorRed, fontSize: 11)),
+            ),
         ],
       ),
     );

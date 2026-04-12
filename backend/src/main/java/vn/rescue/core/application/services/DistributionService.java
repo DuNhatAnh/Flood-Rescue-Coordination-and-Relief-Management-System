@@ -26,6 +26,7 @@ public class DistributionService {
     private final InventoryRepository inventoryRepository;
     private final AssignmentRepository assignmentRepository;
     private final RescueCoordinationService rescueCoordinationService;
+    private final InventoryService inventoryService;
 
     @Transactional
     public Distribution createDistribution(DistributionRequest request, String userId) {
@@ -58,17 +59,16 @@ public class DistributionService {
         }
 
         for (DistributionRequest.ItemQuantity itemReq : request.getItems()) {
-            Inventory inventory = inventoryRepository.findByWarehouseIdAndItemId(
-                    request.getWarehouseId(), itemReq.getItemId()
-            ).orElseThrow(() -> new RuntimeException("Item not found in warehouse"));
+            // Sử dụng InventoryService để xuất kho (đảm bảo ghi log và lịch sử)
+            vn.rescue.core.application.dto.StockOutRequest stockOutRequest = vn.rescue.core.application.dto.StockOutRequest.builder()
+                    .warehouseId(request.getWarehouseId())
+                    .itemId(itemReq.getItemId())
+                    .quantity(itemReq.getQuantity())
+                    .reason("MISSION_EXPORT")
+                    .assignmentId(request.getRequestId()) // requestId ở đây là ID của Assignment
+                    .build();
 
-            if (inventory.getQuantity() < itemReq.getQuantity()) {
-                throw new RuntimeException("Insufficient stock in source warehouse");
-            }
-
-            // Deduct from source
-            inventory.setQuantity(inventory.getQuantity() - itemReq.getQuantity());
-            inventoryRepository.save(inventory);
+            inventoryService.exportStock(stockOutRequest, userId);
 
             DistributionDetail detail = new DistributionDetail();
             detail.setDistributionId(savedDistribution.getId());

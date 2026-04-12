@@ -20,6 +20,8 @@ import vn.rescue.core.domain.entities.MissionItem;
 import vn.rescue.core.domain.entities.User;
 import vn.rescue.core.domain.repositories.RescueReportRepository;
 import vn.rescue.core.domain.repositories.UserRepository;
+import vn.rescue.core.domain.repositories.DistributionRepository;
+import vn.rescue.core.domain.entities.Distribution;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -64,6 +66,9 @@ public class RescueCoordinationService {
 
     @Autowired
     private SystemManagementService systemManagementService;
+
+    @Autowired
+    private DistributionRepository distributionRepository;
 
     public List<RescueRequest> getPendingRequests() {
         return rescueRequestRepository.findByStatus("PENDING");
@@ -389,9 +394,22 @@ public class RescueCoordinationService {
                             .collect(Collectors.toList());
 
                     if (!surplusItems.isEmpty()) {
-                        warehouseRepository.findByManagerId(userId).ifPresent(warehouse -> {
-                            inventoryService.batchReturn(warehouse.getId(), assignment.getId(), surplusItems, userId);
-                        });
+                        // Tìm kho đã xuất hàng cho nhiệm vụ này để hoàn trả vào đúng kho đó
+                        List<Distribution> distributions = distributionRepository.findByRequestId(assignment.getId());
+                        if (distributions.isEmpty()) {
+                            // Backend cũ dùng requestId là ID của RescueRequest, thử tìm cả hai
+                            distributions = distributionRepository.findByRequestId(assignment.getRequestId());
+                        }
+
+                        if (!distributions.isEmpty()) {
+                            String sourceWarehouseId = distributions.get(0).getWarehouseId();
+                            inventoryService.batchReturn(sourceWarehouseId, assignment.getId(), surplusItems, userId);
+                        } else {
+                            // Fallback nếu không tìm thấy phiếu xuất (ví dụ xuất thủ công không qua hệ thống)
+                            warehouseRepository.findByManagerId(userId).ifPresent(warehouse -> {
+                                inventoryService.batchReturn(warehouse.getId(), assignment.getId(), surplusItems, userId);
+                            });
+                        }
                     }
                 }
             }

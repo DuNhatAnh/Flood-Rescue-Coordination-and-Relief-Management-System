@@ -11,8 +11,11 @@ import vn.rescue.core.domain.entities.MissionItem;
 import vn.rescue.core.domain.entities.ReliefItem;
 import vn.rescue.core.domain.entities.StockTransaction;
 import vn.rescue.core.domain.repositories.InventoryRepository;
+import vn.rescue.core.domain.repositories.NotificationRepository;
 import vn.rescue.core.domain.repositories.ReliefItemRepository;
 import vn.rescue.core.domain.repositories.StockTransactionRepository;
+import vn.rescue.core.domain.repositories.WarehouseRepository;
+import vn.rescue.core.application.dto.NotificationDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,12 +27,14 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
     private final ReliefItemRepository reliefItemRepository;
     private final StockTransactionRepository stockTransactionRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final NotificationRepository notificationRepository;
     private final SystemManagementService systemService; // TIÊM ĐỂ GHI LOG
 
     @Transactional
     public InventoryResponse importStock(StockInRequest request, String userId) {
         // 0. Lấy thông tin Item từ danh mục để đồng bộ dữ liệu (tránh bị null/Vật phẩm)
-        ReliefItem item = reliefItemRepository.findById(request.getItemId()).orElse(null);
+        ReliefItem item = request.getItemId() != null ? reliefItemRepository.findById(request.getItemId()).orElse(null) : null;
         String itemName = (item != null) ? item.getItemName() : "Vật phẩm";
         String unit = (item != null) ? item.getUnit() : "N/A";
 
@@ -55,7 +60,12 @@ public class InventoryService {
         inventory.setQuantity(oldQty + request.getQuantity());
         Inventory saved = inventoryRepository.save(inventory);
 
-        // 3. LƯU GIAO DỊCH KHO (Bảng StockTransaction)
+        // 2.1 Xóa cảnh báo cũ nếu hàng đã vượt định mức
+        if (saved.getQuantity() != null && saved.getMinThreshold() != null && saved.getQuantity() > saved.getMinThreshold()) {
+            clearOldLowStockNotifications(saved);
+        }
+
+        // 3. LƯU GIAO GỊCH KHO (Bảng StockTransaction)
         StockTransaction transaction = StockTransaction.builder()
                 .warehouseId(request.getWarehouseId())
                 .itemId(request.getItemId())
@@ -73,6 +83,9 @@ public class InventoryService {
         systemService.logAction(userId, "IMPORT_STOCK",
                 String.format("Nhập kho %s: +%d %s (Tổng: %d)", itemName, request.getQuantity(), unit, saved.getQuantity()),
                 "INVENTORY");
+
+        // 5. KIỂM TRA ĐỊNH MỨC VÀ THÔNG BÁO (SCRUM-56/57)
+        checkAndNotifyLowStock(saved);
 
         return mapToResponse(saved);
     }
@@ -132,6 +145,9 @@ public class InventoryService {
                             request.getAssignmentId() != null ? request.getAssignmentId().substring(0, 8) : "N/A"),
                     "INVENTORY");
             
+            // 4.1 KIỂM TRA ĐỊNH MỨC VÀ THÔNG BÁO
+            checkAndNotifyLowStock(inventory);
+
             // CẢNH BÁO NẾU THIẾU HÀNG (Vấn đề 5 - Đã nâng cấp thành thông báo khẩn cấp)
             if (toExport < request.getQuantity()) {
                 systemService.logAction(userId, "INVENTORY_SHORTAGE",
@@ -197,8 +213,54 @@ public class InventoryService {
                 .imageUrl(imageUrl)
                 .quantity(inventory.getQuantity())
                 .minThreshold(inventory.getMinThreshold())
-                // Tính toán trạng thái để Flutter hiện màu sắc
                 .status((inventory.getQuantity() != null && inventory.getMinThreshold() != null && inventory.getQuantity() <= inventory.getMinThreshold()) ? "LOW_STOCK" : "NORMAL")
                 .build();
+    }
+
+    private void checkAndNotifyLowStock(Inventory inventory) {
+        if (inventory.getMinThreshold() == null || inventory.getQuantity() == null || inventory.getWarehouseId() == null) return;
+
+        if (inventory.getQuantity() <= inventory.getMinThreshold()) {
+            warehouseRepository.findById(inventory.getWarehouseId()).ifPresent(warehouse -> {
+                String managerId = warehouse.getManagerId();
+                if (managerId != null) {
+                    String title = "Cảnh báo hết hàng: " + (inventory.getItemName() != null ? inventory.getItemName() : "Vật phẩm");
+                    
+                    boolean alreadyNotified = !notificationRepository.findByUserIdAndTitleAndIsReadFalseOrderByCreatedAtDesc(managerId, title).isEmpty();
+                    
+                    if (!alreadyNotified) {
+                        vn.rescue.core.domain.entities.Notification notification = vn.rescue.core.domain.entities.Notification.builder()
+                                .title(title)
+                                .content(String.format("Mặt hàng %s trong kho %s hiện chỉ còn %d %s. Định mức tối thiểu là %d. Vui lòng nhập thêm hàng!",
+                                        inventory.getItemName(), warehouse.getWarehouseName(), inventory.getQuantity(), 
+                                        inventory.getUnit(), inventory.getMinThreshold()))
+                                .type("WARNING")
+                                .priority("HIGH")
+                                .userId(managerId)
+                                .isRead(false)
+                                .createdAt(LocalDateTime.now())
+                                .build();
+                        notificationRepository.save(notification);
+                    }
+                }
+            });
+        }
+    }
+
+    private void clearOldLowStockNotifications(Inventory inventory) {
+        if (inventory.getWarehouseId() == null) return;
+        warehouseRepository.findById(inventory.getWarehouseId()).ifPresent(warehouse -> {
+            String managerId = warehouse.getManagerId();
+            if (managerId != null) {
+                String title = "Cảnh báo hết hàng: " + inventory.getItemName();
+                List<vn.rescue.core.domain.entities.Notification> oldNotes = 
+                    notificationRepository.findByUserIdAndTitleAndIsReadFalseOrderByCreatedAtDesc(managerId, title);
+                
+                for (vn.rescue.core.domain.entities.Notification note : oldNotes) {
+                    note.setRead(true);
+                    notificationRepository.save(note);
+                }
+            }
+        });
     }
 }

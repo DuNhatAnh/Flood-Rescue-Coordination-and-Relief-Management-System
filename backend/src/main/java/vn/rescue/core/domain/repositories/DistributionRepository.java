@@ -29,4 +29,7 @@ public interface DistributionRepository extends MongoRepository<Distribution, St
     // 6. Truy vấn nâng cao: Tìm các giao dịch COMPLETED của một nhân viên cụ thể
     @Query("{ 'distributed_by': ?0, 'status': 'COMPLETED' }")
     List<Distribution> findCompletedByStaff(String staffId);
+
+    // 7. Tìm phiếu xuất theo mã nhiệm vụ
+    List<Distribution> findByRequestId(String requestId);
 }

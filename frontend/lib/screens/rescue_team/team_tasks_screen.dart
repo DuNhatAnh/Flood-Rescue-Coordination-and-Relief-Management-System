@@ -188,6 +188,54 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+
+        // Hiển thị phương tiện được giao
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: StaffTheme.border),
+            boxShadow: StaffTheme.softShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('PHƯƠNG TIỆN ĐƯỢC GIAO', 
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: StaffTheme.primaryBlue)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: StaffTheme.primaryBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.directions_boat_rounded, color: StaffTheme.primaryBlue, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task.licensePlate ?? 'CHƯA GÁN PHƯƠNG TIỆN', 
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: StaffTheme.textDark)
+                        ),
+                        Text(
+                          task.vehicleType ?? 'Nhân viên sẽ nhận tại kho', 
+                          style: const TextStyle(fontSize: 12, color: StaffTheme.textLight)
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 24),
 
         // 1. Mục Xuất kho hàng hóa

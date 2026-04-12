@@ -39,5 +39,8 @@ public interface NotificationRepository extends MongoRepository<Notification, St
 
     long countByUserIdAndIsReadFalse(String userId);
 
+    // Kiểm tra xem đã có thông báo chưa đọc với tiêu đề cụ thể chưa (để tránh lặp)
+    List<Notification> findByUserIdAndTitleAndIsReadFalseOrderByCreatedAtDesc(String userId, String title);
+
     void deleteByUserId(String userId);
 }

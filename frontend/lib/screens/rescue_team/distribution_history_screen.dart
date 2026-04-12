@@ -69,6 +69,7 @@ class _DistributionHistoryScreenState extends State<DistributionHistoryScreen> {
               itemBuilder: (context, index) {
                 final item = history[index];
                 final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(item.distributedAt);
+                final bool isTransfer = item.type == 'TRANSFER';
                 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -78,27 +79,87 @@ class _DistributionHistoryScreenState extends State<DistributionHistoryScreen> {
                     border: Border.all(color: StaffTheme.border),
                     boxShadow: StaffTheme.softShadow,
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: StaffTheme.successGreen.withOpacity(0.1),
-                        shape: BoxShape.circle,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: (isTransfer ? Colors.orange : StaffTheme.successGreen).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isTransfer ? Icons.swap_horiz_rounded : Icons.outbox_rounded, 
+                          color: isTransfer ? Colors.orange : StaffTheme.successGreen
+                        ),
                       ),
-                      child: const Icon(Icons.outbox_rounded, color: StaffTheme.successGreen),
-                    ),
-                    title: Text('Phiếu xuất #${item.id?.substring(0, 6) ?? "N/A"}', style: StaffTheme.cardTitle),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      title: Text(
+                        isTransfer ? 'Phiếu điều chuyển #${item.id?.substring(0, 6)}' : 'Phiếu cứu trợ #${item.id?.substring(0, 6)}', 
+                        style: StaffTheme.cardTitle
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text('Ngày: $dateStr', style: StaffTheme.cardSubtitle),
+                          if (!isTransfer) Text('Mã nhiệm vụ: ${item.requestId.length > 8 ? item.requestId.substring(0, 8) : item.requestId}', style: StaffTheme.cardSubtitle),
+                        ],
+                      ),
                       children: [
-                        const SizedBox(height: 4),
-                        Text('Nhiệm vụ: ${item.requestId}', style: StaffTheme.cardSubtitle),
-                        Text('Ngày: $dateStr', style: StaffTheme.cardSubtitle),
+                        const Divider(height: 1),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: StaffTheme.background,
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CHI TIẾT VẬT PHẨM MANG ĐI:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: StaffTheme.textLight)),
+                              const SizedBox(height: 10),
+                              ...item.items.map((goods) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(goods.itemName, style: const TextStyle(fontWeight: FontWeight.w500)),
+                                    Text('x${goods.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              )).toList(),
+                              if (item.items.isEmpty)
+                                const Text('Không có thông tin vật phẩm cụ thể', style: TextStyle(fontStyle: FontStyle.italic, color: StaffTheme.textLight, fontSize: 12)),
+                              
+                              if (!isTransfer) ...[
+                                const SizedBox(height: 16),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.blue.withOpacity(0.1)),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.info_outline_rounded, size: 16, color: Colors.blue),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Hệ thống sẽ tự động đối soát và cộng lại hàng dư vào kho sau khi đội cứu cứu hộ hoàn thành nhiệm vụ.',
+                                          style: TextStyle(fontSize: 10, color: Colors.blue, height: 1.4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                    trailing: const Icon(Icons.chevron_right_rounded, color: StaffTheme.textLight),
-                    onTap: () {},
                   ),
                 );
               },

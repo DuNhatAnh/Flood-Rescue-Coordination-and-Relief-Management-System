@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:ui';
 import '../utils/constants.dart';
 import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
 import 'package:flood_rescue_app/screens/track_rescue_request_screen.dart';
@@ -428,6 +429,75 @@ class _MapTabState extends State<MapTab> {
       ),
     );
   }
+  
+  Widget _buildMapLegend() {
+    return Positioned(
+      bottom: 20,
+      left: 20,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'CHÚ THÍCH',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _legendItem(Icons.location_on, Colors.red, 'Khẩn cấp (Cao)'),
+                const SizedBox(height: 8),
+                _legendItem(Icons.location_on, Colors.orange, 'Cần cứu hộ (Trung bình)'),
+                const SizedBox(height: 8),
+                _legendItem(Icons.location_on, Colors.blue, 'Hỗ trợ (Thấp)'),
+                const SizedBox(height: 8),
+                _legendItem(Icons.favorite, Colors.green, 'Vùng an toàn'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _legendItem(IconData icon, Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF263238),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -516,6 +586,7 @@ class _MapTabState extends State<MapTab> {
             ),
           ),
         ),
+        _buildMapLegend(),
       ],
     );
   }
