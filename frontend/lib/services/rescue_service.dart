@@ -64,7 +64,10 @@ class RescueService {
       return null;
     } catch (e) {
       print('Error creating rescue request: $e');
-      return null;
+      if (e is DioException && e.response != null && e.response?.data != null) {
+        throw Exception(e.response?.data['message'] ?? 'Gửi yêu cầu thất bại');
+      }
+      rethrow;
     }
   }
 
@@ -79,6 +82,22 @@ class RescueService {
     } catch (e) {
       print('Error tracking rescue request: $e');
       return null;
+    }
+  }
+
+  // Cập nhật trạng thái yêu cầu (VD: Từ chối)
+  Future<bool> updateRequestStatus(String id, String status, {String? note}) async {
+    try {
+      final response = await _dio.patch('/rescue-requests/$id/status', data: {
+        'status': status,
+        'note': note,
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      if (e is DioException && e.response != null && e.response?.data != null) {
+        throw Exception(e.response?.data['message'] ?? 'Cập nhật thất bại');
+      }
+      return false;
     }
   }
 
@@ -424,6 +443,32 @@ class RescueService {
       return [];
     } catch (e) {
       print('Error fetching vehicles by warehouse: $e');
+      return [];
+    }
+  }
+
+  // Lấy tệp đính kèm theo ID yêu cầu (Hình ảnh/Tài liệu từ người dân gửi)
+  Future<List<String>> getAttachments(String requestId) async {
+    try {
+      final response = await _dio.get('/attachments/request/$requestId');
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData['success'] == true) {
+          final List<dynamic> data = responseData['data'] ?? [];
+          return data.map((item) {
+            String url = item['fileUrl'] as String;
+            if (!url.startsWith('http')) {
+              // Lấy domain host, VD từ http://localhost:8080/api/v1 -> http://localhost:8080
+              final baseUrlHost = Constants.apiV1.replaceAll('/api/v1', '');
+              url = '$baseUrlHost$url';
+            }
+            return url;
+          }).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching attachments: $e');
       return [];
     }
   }

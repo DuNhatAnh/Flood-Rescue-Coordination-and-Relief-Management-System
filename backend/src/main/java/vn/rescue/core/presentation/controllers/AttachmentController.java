@@ -35,4 +35,10 @@ public class AttachmentController {
 
         return ResponseEntity.ok(ApiResponse.success(fileUrl, "Tải lên thành công"));
     }
+
+    @GetMapping("/request/{requestId}")
+    public ResponseEntity<ApiResponse<java.util.List<Attachment>>> getAttachmentsByRequestId(@PathVariable("requestId") String requestId) {
+        java.util.List<Attachment> attachments = attachmentRepository.findByRequestId(requestId);
+        return ResponseEntity.ok(ApiResponse.success(attachments, "Lấy danh sách tệp đính kèm thành công"));
+    }
 }

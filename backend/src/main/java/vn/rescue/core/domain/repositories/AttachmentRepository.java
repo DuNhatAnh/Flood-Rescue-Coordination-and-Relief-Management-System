@@ -6,4 +6,5 @@ import vn.rescue.core.domain.entities.Attachment;
 
 @Repository
 public interface AttachmentRepository extends MongoRepository<Attachment, String> {
+    java.util.List<Attachment> findByRequestId(String requestId);
 }

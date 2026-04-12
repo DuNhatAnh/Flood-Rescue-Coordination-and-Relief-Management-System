@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum UrgencyLevel { low, medium, high }
-enum RequestStatus { pending, assigned, completed }
+enum RequestStatus { pending, assigned, completed, rejected }
 
 class RescueRequest {
   final String id;
@@ -72,6 +72,7 @@ class RescueRequest {
     switch (status?.toUpperCase()) {
       case 'ASSIGNED': return RequestStatus.assigned;
       case 'COMPLETED': return RequestStatus.completed;
+      case 'REJECTED': return RequestStatus.rejected;
       default: return RequestStatus.pending;
     }
   }
