@@ -37,8 +37,8 @@ class _LoginScreenState extends State<LoginScreen> {
       case UserRole.rescueStaff:
         routeName = '/staff/dashboard';
         break;
-      case UserRole.user:
       default:
+        // Với các trường hợp khác, mặc định về HomeScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),

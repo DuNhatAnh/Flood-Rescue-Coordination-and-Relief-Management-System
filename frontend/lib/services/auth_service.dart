@@ -53,8 +53,8 @@ class AuthService {
         final data = jsonDecode(response.body);
         final token = data['token'];
         
-        // Lấy Role từ mảng roles của Spring Boot (Kiểm tra tất cả các role)
-        UserRole mappedRole = UserRole.user;
+        // Lấy Role từ mảng roles của Spring Boot
+        UserRole mappedRole = UserRole.rescueStaff; // Mặc định là đội cứu hộ
         if (data['roles'] != null && data['roles'] is List) {
            final List<dynamic> roleList = data['roles'];
            final String roleString = roleList.join(',').toUpperCase();

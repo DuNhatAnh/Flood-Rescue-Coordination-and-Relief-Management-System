@@ -28,7 +28,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       final roles = await _adminService.getRoles();
       final teams = await _adminService.getTeams();
       setState(() {
-        _roles = roles;
+        // Lọc bỏ role USER nếu backend vẫn trả về
+        _roles = roles.where((r) => r['id'] != 'USER').toList();
         _teams = teams;
       });
       await _loadUsers();
@@ -46,7 +47,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       final users = await _adminService.getUsers(query: _searchQuery);
       if (!mounted) return;
       setState(() {
-        _users = users;
+        // Lọc bỏ tài khoản admin@rescue.vn theo yêu cầu
+        _users = users.where((u) => u['email'] != 'admin@rescue.vn').toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -55,6 +57,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi tải Users: $e')),
       );
+    }
+  }
+
+  String _getRoleDisplayName(String technicalName) {
+    switch (technicalName.toUpperCase()) {
+      case 'ADMIN':
+        return 'Quản trị viên';
+      case 'COORDINATOR':
+        return 'Điều phối viên';
+      case 'RESCUE_STAFF':
+      case 'RESCUER':
+        return 'Đội cứu hộ';
+      default:
+        return technicalName;
     }
   }
 
@@ -82,7 +98,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     value: selectedRole,
                     items: _roles.map((role) => DropdownMenuItem<String>(
                       value: role['id'],
-                      child: Text(role['name'] ?? ''),
+                      child: Text(_getRoleDisplayName(role['name'] ?? '')),
                     )).toList(),
                     onChanged: (val) {
                       setDialogState(() => selectedRole = val);
@@ -120,11 +136,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         'teamId': selectedTeam,
                       });
                       if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Tạo tài khoản thành công!'), backgroundColor: Colors.green),
+                      );
                       Navigator.pop(context);
                       _loadUsers();
                     } catch (e) {
                       if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Lỗi tạo tài khoản: $e'), backgroundColor: Colors.red),
+                      );
                     }
                   },
                   child: const Text('Tạo'),
@@ -273,18 +294,23 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                               icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2555D4)),
                                               items: _roles.map((role) => DropdownMenuItem<String>(
                                                 value: role['id'],
-                                                child: Text(role['name'] ?? ''),
+                                                child: Text(_getRoleDisplayName(role['name'] ?? '')),
                                               )).toList(),
                                               onChanged: (val) async {
                                                 if (val != null) {
-                                                  try {
-                                                    await _adminService.updateUserRole(user['id'], val);
-                                                    if (!mounted) return;
-                                                    _loadUsers();
-                                                  } catch (e) {
-                                                    if (!mounted) return;
-                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi cập nhật quyền: $e')));
-                                                  }
+                                                    try {
+                                                      await _adminService.updateUserRole(user['id'], val);
+                                                      if (!mounted) return;
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(content: Text('Cập nhật vai trò thành công!'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
+                                                      );
+                                                      _loadUsers();
+                                                    } catch (e) {
+                                                      if (!mounted) return;
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(content: Text('Lỗi cập nhật quyền: $e'), backgroundColor: Colors.red),
+                                                      );
+                                                    }
                                                 }
                                               },
                                             ),
@@ -324,14 +350,23 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 activeColor: Colors.green,
                                   onChanged: (val) async {
                                     final newStatus = val ? 'ACTIVE' : 'LOCKED';
-                                    try {
-                                      await _adminService.updateUserStatus(user['id'], newStatus);
-                                      if (!mounted) return;
-                                      _loadUsers();
-                                    } catch (e) {
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-                                    }
+                                      try {
+                                        await _adminService.updateUserStatus(user['id'], newStatus);
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(val ? 'Đã kích hoạt tài khoản' : 'Đã khóa tài khoản'),
+                                            backgroundColor: val ? Colors.green : Colors.orange,
+                                            duration: const Duration(seconds: 1),
+                                          ),
+                                        );
+                                        _loadUsers();
+                                      } catch (e) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+                                        );
+                                      }
                                   },
                               ),
                             ],

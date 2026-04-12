@@ -1,4 +1,4 @@
-enum UserRole { admin, coordinator, rescueStaff, user }
+enum UserRole { admin, coordinator, rescueStaff }
 
 class UserModel {
   final String id;
