@@ -117,7 +117,7 @@ class _DangerPointManagementScreenState extends State<DangerPointManagementScree
                     Expanded(
                       child: TextField(
                         controller: latController,
-                        decoration: const InputDecoration(labelText: 'Kinh độ (Lat)'),
+                        decoration: const InputDecoration(labelText: 'Vĩ độ (Lat)'),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -125,7 +125,7 @@ class _DangerPointManagementScreenState extends State<DangerPointManagementScree
                     Expanded(
                       child: TextField(
                         controller: lngController,
-                        decoration: const InputDecoration(labelText: 'Vĩ độ (Lng)'),
+                        decoration: const InputDecoration(labelText: 'Kinh độ (Lng)'),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -150,16 +150,24 @@ class _DangerPointManagementScreenState extends State<DangerPointManagementScree
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
             ElevatedButton(
               onPressed: () async {
-                if (nameController.text.isEmpty || latController.text.isEmpty || lngController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')));
+                final lat = double.tryParse(latController.text);
+                final lng = double.tryParse(lngController.text);
+
+                if (lat == null || lat < -90 || lat > 90) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vĩ độ (Lat) không hợp lệ (phải từ -90 đến 90)')));
                   return;
                 }
+                if (lng == null || lng < -180 || lng > 180) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kinh độ (Lng) không hợp lệ (phải từ -180 đến 180)')));
+                  return;
+                }
+
                 final user = AuthService.currentUser;
                 final newPoint = DangerPoint(
                   name: nameController.text,
                   address: addressController.text,
-                  latitude: double.parse(latController.text),
-                  longitude: double.parse(lngController.text),
+                  latitude: lat,
+                  longitude: lng,
                   depth: depth,
                   createdBy: user?.id,
                 );

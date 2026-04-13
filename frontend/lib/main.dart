@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flood_rescue_app/components/protected_route.dart';
+import 'package:flood_rescue_app/models/user_model.dart';
 import 'package:flood_rescue_app/screens/coordinator/coordinator_dashboard.dart';
 import 'package:flood_rescue_app/screens/rescue_team/staff_main_screen.dart';
 import 'screens/home_screen.dart';
@@ -43,19 +45,63 @@ class FloodRescueApp extends StatelessWidget {
       ),
       home: const HomeScreen(),
       routes: {
-        '/admin/users': (context) => const UserManagementScreen(),
-        '/admin/roles': (context) => const RoleManagementScreen(),
-        '/admin/notifications': (context) => const NotificationManagementScreen(),
-        '/admin/dashboard': (context) => const SystemDashboardScreen(),
-        '/coordinator/dashboard': (context) => const CoordinatorDashboard(),
-        '/coordinator/analytics': (context) => const AnalyticsScreen(),
-        '/staff/dashboard': (context) => const StaffMainScreen(),
-        '/admin/vehicles': (context) => const VehicleManagementScreen(),
-        '/admin/vehicle_locations': (context) => const VehicleLocationScreen(),
-        '/admin/warehouses': (context) => const WarehouseManagementScreen(),
-        '/admin/analytics': (context) => const AdminAnalyticsScreen(),
-        '/admin/danger-points': (context) => const DangerPointManagementScreen(),
-        '/admin/settings': (context) => const SystemSettingsScreen(),
+        // Admin Protected Routes
+        '/admin/dashboard': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: SystemDashboardScreen(),
+        ),
+        '/admin/users': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: UserManagementScreen(),
+        ),
+        '/admin/roles': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: RoleManagementScreen(),
+        ),
+        '/admin/notifications': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: NotificationManagementScreen(),
+        ),
+        '/admin/vehicles': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: VehicleManagementScreen(),
+        ),
+        '/admin/vehicle_locations': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: VehicleLocationScreen(),
+        ),
+        '/admin/warehouses': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: WarehouseManagementScreen(),
+        ),
+        '/admin/analytics': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: AdminAnalyticsScreen(),
+        ),
+        '/admin/danger-points': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: DangerPointManagementScreen(),
+        ),
+        '/admin/settings': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.admin],
+          child: SystemSettingsScreen(),
+        ),
+
+        // Coordinator Protected Routes
+        '/coordinator/dashboard': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.coordinator, UserRole.admin],
+          child: CoordinatorDashboard(),
+        ),
+        '/coordinator/analytics': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.coordinator, UserRole.admin],
+          child: AnalyticsScreen(),
+        ),
+
+        // Staff Protected Routes
+        '/staff/dashboard': (context) => const ProtectedRoute(
+          allowedRoles: [UserRole.rescueStaff, UserRole.admin],
+          child: StaffMainScreen(),
+        ),
       },
     );
   }

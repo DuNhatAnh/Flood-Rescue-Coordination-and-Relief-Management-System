@@ -27,42 +27,48 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
   @override
   void initState() {
     super.initState();
-cấp    _fetchConfigs();
+    _fetchConfigs();
   }
 
   Future<void> _fetchConfigs() async {
     setState(() => _isLoading = true);
     try {
       final configs = await _adminService.getSystemConfigs();
-      for (var config in configs) {
-        final String key = config['key'];
-        final String value = config['value'];
-        
-        switch (key) {
-          case 'HOTLINE_NUMBER':
-            hotspotNumberController.text = value;
-            break;
-          case 'SUPPORT_EMAIL':
-            hotspotEmailController.text = value;
-            break;
-          case 'MAP_CENTER_LAT':
-            mapLatController.text = value;
-            break;
-          case 'MAP_CENTER_LNG':
-            mapLngController.text = value;
-            break;
-          case 'MAP_DEFAULT_ZOOM':
-            mapZoomController.text = value;
-            break;
-          case 'MAINTENANCE_MODE':
-            _isMaintenanceMode = value == 'true';
-            break;
+      setState(() {
+        for (var config in configs) {
+          final String key = config['key'];
+          final String value = config['value'].toString();
+          
+          switch (key) {
+            case 'HOTLINE_NUMBER':
+              hotspotNumberController.text = value;
+              break;
+            case 'SUPPORT_EMAIL':
+              hotspotEmailController.text = value;
+              break;
+            case 'MAP_CENTER_LAT':
+              mapLatController.text = value;
+              break;
+            case 'MAP_CENTER_LNG':
+              mapLngController.text = value;
+              break;
+            case 'MAP_DEFAULT_ZOOM':
+              mapZoomController.text = value;
+              break;
+            case 'MAINTENANCE_MODE':
+              _isMaintenanceMode = value == 'true';
+              break;
+          }
         }
-      }
+        _isLoading = false;
+      });
     } catch (e) {
-      debugPrint('Error fetching system configs: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể tải cấu hình: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -138,9 +144,9 @@ cấp    _fetchConfigs();
                     ),
                   ),
                   const Divider(),
-                  _buildTextFieldSetting('Kinh độ trung tâm (Lat)', mapLatController, 'MAP_CENTER_LAT'),
+                  _buildTextFieldSetting('Vĩ độ trung tâm (Lat)', mapLatController, 'MAP_CENTER_LAT'),
                   const Divider(),
-                  _buildTextFieldSetting('Vĩ độ trung tâm (Lng)', mapLngController, 'MAP_CENTER_LNG'),
+                  _buildTextFieldSetting('Kinh độ trung tâm (Lng)', mapLngController, 'MAP_CENTER_LNG'),
                   const Divider(),
                   _buildTextFieldSetting('Mức zoom mặc định', mapZoomController, 'MAP_DEFAULT_ZOOM'),
                 ]),

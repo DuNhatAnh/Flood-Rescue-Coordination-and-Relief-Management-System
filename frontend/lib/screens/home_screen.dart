@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
+import 'dart:math' as math;
 import '../utils/constants.dart';
 import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
 import 'package:flood_rescue_app/screens/track_rescue_request_screen.dart';
@@ -376,6 +377,7 @@ class _MapTabState extends State<MapTab> {
   List<DangerPoint> _dangerPoints = [];
   final AdminService _adminService = AdminService();
   bool _isLoading = true;
+  double _currentZoom = 12.0;
 
   @override
   void initState() {
@@ -500,7 +502,7 @@ class _MapTabState extends State<MapTab> {
       ),
     );
   }
-  
+
   Widget _buildMapLegend() {
     return Positioned(
       bottom: 20,
@@ -537,13 +539,15 @@ class _MapTabState extends State<MapTab> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                _legendItem(Icons.location_on, Colors.red, 'Khẩn cấp (Cao)'),
-                const SizedBox(height: 8),
-                _legendItem(Icons.location_on, Colors.orange, 'Cần cứu hộ (Trung bình)'),
-                const SizedBox(height: 8),
-                _legendItem(Icons.location_on, Colors.blue, 'Hỗ trợ (Thấp)'),
-                const SizedBox(height: 8),
-                _legendItem(Icons.favorite, Colors.green, 'Vùng an toàn'),
+                _legendItem(Icons.location_on, Colors.red, 'Khẩn cấp (Cao)', size: 14),
+                const SizedBox(height: 6),
+                _legendItem(Icons.location_on, Colors.orange, 'Cần cứu hộ (Trung)', size: 14),
+                const SizedBox(height: 6),
+                _legendItem(Icons.location_on, Colors.blue, 'Hỗ trợ (Thấp)', size: 14),
+                const SizedBox(height: 6),
+                _legendItem(Icons.favorite, Colors.green, 'Vùng an toàn', size: 14),
+                const Divider(height: 16),
+                _legendItem(Icons.circle, Colors.redAccent, 'Điểm ngập lụt (Cảnh báo)', size: 14, isPulse: true),
               ],
             ),
           ),
@@ -552,16 +556,27 @@ class _MapTabState extends State<MapTab> {
     );
   }
 
-  Widget _legendItem(IconData icon, Color color, String label) {
+  Widget _legendItem(IconData icon, Color color, String label, {double size = 18, bool isPulse = false}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: color, size: 18),
+        if (isPulse)
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 4, spreadRadius: 2)],
+            ),
+          )
+        else
+          Icon(icon, color: color, size: size),
         const SizedBox(width: 8),
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
             color: Color(0xFF263238),
           ),
@@ -576,9 +591,14 @@ class _MapTabState extends State<MapTab> {
       children: [
         FlutterMap(
           mapController: _mapController,
-          options: const MapOptions(
-            initialCenter: LatLng(15.6, 108.5),
-            initialZoom: 11.0,
+          options: MapOptions(
+            initialCenter: const LatLng(16.068, 108.212), // Đà Nẵng fallback
+            initialZoom: 12.0,
+            onPositionChanged: (pos, hasGesture) {
+              if (pos.zoom != null && pos.zoom != _currentZoom) {
+                setState(() => _currentZoom = pos.zoom!);
+              }
+            },
           ),
           children: [
             TileLayer(
@@ -588,41 +608,44 @@ class _MapTabState extends State<MapTab> {
             ),
             MarkerLayer(
               markers: [
-                // Markers for Rescue Requests
+                // Markers for Rescue Requests (Fixed size, not scaled)
                 ..._requests.map((req) => Marker(
                   point: LatLng(req.lat, req.lng),
-                  width: 50,
-                  height: 50,
+                  width: 30,
+                  height: 30,
                   child: GestureDetector(
                     onTap: () => _showMarkerDetail(req),
-                    child: Icon(
-                      Icons.location_on,
-                      color: req.urgencyColor,
-                      size: 40,
-                    ),
+                    child: Icon(Icons.location_on, color: req.urgencyColor, size: 25),
                   ),
                 )),
-                // Markers for Safety Reports
+                // Markers for Safety Reports (Fixed size)
                 ..._safetyReports.where((rep) => rep.lat != null && rep.lng != null).map((rep) => Marker(
                   point: LatLng(rep.lat!, rep.lng!),
-                  width: 50,
-                  height: 50,
+                  width: 30,
+                  height: 30,
                   child: GestureDetector(
                     onTap: () => _showMarkerDetail(rep),
-                    child: const Icon(
-                      Icons.favorite,
-                      color: Colors.green,
-                      size: 30,
-                    ),
+                    child: const Icon(Icons.favorite, color: Colors.green, size: 20),
                   ),
                 )),
-                // Markers for Danger Points (Glowing Dots)
-                ..._dangerPoints.map((dp) => Marker(
-                  point: LatLng(dp.latitude, dp.longitude),
-                  width: _getMarkerSize(dp.depth) + 20,
-                  height: _getMarkerSize(dp.depth) + 20,
-                  child: _buildGlowingMarker(dp),
-                )),
+                // Intelligent Markers for Danger Points (Clustered & Scaled)
+                ..._getClusteredDangerPoints().map((dp) {
+                  final double baseSize = _getMarkerSize(dp.depth) * 2.5; 
+                  // Scale factor: grows slightly as we zoom in, shrinks as we zoom out
+                  final double scaleFactor = math.pow(1.5, _currentZoom - 12.0).toDouble();
+                  final double scaledSize = baseSize * scaleFactor;
+                  
+                  return Marker(
+                    point: LatLng(dp.latitude, dp.longitude),
+                    width: scaledSize + 60, 
+                    height: scaledSize + 60,
+                    alignment: Alignment.center,
+                    child: PulseMarker(
+                      color: _getRiskColor(dp.depth),
+                      size: scaledSize,
+                    ),
+                  );
+                }),
               ],
             ),
           ],
@@ -675,46 +698,127 @@ class _MapTabState extends State<MapTab> {
     return 40.0;
   }
 
-  Widget _buildGlowingMarker(DangerPoint dp) {
-    final color = _getRiskColor(dp.depth);
-    final size = _getMarkerSize(dp.depth);
-    
-    return RepaintBoundary(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: size + 20,
-            height: size + 20,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.4),
-                  blurRadius: 15,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-          ),
-        ],
-      ),
-    );
+  // --- Logic Gom cụm (Clustering) cho điểm ngập ---
+  List<DangerPoint> _getClusteredDangerPoints() {
+    if (_currentZoom >= 11.5) return _dangerPoints;
+
+    // Grid-based clustering
+    final Map<String, List<DangerPoint>> clusters = {};
+    // Grid size depends on zoom: zoom smaller -> grid larger
+    final double gridSize = 0.04 * (12.0 - _currentZoom + 1);
+
+    for (var dp in _dangerPoints) {
+      final double gridLat = (dp.latitude / gridSize).roundToDouble() * gridSize;
+      final double gridLng = (dp.longitude / gridSize).roundToDouble() * gridSize;
+      final String key = '${gridLat}_$gridLng';
+      clusters.putIfAbsent(key, () => []).add(dp);
+    }
+
+    return clusters.values.map((pts) {
+      // Calculate averaged location and max depth for the cluster
+      double avgLat = 0, avgLng = 0, maxDepth = 0;
+      for (var p in pts) {
+        avgLat += p.latitude;
+        avgLng += p.longitude;
+        if (p.depth > maxDepth) maxDepth = p.depth;
+      }
+      return DangerPoint(
+        id: 'cluster_${pts.first.id}',
+        name: 'Khu vực ngập lụt (${pts.length} điểm)',
+        address: pts.first.address,
+        latitude: avgLat / pts.length,
+        longitude: avgLng / pts.length,
+        depth: maxDepth,
+      );
+    }).toList();
   }
 
   Color _getRiskColor(double depth) {
     if (depth < 0.5) return Colors.green;
     if (depth <= 2.0) return Colors.orange;
     return Colors.red;
+  }
+}
+
+class PulseMarker extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const PulseMarker({Key? key, required this.color, required this.size}) : super(key: key);
+
+  @override
+  State<PulseMarker> createState() => _PulseMarkerState();
+}
+
+class _PulseMarkerState extends State<PulseMarker> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000), // Slower pulsing per user request
+    )..repeat(reverse: true);
+    
+    _animation = Tween<double>(begin: 0.5, end: 1.1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Glowing effect (Softer pulsing)
+              Container(
+                width: (widget.size + 30) * _animation.value,
+                height: (widget.size + 30) * _animation.value,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.color.withOpacity(0.35 * (1.3 - _animation.value)),
+                      blurRadius: 25 * _animation.value,
+                      spreadRadius: 12 * _animation.value,
+                    ),
+                  ],
+                ),
+              ),
+              // Core dot
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color,
+                  border: Border.all(color: Colors.white.withOpacity(0.8), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

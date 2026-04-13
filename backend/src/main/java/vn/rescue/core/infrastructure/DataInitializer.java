@@ -27,6 +27,8 @@ public class DataInitializer implements CommandLineRunner {
     private final InventoryRepository inventoryRepository;
     private final AssignmentRepository assignmentRepository;
     private final RoleRepository roleRepository;
+    private final DangerPointRepository dangerPointRepository;
+    private final SystemConfigRepository systemConfigRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -39,6 +41,8 @@ public class DataInitializer implements CommandLineRunner {
         seedRescueRequests();
         seedWarehousesAndItems();
         seedRescueTeamsAndVehicles();
+        seedDangerPoints();
+        seedSystemConfigs();
         
         backfillRescueRequestIds();
         seedAssignments();
@@ -406,6 +410,58 @@ public class DataInitializer implements CommandLineRunner {
                         });
                 }
             });
+        }
+    }
+
+    private void seedDangerPoints() {
+        if (dangerPointRepository.count() == 0) {
+            log.info("Nạp dữ liệu điểm nguy hiểm mẫu tại Quảng Nam...");
+
+            DangerPoint d1 = DangerPoint.builder()
+                    .name("Khu vực ngập sâu Phú Ninh")
+                    .address("Phú Ninh, Quảng Nam")
+                    .latitude(15.4745)
+                    .longitude(108.4321)
+                    .depth(3.5)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            DangerPoint d2 = DangerPoint.builder()
+                    .name("Ngã tư trung tâm Tam Kỳ")
+                    .address("Phường An Xuân, Tam Kỳ, Quảng Nam")
+                    .latitude(15.5654)
+                    .longitude(108.5212)
+                    .depth(1.2)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            DangerPoint d3 = DangerPoint.builder()
+                    .name("Vùng thấp trũng Núi Thành")
+                    .address("Núi Thành, Quảng Nam")
+                    .latitude(15.4321)
+                    .longitude(108.6456)
+                    .depth(0.4)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            dangerPointRepository.saveAll(Arrays.asList(d1, d2, d3));
+            log.info("Đã nạp 3 điểm nguy hiểm vùng Quảng Nam.");
+        }
+    }
+
+    private void seedSystemConfigs() {
+        if (systemConfigRepository.count() == 0) {
+            log.info("Nạp cấu hình hệ thống mặc định...");
+            
+            SystemConfig c1 = SystemConfig.builder().key("MAP_CENTER_LAT").value("15.5654").build();
+            SystemConfig c2 = SystemConfig.builder().key("MAP_CENTER_LNG").value("108.5212").build();
+            SystemConfig c3 = SystemConfig.builder().key("MAP_DEFAULT_ZOOM").value("11.0").build();
+            SystemConfig c4 = SystemConfig.builder().key("HOTLINE_NUMBER").value("086.777.9427").build();
+            SystemConfig c5 = SystemConfig.builder().key("SUPPORT_EMAIL").value("support@rescue.vn").build();
+            SystemConfig c6 = SystemConfig.builder().key("MAINTENANCE_MODE").value("false").build();
+            
+            systemConfigRepository.saveAll(Arrays.asList(c1, c2, c3, c4, c5, c6));
+            log.info("Đã nạp 6 cấu hình hệ thống mặc định.");
         }
     }
 
