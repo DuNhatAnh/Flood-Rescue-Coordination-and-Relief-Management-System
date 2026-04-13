@@ -13,7 +13,9 @@ class DangerPointManagementScreen extends StatefulWidget {
 
 class _DangerPointManagementScreenState extends State<DangerPointManagementScreen> {
   final AdminService _adminService = AdminService();
+  final TextEditingController _searchController = TextEditingController();
   List<DangerPoint> _points = [];
+  String _searchQuery = "";
   bool _isLoading = true;
 
   @override
@@ -213,6 +215,16 @@ class _DangerPointManagementScreenState extends State<DangerPointManagementScree
     );
   }
 
+  List<DangerPoint> get _filteredPoints {
+    if (_searchQuery.isEmpty) return _points;
+    return _points.where((p) {
+      final name = p.name.toLowerCase();
+      final addr = p.address.toLowerCase();
+      final query = _searchQuery.toLowerCase();
+      return name.contains(query) || addr.contains(query);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,50 +233,91 @@ class _DangerPointManagementScreenState extends State<DangerPointManagementScree
         backgroundColor: const Color(0xFF2555D4),
         foregroundColor: Colors.white,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _points.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.location_off_outlined, size: 80, color: Colors.grey[300]),
-                      const SizedBox(height: 16),
-                      Text('Chưa có điểm nguy hiểm nào', style: TextStyle(color: Colors.grey[500], fontSize: 16)),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _points.length,
-                  itemBuilder: (context, index) {
-                    final p = _points[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: ListTile(
-                        leading: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _getRiskColor(p.depth),
-                            boxShadow: [
-                              BoxShadow(color: _getRiskColor(p.depth).withOpacity(0.5), blurRadius: 4, spreadRadius: 2),
-                            ],
-                          ),
-                        ),
-                        title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('${p.address}\nĐộ sâu: ${p.depth}m', style: const TextStyle(fontSize: 12)),
-                        isThreeLine: true,
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
-                          onPressed: () => _showDeleteConfirm(p),
-                        ),
-                      ),
-                    );
-                  },
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+              decoration: InputDecoration(
+                hintText: 'Tìm theo tên hoặc địa chỉ...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty 
+                  ? IconButton(
+                      icon: const Icon(Icons.clear), 
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = "");
+                      }
+                    )
+                  : null,
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredPoints.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _searchQuery.isEmpty ? Icons.location_off_outlined : Icons.search_off, 
+                              size: 80, 
+                              color: Colors.grey[300]
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isEmpty ? 'Chưa có điểm nguy hiểm nào' : 'Không tìm thấy kết quả phù hợp', 
+                              style: TextStyle(color: Colors.grey[500], fontSize: 16)
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredPoints.length,
+                        itemBuilder: (context, index) {
+                          final p = _filteredPoints[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              leading: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _getRiskColor(p.depth),
+                                  boxShadow: [
+                                    BoxShadow(color: _getRiskColor(p.depth).withOpacity(0.5), blurRadius: 4, spreadRadius: 2),
+                                  ],
+                                ),
+                              ),
+                              title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text('${p.address}\nĐộ sâu: ${p.depth}m', style: const TextStyle(fontSize: 12)),
+                              isThreeLine: true,
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                onPressed: () => _showDeleteConfirm(p),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddDialog,
         label: const Text('Tạo điểm mới'),

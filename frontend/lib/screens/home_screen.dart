@@ -547,7 +547,11 @@ class _MapTabState extends State<MapTab> {
                 const SizedBox(height: 6),
                 _legendItem(Icons.favorite, Colors.green, 'Vùng an toàn', size: 14),
                 const Divider(height: 16),
-                _legendItem(Icons.circle, Colors.redAccent, 'Điểm ngập lụt (Cảnh báo)', size: 14, isPulse: true),
+                _legendItem(Icons.circle, Colors.red, 'Ngập sâu (> 2.0m)', size: 14, isPulse: true),
+                const SizedBox(height: 6),
+                _legendItem(Icons.circle, Colors.orange, 'Ngập vừa (0.5m - 2.0m)', size: 14, isPulse: true),
+                const SizedBox(height: 6),
+                _legendItem(Icons.circle, Colors.green, 'Ngập thấp (< 0.5m)', size: 14, isPulse: true),
               ],
             ),
           ),
@@ -630,15 +634,15 @@ class _MapTabState extends State<MapTab> {
                 )),
                 // Intelligent Markers for Danger Points (Clustered & Scaled)
                 ..._getClusteredDangerPoints().map((dp) {
-                  final double baseSize = _getMarkerSize(dp.depth) * 2.5; 
+                  final double baseSize = _getMarkerSize(dp.depth) * 1.25; 
                   // Scale factor: grows slightly as we zoom in, shrinks as we zoom out
                   final double scaleFactor = math.pow(1.5, _currentZoom - 12.0).toDouble();
                   final double scaledSize = baseSize * scaleFactor;
                   
                   return Marker(
                     point: LatLng(dp.latitude, dp.longitude),
-                    width: scaledSize + 60, 
-                    height: scaledSize + 60,
+                    width: scaledSize + 30, 
+                    height: scaledSize + 30,
                     alignment: Alignment.center,
                     child: PulseMarker(
                       color: _getRiskColor(dp.depth),
@@ -759,7 +763,7 @@ class _PulseMarkerState extends State<PulseMarker> with SingleTickerProviderStat
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000), // Slower pulsing per user request
+      duration: const Duration(milliseconds: 1000), // 1 s nhịp thở theo yêu cầu
     )..repeat(reverse: true);
     
     _animation = Tween<double>(begin: 0.5, end: 1.1).animate(
@@ -784,15 +788,20 @@ class _PulseMarkerState extends State<PulseMarker> with SingleTickerProviderStat
             children: [
               // Glowing effect (Softer pulsing)
               Container(
-                width: (widget.size + 30) * _animation.value,
-                height: (widget.size + 30) * _animation.value,
+                width: (widget.size + 15) * _animation.value,
+                height: (widget.size + 15) * _animation.value,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withOpacity(0.35 * (1.3 - _animation.value)),
-                      blurRadius: 25 * _animation.value,
-                      spreadRadius: 12 * _animation.value,
+                      color: widget.color.withOpacity(0.5 * (1.1 - _animation.value)),
+                      blurRadius: 20 * _animation.value,
+                      spreadRadius: 8 * _animation.value,
+                    ),
+                    BoxShadow(
+                      color: widget.color.withOpacity(0.25 * (1.1 - _animation.value)),
+                      blurRadius: 35 * _animation.value,
+                      spreadRadius: 15 * _animation.value,
                     ),
                   ],
                 ),
