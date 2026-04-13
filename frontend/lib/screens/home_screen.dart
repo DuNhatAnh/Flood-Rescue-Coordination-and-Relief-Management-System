@@ -826,6 +826,26 @@ class EmergencyHotline extends StatelessWidget {
     }
   }
 
+  Future<String> _getEmail() async {
+    try {
+      final configs = await AdminService().getSystemConfigs();
+      final config = configs.firstWhere((c) => c['key'] == 'SUPPORT_EMAIL', orElse: () => null);
+      return config != null ? config['value'] : 'support@rescue.vn';
+    } catch (e) {
+      return 'support@rescue.vn';
+    }
+  }
+
+  Future<void> _sendEmail(String email) async {
+    final Uri launchUri = Uri(
+      scheme: 'mailto',
+      path: email,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -866,6 +886,21 @@ class EmergencyHotline extends StatelessWidget {
                   }
                 ),
                 const Divider(height: 24),
+                FutureBuilder<String>(
+                  future: _getEmail(),
+                  builder: (context, snapshot) {
+                    final email = snapshot.data ?? 'support@rescue.vn';
+                    return _hotlineItem(
+                      email, 
+                      'Email hỗ trợ trực tuyến', 
+                      const Color(0xFF2E7D32), 
+                      () => _sendEmail(email),
+                      icon: Icons.email_outlined,
+                      actionText: 'GỬI NGAY',
+                    );
+                  }
+                ),
+                const Divider(height: 24),
                 _hotlineItem(
                   '112', 
                   'Tìm kiếm & Cứu nạn Quốc gia', 
@@ -894,7 +929,7 @@ class EmergencyHotline extends StatelessWidget {
     );
   }
 
-  Widget _hotlineItem(String number, String label, Color color, VoidCallback onTap) {
+  Widget _hotlineItem(String number, String label, Color color, VoidCallback onTap, {IconData icon = Icons.phone_in_talk, String actionText = 'GỌI NGAY'}) {
     return InkWell(
       onTap: onTap,
       child: Row(
@@ -905,7 +940,7 @@ class EmergencyHotline extends StatelessWidget {
               color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.phone_in_talk, color: color, size: 20),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -915,10 +950,10 @@ class EmergencyHotline extends StatelessWidget {
                 Text(
                   number,
                   style: TextStyle(
-                    fontSize: 20, 
+                    fontSize: label.contains('Email') ? 16 : 20, 
                     fontWeight: FontWeight.bold, 
                     color: color,
-                    letterSpacing: 1.0,
+                    letterSpacing: label.contains('Email') ? 0.5 : 1.0,
                   ),
                 ),
                 Text(
@@ -929,7 +964,7 @@ class EmergencyHotline extends StatelessWidget {
             ),
           ),
           Text(
-            'GỌI NGAY',
+            actionText,
             style: TextStyle(
               fontSize: 11, 
               fontWeight: FontWeight.bold, 

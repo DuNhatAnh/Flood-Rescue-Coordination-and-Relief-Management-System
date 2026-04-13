@@ -15,7 +15,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin/system")
-@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Quan trọng để Flutter gọi không bị chặn CORS
 public class AdminSystemController {
@@ -24,6 +23,7 @@ public class AdminSystemController {
 
     // --- SCRUM-54: LẤY NHẬT KÝ ---
     @GetMapping("/logs")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<SystemLog>>> getLogs() {
         List<SystemLog> logs = systemManagementService.getAllLogs();
         return ResponseEntity.ok(ApiResponse.success(logs, "System logs retrieved successfully"));
@@ -32,6 +32,7 @@ public class AdminSystemController {
     // --- SCRUM-55: DASHBOARD THỐNG KÊ TỔNG HỢP ---
     // Endpoint này sẽ gọi Service để tính toán số xe, hàng hóa sắp hết theo kho
     @GetMapping("/dashboard/{warehouseId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DashboardStatsResponse>> getDashboardStats(
             @PathVariable String warehouseId) {
         DashboardStatsResponse stats = systemManagementService.getDashboardStats(warehouseId);
@@ -45,6 +46,7 @@ public class AdminSystemController {
     }
 
     @PutMapping("/config")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<SystemConfig>> updateConfig(
             @RequestParam String key,
             @RequestParam String value,

@@ -27,9 +27,43 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Trong thực tế, bạn sẽ load các giá trị này từ API fetchSystemConfig
-    // Hiện tại AdminService chỉ có hàm updateSystemConfig, vì Backend lưu động
-    // có thể fetch từ danh sách hoặc hardcode mặc định.
+cấp    _fetchConfigs();
+  }
+
+  Future<void> _fetchConfigs() async {
+    setState(() => _isLoading = true);
+    try {
+      final configs = await _adminService.getSystemConfigs();
+      for (var config in configs) {
+        final String key = config['key'];
+        final String value = config['value'];
+        
+        switch (key) {
+          case 'HOTLINE_NUMBER':
+            hotspotNumberController.text = value;
+            break;
+          case 'SUPPORT_EMAIL':
+            hotspotEmailController.text = value;
+            break;
+          case 'MAP_CENTER_LAT':
+            mapLatController.text = value;
+            break;
+          case 'MAP_CENTER_LNG':
+            mapLngController.text = value;
+            break;
+          case 'MAP_DEFAULT_ZOOM':
+            mapZoomController.text = value;
+            break;
+          case 'MAINTENANCE_MODE':
+            _isMaintenanceMode = value == 'true';
+            break;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching system configs: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _updateConfig(String key, String value) async {
