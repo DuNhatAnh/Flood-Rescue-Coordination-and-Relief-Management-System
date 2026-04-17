@@ -68,4 +68,10 @@ public class RescueRequestController {
                 
         return ResponseEntity.ok(ApiResponse.success(data, "Rescue request status updated successfully"));
     }
+
+    @PostMapping("/{id}/confirm-safety")
+    public ResponseEntity<ApiResponse<RescueRequest>> confirmSafety(@PathVariable("id") String id) {
+        RescueRequest request = rescueRequestService.confirmSafety(id);
+        return ResponseEntity.ok(ApiResponse.success(request, "Safety confirmed by citizen"));
+    }
 }

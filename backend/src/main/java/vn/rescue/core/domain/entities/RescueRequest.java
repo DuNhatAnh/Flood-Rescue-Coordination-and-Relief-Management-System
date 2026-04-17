@@ -62,4 +62,10 @@ public class RescueRequest {
 
     @Field("team_id")
     private String teamId;
+
+    @Field("citizen_verified")
+    private boolean citizenVerified = false;
+
+    @Field("citizen_verified_at")
+    private LocalDateTime citizenVerifiedAt;
 }

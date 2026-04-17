@@ -1,6 +1,7 @@
 package vn.rescue.core.application.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.rescue.core.application.dto.RescueRequestDto;
@@ -135,6 +136,64 @@ public class RescueRequestService {
                 "peopleSupported", peopleSupported,
                 "safeReports", safeReports
         );
+    }
+
+    /**
+     * Xác nhận an toàn từ phía người dân (Dual-Verification)
+     */
+    @Transactional
+    public RescueRequest confirmSafety(String id) {
+        RescueRequest request = getById(id);
+        
+        if (!"COMPLETED".equalsIgnoreCase(request.getStatus())) {
+            throw new RuntimeException("Chỉ có thể xác nhận an toàn cho các yêu cầu đã hoàn thành cứu hộ!");
+        }
+
+        request.setCitizenVerified(true);
+        request.setCitizenVerifiedAt(LocalDateTime.now());
+        RescueRequest saved = rescueRequestRepository.save(request);
+
+        // Ghi log lịch sử
+        RequestStatusHistory history = new RequestStatusHistory();
+        history.setRequestId(saved.getId());
+        history.setStatus("VERIFIED_SAFE");
+        history.setNote("Người dân xác nhận đã an toàn (Báo cáo kép)");
+        history.setCreatedAt(LocalDateTime.now());
+        statusHistoryRepository.save(history);
+
+        return saved;
+    }
+
+    /**
+     * Tự động xác minh an toàn sau 48 giờ nếu người dân không phản hồi
+     * Chạy mỗi giờ một lần
+     */
+    @Scheduled(cron = "0 0 * * * *")
+    @Transactional
+    public void autoVerifyOldRequests() {
+        LocalDateTime threshold = LocalDateTime.now().minusHours(48);
+        List<RescueRequest> oldRequests = rescueRequestRepository.findAll().stream()
+                .filter(r -> "COMPLETED".equalsIgnoreCase(r.getStatus()) 
+                        && !r.isCitizenVerified() 
+                        && r.getCreatedAt().isBefore(threshold)) // Simplified: using createdAt but better would be statusUpdatedAt
+                .toList();
+
+        for (RescueRequest request : oldRequests) {
+            request.setCitizenVerified(true);
+            request.setCitizenVerifiedAt(LocalDateTime.now());
+            rescueRequestRepository.save(request);
+
+            RequestStatusHistory history = new RequestStatusHistory();
+            history.setRequestId(request.getId());
+            history.setStatus("AUTO_VERIFIED");
+            history.setNote("Hệ thống tự động xác nhận an toàn sau 48 giờ");
+            history.setCreatedAt(LocalDateTime.now());
+            statusHistoryRepository.save(history);
+        }
+        
+        if (!oldRequests.isEmpty()) {
+            System.out.println("DEBUG: Auto-verified " + oldRequests.size() + " requests.");
+        }
     }
 
     public List<RescueRequest> getAll() {

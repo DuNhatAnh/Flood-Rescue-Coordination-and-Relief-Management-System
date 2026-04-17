@@ -328,6 +328,17 @@ class RescueService {
     }
   }
 
+  // Xác nhận an toàn từ phía người dân (Dual-Verification)
+  Future<bool> confirmSafety(String requestId) async {
+    try {
+      final response = await _dio.post('/rescue-requests/$requestId/confirm-safety');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error confirming safety: $e');
+      return false;
+    }
+  }
+
   // Lấy danh sách báo cáo an toàn
   Future<List<SafetyReport>> getSafetyReports() async {
     try {

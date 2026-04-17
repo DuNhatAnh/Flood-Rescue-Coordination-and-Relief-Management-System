@@ -50,6 +50,40 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
     }
   }
 
+  Future<void> _confirmSafety() async {
+    final requestId = _requestData!['id'];
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final success = await _rescueService.confirmSafety(requestId);
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Xác nhận an toàn thành công! Cảm ơn bạn."),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        _trackRequest(); // Refresh data
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Lỗi khi xác nhận an toàn. Vui lòng thử lại."),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -204,6 +238,49 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
           const Text("Tiến trình", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 16),
           _buildTimeline(status),
+          if (status == 'COMPLETED' && (_requestData!['citizenVerified'] != true))
+            Padding(
+              padding: const EdgeInsets.only(top: 32),
+              child: SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _confirmSafety,
+                  icon: const Icon(Icons.check_circle),
+                  label: const Text("XÁC NHẬN TÔI ĐÃ AN TOÀN", 
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ),
+          if (_requestData!['citizenVerified'] == true)
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.verified, color: Colors.green[700]),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        "Bạn đã xác nhận an toàn. Nhiệm vụ kết thúc thành công.",
+                        style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -281,7 +358,11 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
       {'id': 'COMPLETED', 'label': 'Đã hoàn thành'},
     ];
 
-    int currentIndex = stages.indexWhere((s) => s['id'] == currentStatus);
+    if (_requestData!['citizenVerified'] == true) {
+      stages.add({'id': 'VERIFIED', 'label': 'Dân báo an toàn'});
+    }
+
+    int currentIndex = stages.indexWhere((s) => s['id'] == (currentStatus == 'COMPLETED' && _requestData!['citizenVerified'] == true ? 'VERIFIED' : currentStatus));
     if (currentIndex == -1) currentIndex = 0;
 
     return Column(
