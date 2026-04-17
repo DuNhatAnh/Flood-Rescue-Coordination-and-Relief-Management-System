@@ -16,9 +16,9 @@ public class TaskAssignmentResponse {
     // From RescueTeam
     private String teamName;
 
-    // From Vehicles (Gộp nhiều xe)
     private String vehicleType;
     private String licensePlate;
+    private java.util.List<VehicleSummary> vehicles;
 
     // From RescueRequest
     private String citizenName;

@@ -274,10 +274,10 @@ class RescueService {
   }
 
   // Cập nhật phương tiện nhiệm vụ (Linh hoạt đổi xe tại kho)
-  Future<bool> updateAssignmentVehicle(String id, String newVehicleId, String reason) async {
+  Future<bool> updateAssignmentVehicle(String id, List<String> vehicleIds, String reason) async {
     try {
       final response = await _dio.put('/assignments/$id/vehicle', data: {
-        'newVehicleId': newVehicleId,
+        'newVehicleIds': vehicleIds,
         'reason': reason
       });
       return response.statusCode == 200;

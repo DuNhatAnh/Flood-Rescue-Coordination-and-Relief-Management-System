@@ -47,9 +47,10 @@ public class AssignmentController {
     }
 
     @PutMapping("/{id}/vehicle")
-    public void updateVehicle(@PathVariable("id") String id, @RequestBody Map<String, String> body) {
-        String newVehicleId = body.get("newVehicleId");
-        String reason = body.get("reason");
-        rescueCoordinationService.updateAssignmentVehicle(id, newVehicleId, reason);
+    @SuppressWarnings("unchecked")
+    public void updateVehicle(@PathVariable("id") String id, @RequestBody Map<String, Object> body) {
+        java.util.List<String> newVehicleIds = (java.util.List<String>) body.get("newVehicleIds");
+        String reason = (String) body.get("reason");
+        rescueCoordinationService.updateAssignmentVehicles(id, newVehicleIds, reason);
     }
 }

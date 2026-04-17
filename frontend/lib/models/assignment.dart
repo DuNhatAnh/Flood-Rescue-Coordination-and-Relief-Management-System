@@ -1,4 +1,33 @@
 
+
+class VehicleSummary {
+  final String id;
+  final String vehicleType;
+  final String licensePlate;
+
+  VehicleSummary({
+    required this.id,
+    required this.vehicleType,
+    required this.licensePlate,
+  });
+
+  factory VehicleSummary.fromJson(Map<String, dynamic> json) {
+    return VehicleSummary(
+      id: json['id'] ?? '',
+      vehicleType: json['vehicleType'] ?? '',
+      licensePlate: json['licensePlate'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'vehicleType': vehicleType,
+      'licensePlate': licensePlate,
+    };
+  }
+}
+
 class Assignment {
   final String id;
   final String requestId;
@@ -26,6 +55,7 @@ class Assignment {
   final String? reportNote;
   final List<String>? imageUrls;
   final List<MissionItem> actualDistributedItems;
+  final List<VehicleSummary> vehicles;
 
   Assignment({
     required this.id,
@@ -52,6 +82,7 @@ class Assignment {
     this.reportNote,
     this.imageUrls,
     this.actualDistributedItems = const [],
+    this.vehicles = const [],
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
@@ -91,6 +122,9 @@ class Assignment {
       imageUrls: json['imageUrls'] != null ? List<String>.from(json['imageUrls']) : null,
       actualDistributedItems: json['actualDistributedItems'] != null 
           ? (json['actualDistributedItems'] as List).map((i) => MissionItem.fromJson(i)).toList() 
+          : [],
+      vehicles: json['vehicles'] != null 
+          ? (json['vehicles'] as List).map((v) => VehicleSummary.fromJson(v)).toList() 
           : [],
     );
   }

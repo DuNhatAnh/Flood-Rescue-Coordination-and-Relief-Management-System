@@ -57,7 +57,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
   bool _isSubmitting = false;
   Warehouse? _selectedWarehouse;
   Warehouse? _myManagedWarehouse; // KHO CỐ ĐỊNH CỦA ĐỘI (VD: Xuân Hòa)
-  Vehicle? _selectedVehicle;
+  List<Vehicle> _selectedVehicles = [];
   final TextEditingController _changeReasonController = TextEditingController();
   
   List<Map<String, dynamic>> _selectedItems = [];
@@ -121,24 +121,14 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
         }
       });
       
-      // AUTO-FILL VEHICLE FROM MISSION (Fix: Nới lỏng logic so khớp biển số)
-      if (widget.mission != null && widget.mission!.licensePlate != null) {
+      // AUTO-FILL VEHICLE ONLY FOR QUICK MODE
+      if (widget.mode == 'QUICK' && widget.mission != null && widget.mission!.vehicles.isNotEmpty) {
         _loadVehicles(_selectedWarehouse?.id ?? '').then((_) {
           if (mounted && _availableVehicles.isNotEmpty) {
             setState(() {
-              try {
-                // Chuẩn hóa biển số: chữ thường và bỏ ký tự đặc biệt
-                final normMissionPlate = widget.mission!.licensePlate!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-                _selectedVehicle = _availableVehicles.firstWhere(
-                  (v) {
-                    if (v.id != null && (widget.mission!.vehicleIds?.contains(v.id) ?? false)) return true;
-                    if (v.licensePlate == null) return false;
-                    String normVPlate = v.licensePlate!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-                    return normMissionPlate.contains(normVPlate) || normVPlate.contains(normMissionPlate);
-                  }
-                );
-              } catch (_) {
-              }
+              _selectedVehicles = _availableVehicles.where((v) => 
+                widget.mission!.vehicles.any((mv) => mv.id == v.id)
+              ).toList();
             });
           }
         });
@@ -169,42 +159,29 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
   }
 
   Future<void> _loadVehicles(String warehouseId) async {
-    final vehiclesRaw = await _vehicleService.getAvailableVehicles();
-    List<Vehicle> vehicles = vehiclesRaw.map((v) => Vehicle.fromJson(v)).toList();
-
-    // HỢP NHẤT: Bổ sung xe của nhiệm vụ vào danh sách nếu nó đang bị lọc mất do trạng thái BUSY
-    if (widget.mission != null && widget.mission!.vehicleIds != null) {
-      for (String vId in widget.mission!.vehicleIds!) {
-        bool exists = vehicles.any((v) => v.id == vId);
-        if (!exists) {
-          // Thử lấy thông tin xe cụ thể (giả lập hoặc từ licensePlate đã có)
-          vehicles.add(Vehicle(
-            id: vId, 
-            vehicleType: widget.mission!.vehicleType ?? 'Phương tiện cứu hộ', 
-            licensePlate: widget.mission!.licensePlate ?? 'ĐANG DÙNG', 
-            status: 'IN_USE'
-          ));
-        }
-      }
+    // Lấy tất cả xe của kho này (bao gồm cả xe bận để có thể chọn lại)
+    final response = await _vehicleService.getAllVehicles(warehouseId: warehouseId, size: 100);
+    List<dynamic> content = [];
+    
+    if (response['content'] != null) {
+      content = response['content'];
+    } else if (response['data'] != null && response['data'] is List) {
+      content = response['data'];
+    } else if (response['data'] != null && response['data'] is Map && response['data']['content'] != null) {
+      content = response['data']['content'];
     }
+    
+    List<Vehicle> vehicles = content.map((v) => Vehicle.fromJson(v)).toList();
 
     if (mounted) {
       setState(() {
         _availableVehicles = vehicles;
         
-        // Tự động chọn nếu khớp với nhiệm vụ mà chưa được chọn
-        if (_selectedVehicle == null && widget.mission != null && widget.mission!.licensePlate != null) {
-          try {
-            final normMissionPlate = widget.mission!.licensePlate!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-            _selectedVehicle = vehicles.firstWhere(
-              (v) {
-                if (v.id != null && (widget.mission!.vehicleIds?.contains(v.id) ?? false)) return true;
-                if (v.licensePlate == null) return false;
-                String normVPlate = v.licensePlate!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-                return normMissionPlate.contains(normVPlate) || normVPlate.contains(normMissionPlate);
-              }
-            );
-          } catch (_) {}
+        // Cập nhật lại danh sách đã chọn nếu cần (Chỉ tự động chọn cho QUICK mode)
+        if (widget.mode == 'QUICK' && _selectedVehicles.isEmpty && widget.mission != null && widget.mission!.vehicles.isNotEmpty) {
+          _selectedVehicles = vehicles.where((v) => 
+            widget.mission!.vehicles.any((mv) => mv.id == v.id)
+          ).toList();
         }
       });
     }
@@ -227,6 +204,8 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
         
         // AUTO-FILL FOR QUICK MODE (Fix Hình 1: Không hiện danh sách)
         if (widget.mode == 'QUICK' && widget.mission != null) {
+          _selectedItems = []; // Đảm bảo reset trước khi fill
+          
           // HỢP NHẤT: missionItems + assignedItems
           final reqItems = {
             ...{for (var i in widget.mission!.assignedItems) i.itemId: i},
@@ -234,7 +213,11 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
           }.values;
 
           for (var item in reqItems) {
-            final stock = inv.firstWhere((s) => s.itemId == item.itemId, orElse: () => Inventory(warehouseId: _selectedWarehouse!.id!, itemId: item.itemId, itemName: item.itemName, quantity: 0, unit: item.unit));
+            final stockIter = inv.where((s) => s.itemId == item.itemId);
+            final stock = stockIter.isNotEmpty 
+                ? stockIter.first 
+                : Inventory(warehouseId: _selectedWarehouse!.id!, itemId: item.itemId, itemName: item.itemName, quantity: 0, unit: item.unit);
+            
             _selectedItems.add({
               'itemId': item.itemId,
               'itemName': item.itemName,
@@ -380,9 +363,12 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
             const SizedBox(height: 12),
             const Text('Danh sách vật phẩm:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ..._selectedItems.map((item) => Text('• ${item['quantity']} ${item['itemName']}', style: const TextStyle(fontSize: 13))).toList(),
-            if (_selectedVehicle != null || (widget.mission?.licensePlate != null)) ...[
+            if (_selectedVehicles.isNotEmpty || (widget.mission?.licensePlate != null)) ...[
               const SizedBox(height: 8),
-              Text('Phương tiện: ${_selectedVehicle?.licensePlate ?? widget.mission!.licensePlate}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
+              Text(
+                'Phương tiện: ${_selectedVehicles.isNotEmpty ? _selectedVehicles.map((v) => v.licensePlate).join(', ') : widget.mission!.licensePlate}', 
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)
+              ),
             ],
           ],
         ),
@@ -401,15 +387,17 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
 
     setState(() => _isLoading = true);
     
-    // Nếu có đổi xe (kiểm tra xem xe đã chọn có nằm trong danh sách xe được gán không)
-    bool isDifferentVehicle = _selectedVehicle != null && 
-        !(widget.mission?.vehicleIds?.contains(_selectedVehicle!.id) ?? false);
+    // Kiểm tra xem danh sách xe có thay đổi không
+    final currentIds = _selectedVehicles.map((v) => v.id).toSet();
+    final missionIds = widget.mission?.vehicleIds?.toSet() ?? {};
+    bool isDifferentVehicles = currentIds.length != missionIds.length || 
+                              !currentIds.every((id) => missionIds.contains(id));
         
-    if (widget.mission != null && isDifferentVehicle) {
+    if (widget.mission != null && isDifferentVehicles) {
        await _rescueService.updateAssignmentVehicle(
          widget.mission!.id, 
-         _selectedVehicle!.id!, 
-         _changeReasonController.text.isNotEmpty ? _changeReasonController.text : "Đội cứu hộ chủ động đổi xe tại kho"
+         _selectedVehicles.map((v) => v.id!).toList(), 
+         _changeReasonController.text.isNotEmpty ? _changeReasonController.text : "Đội cứu hộ cập nhật phương tiện tại kho"
        );
     }
 
@@ -534,29 +522,53 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
             _buildSectionTitle('4. PHƯƠNG TIỆN DI CHUYỂN'),
             _buildCard(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   DropdownButtonFormField<Vehicle>(
-                      decoration: const InputDecoration(labelText: 'Chọn xe sử dụng', border: InputBorder.none),
-                      hint: const Text('Giữ nguyên xe điều phối gán'),
-                      value: _selectedVehicle,
-                      items: _availableVehicles.map((v) => DropdownMenuItem(
-                        value: v,
-                        child: Text('${v.vehicleType} - ${v.licensePlate}'),
-                      )).toList(),
-                      onChanged: (val) => setState(() => _selectedVehicle = val),
+                   const SizedBox(height: 12),
+                   Wrap(
+                     spacing: 8,
+                     runSpacing: 8,
+                     children: _availableVehicles.map((v) {
+                       final bool isSelected = _selectedVehicles.any((sv) => sv.id == v.id);
+                       final bool isBusy = v.status?.toUpperCase() == 'BUSY' || v.status?.toUpperCase() == 'IN_USE';
+                       final bool isAssignedToThis = widget.mission?.vehicleIds?.contains(v.id) ?? false;
+                       
+                       return FilterChip(
+                         selected: isSelected,
+                         label: Text('${v.licensePlate} (${v.vehicleType})', style: const TextStyle(fontSize: 12)),
+                         onSelected: (bool selected) {
+                           setState(() {
+                             if (selected) {
+                               _selectedVehicles.add(v);
+                             } else {
+                               _selectedVehicles.removeWhere((sv) => sv.id == v.id);
+                             }
+                           });
+                         },
+                         selectedColor: StaffTheme.primaryBlue.withOpacity(0.2),
+                         checkmarkColor: StaffTheme.primaryBlue,
+                         backgroundColor: (isBusy && !isAssignedToThis) ? Colors.red.shade50 : Colors.grey.shade100,
+                       );
+                     }).toList(),
                    ),
-                   if (_selectedVehicle != null && !(widget.mission?.vehicleIds?.contains(_selectedVehicle?.id) ?? false))
+                   if (_availableVehicles.isEmpty)
+                     const Padding(
+                       padding: EdgeInsets.symmetric(vertical: 8.0),
+                       child: Text('Không tìm thấy phương tiện nào trong kho này.', style: TextStyle(fontSize: 12, color: StaffTheme.errorRed)),
+                     ),
+                   if (_selectedVehicles.isNotEmpty)
                      Padding(
-                       padding: const EdgeInsets.only(top: 8.0),
+                       padding: const EdgeInsets.only(top: 12.0),
                        child: TextField(
                          controller: _changeReasonController,
                          decoration: const InputDecoration(
-                           labelText: 'Lý do đổi xe (bắt buộc)',
-                           hintText: 'VD: Xe cũ hỏng, xe này tải trọng lớn hơn...',
+                           labelText: 'Lý do chọn/đổi xe (không bắt buộc)',
+                           hintText: 'VD: Cần thêm xe để chở hàng...',
                            labelStyle: TextStyle(fontSize: 12),
                          ),
                        ),
                      ),
+                   const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -592,7 +604,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                    ],
                  ),
                ),
-                if (widget.mission != null && widget.mode == 'MANUAL') ...[
+                if (widget.mission != null) ...[
                   const SizedBox(width: 20),
                   Expanded(
                     flex: 2,
@@ -600,7 +612,7 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                          _buildSectionTitle('ĐỐI CHIẾU YÊU CẦU'),
-                         // HỢP NHẤT: missionItems + assignedItems (Fix Hình 2: Không hiện danh sách đối chiếu)
+                         // DANH SÁCH VẬT PHẨM YÊU CẦU
                          ...{
                            ...{for (var i in widget.mission!.assignedItems) i.itemId: i},
                            ...{for (var i in widget.mission!.missionItems) i.itemId: i}
@@ -609,11 +621,16 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
                              final isMatch = selected.isNotEmpty && selected['quantity'] == req.quantity;
                              return _buildComparisonItem('${req.quantity} ${req.itemName}', isMatch);
                          }).toList(),
-                         if (widget.mission?.licensePlate != null) ...[
+                         
+                         // DANH SÁCH PHƯƠNG TIỆN YÊU CẦU (Trải danh sách)
+                         if (widget.mission!.vehicles.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             const Text('PHƯƠNG TIỆN ĐÃ GIAO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: StaffTheme.textLight)),
                             const SizedBox(height: 4),
-                            _buildComparisonItem(widget.mission!.licensePlate!, _selectedVehicle?.licensePlate == widget.mission!.licensePlate || _selectedVehicle == null),
+                            ...widget.mission!.vehicles.map((mv) {
+                               final isAssigned = _selectedVehicles.any((sv) => sv.id == mv.id);
+                               return _buildComparisonItem('${mv.licensePlate} (${mv.vehicleType})', isAssigned);
+                            }).toList(),
                          ],
                       ],
                     ),
@@ -706,47 +723,47 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
         border: Border.all(color: isWarning ? StaffTheme.errorRed : (isSuccess ? StaffTheme.successGreen : StaffTheme.border)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              if (isSuccess) const Icon(Icons.check_circle, color: StaffTheme.successGreen, size: 18),
-              if (isWarning) const Icon(Icons.warning_amber_rounded, color: StaffTheme.errorRed, size: 18),
-              if (isSuccess || isWarning) const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['itemName'], 
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                        Text('Số lượng: ${item['quantity']}', style: StaffTheme.cardSubtitle),
-                        if (item['quantity'] > item['stock'])
-                          Text('Vượt mức tồn kho (${item['stock']})', style: const TextStyle(color: StaffTheme.errorRed, fontSize: 10)),
-                      ],
-                    ),
-                  ),
-            ],
-          ),
-          if (widget.mode != 'QUICK')
-            Row(
+          // 1. Icon cảnh báo/thành công
+          if (isSuccess) const Icon(Icons.check_circle, color: StaffTheme.successGreen, size: 18),
+          if (isWarning) const Icon(Icons.warning_amber_rounded, color: StaffTheme.errorRed, size: 18),
+          if (isSuccess || isWarning) const SizedBox(width: 8),
+          
+          // 2. Nội dung text (Dùng Expanded trực tiếp trong Row chính)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: StaffTheme.primaryBlue, size: 20),
-                  onPressed: () => _editItem(item),
-                  tooltip: 'Chỉnh sửa',
+                Text(
+                  item['itemName'], 
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: StaffTheme.errorRed, size: 20),
-                  onPressed: () => setState(() => _selectedItems.remove(item)),
-                  tooltip: 'Xóa',
-                ),
+                Text('Số lượng: ${item['quantity']}', style: StaffTheme.cardSubtitle),
+                if (isWarning)
+                  Text('Vượt tồn kho (${item['stock']})', style: const TextStyle(color: StaffTheme.errorRed, fontSize: 10)),
               ],
             ),
+          ),
+          
+          // 3. Nút hành động (Xóa/Sửa)
+          if (widget.mode != 'QUICK') ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: StaffTheme.primaryBlue, size: 20),
+              onPressed: () => _editItem(item),
+              constraints: const BoxConstraints(),
+              padding: EdgeInsets.zero,
+            ),
+            const SizedBox(width: 12),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: StaffTheme.errorRed, size: 20),
+              onPressed: () => setState(() => _selectedItems.remove(item)),
+              constraints: const BoxConstraints(),
+              padding: EdgeInsets.zero,
+            ),
+          ],
         ],
       ),
     );

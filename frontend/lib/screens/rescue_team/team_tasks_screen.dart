@@ -255,34 +255,40 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
               const Text('PHƯƠNG TIỆN ĐƯỢC GIAO', 
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: StaffTheme.primaryBlue)),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: StaffTheme.primaryBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.directions_boat_rounded, color: StaffTheme.primaryBlue, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task.licensePlate ?? 'CHƯA GÁN PHƯƠNG TIỆN', 
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: StaffTheme.textDark)
+              if (task.vehicles.isEmpty)
+                const Text('Chưa có danh sách phương tiện cụ thể.', style: TextStyle(fontSize: 12, color: Colors.grey))
+              else
+                ...task.vehicles.map((v) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: StaffTheme.primaryBlue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        Text(
-                          task.vehicleType ?? 'Nhân viên sẽ nhận tại kho', 
-                          style: const TextStyle(fontSize: 12, color: StaffTheme.textLight)
+                        child: const Icon(Icons.directions_boat_rounded, color: StaffTheme.primaryBlue, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              v.licensePlate, 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: StaffTheme.textDark)
+                            ),
+                            Text(
+                              v.vehicleType, 
+                              style: const TextStyle(fontSize: 12, color: StaffTheme.textLight)
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                )).toList(),
             ],
           ),
         ),

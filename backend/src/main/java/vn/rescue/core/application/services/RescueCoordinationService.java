@@ -507,23 +507,31 @@ public class RescueCoordinationService {
             response.setVehicleIds(assignment.getVehicleIds());
             java.util.List<String> types = new java.util.ArrayList<>();
             java.util.List<String> plates = new java.util.ArrayList<>();
+            java.util.List<vn.rescue.core.application.dto.VehicleSummary> vehicleSummaries = new java.util.ArrayList<>();
             
             for (String vId : assignment.getVehicleIds()) {
                 vehiclesRepository.findById(vId).ifPresent(v -> {
                     types.add(v.getVehicleType());
                     plates.add(v.getLicensePlate());
+                    vehicleSummaries.add(new vn.rescue.core.application.dto.VehicleSummary(
+                        v.getId(), 
+                        v.getVehicleType(), 
+                        v.getLicensePlate()
+                    ));
                 });
             }
             
             response.setVehicleType(types.stream().distinct().collect(java.util.stream.Collectors.joining(", ")));
             response.setLicensePlate(String.join(", ", plates));
+            response.setVehicles(vehicleSummaries);
         }
+
 
         return response;
     }
 
     @Transactional
-    public void updateAssignmentVehicle(String assignmentId, String newVehicleId, String reason) {
+    public void updateAssignmentVehicles(String assignmentId, java.util.List<String> newVehicleIds, String reason) {
         Optional<Assignment> assignmentOpt = assignmentRepository.findById(assignmentId);
         if (assignmentOpt.isPresent()) {
             Assignment assignment = assignmentOpt.get();
@@ -539,17 +547,21 @@ public class RescueCoordinationService {
                 }
             }
                 
-            // Gán xe mới
-            vehiclesRepository.findById(newVehicleId).ifPresent(v -> {
-                v.setStatus("BUSY");
-                vehiclesRepository.save(v);
-            });
+            // Gán toàn bộ xe mới
+            if (newVehicleIds != null) {
+                for (String newId : newVehicleIds) {
+                    vehiclesRepository.findById(newId).ifPresent(v -> {
+                        v.setStatus("BUSY");
+                        vehiclesRepository.save(v);
+                    });
+                }
+            }
             
-            assignment.setVehicleIds(java.util.Collections.singletonList(newVehicleId));
+            assignment.setVehicleIds(newVehicleIds != null ? newVehicleIds : new java.util.ArrayList<>());
             assignmentRepository.save(assignment);
             
-            logger.info("Vehicles replaced for assignment {}: new vehicle {} (Reason: {})", 
-                assignmentId, newVehicleId, reason);
+            logger.info("Vehicles replaced for assignment {}: new vehicles {} (Reason: {})", 
+                assignmentId, newVehicleIds, reason);
         }
     }
 }
