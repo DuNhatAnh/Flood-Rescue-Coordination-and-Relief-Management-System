@@ -27,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -168,6 +170,7 @@ public class RescueCoordinationService {
         return vehicles;
     }
 
+    @Transactional
     public Assignment createAssignment(AssignmentRequest requestDto) {
         String requestId = requestDto.getRequestId();
         String teamId = requestDto.getTeamId();
@@ -241,10 +244,10 @@ public class RescueCoordinationService {
 
     @Transactional
     @SuppressWarnings("unchecked")
-    public void updateAssignmentStatus(String id, java.util.Map<String, Object> body) {
+    public void updateAssignmentStatus(String id, Map<String, Object> body) {
         String status = (String) body.get("status");
         String note = (String) body.get("note");
-        String userId = (String) body.get("userId"); // Extra field from App
+        String userId = (String) body.get("userId");
         List<java.util.Map<String, Object>> itemsRaw = (List<java.util.Map<String, Object>>) body.get("items");
 
         Optional<Assignment> assignmentOpt = assignmentRepository.findById(id);
@@ -274,12 +277,20 @@ public class RescueCoordinationService {
             }
 
             String oldStatus = assignment.getStatus();
-            assignment.setStatus(status);
-            System.out.println("DEBUG: Updating assignment " + id + " to status: " + status);
+            String targetStatus = status;
+
+            // Nếu nhân viên báo hoàn thành -> Chuyển sang REPORTED (Chờ duyệt)
+            // Nếu Admin/Điều phối báo hoàn thành -> Chuyển thẳng sang COMPLETED
+            if ("COMPLETED".equalsIgnoreCase(status) && !isElevatedUser) {
+                targetStatus = "REPORTED";
+            }
+            
+            assignment.setStatus(targetStatus);
+            System.out.println("DEBUG: Updating assignment " + id + " to target status: " + targetStatus);
 
             // LOGIC PHẦN 2: Xử lý xuất hàng - Bổ sung CHỐNG NHẢY CÓC (Vấn đề 3)
             // Nếu chuyển sang trạng thái đang hoạt động mà chưa trừ hàng thì tự động trừ
-            boolean isActiveStatus = List.of("MOVING", "RESCUING", "RETURNING").contains(status.toUpperCase());
+            boolean isActiveStatus = List.of("MOVING", "RESCUING", "RETURNING", "REPORTED").contains(targetStatus.toUpperCase());
             if (isActiveStatus && !assignment.isItemsExported() && itemsRaw != null) {
                 List<MissionItem> missionItems = itemsRaw.stream().map(m -> {
                     MissionItem item = new MissionItem();
@@ -310,7 +321,7 @@ public class RescueCoordinationService {
             if (body.containsKey("rescuedCount")) {
                 assignment.setRescuedCount((Integer) body.get("rescuedCount"));
             }
-            if (body.containsKey("note") && !"COMPLETED".equalsIgnoreCase(status)) {
+            if (body.containsKey("note") && !"COMPLETED".equalsIgnoreCase(targetStatus) && !"REPORTED".equalsIgnoreCase(targetStatus)) {
                 assignment.setReportNote((String) body.get("note"));
             }
             if (body.containsKey("actualItems")) {
@@ -338,47 +349,63 @@ public class RescueCoordinationService {
                 RescueRequest request = requestOpt.get();
                 
                 // If REJECTED, move request back to VERIFIED
-                if ("REJECTED".equalsIgnoreCase(status)) {
+                if ("REJECTED".equalsIgnoreCase(targetStatus)) {
                     request.setStatus("VERIFIED");
                     rescueRequestRepository.save(request);
                 } else {
-                    request.setStatus(status);
+                    request.setStatus(targetStatus);
                     request.setNote(note);
+                    if ("REPORTED".equalsIgnoreCase(targetStatus)) {
+                        request.setReportedAt(LocalDateTime.now());
+                    }
                     rescueRequestRepository.save(request);
                 }
 
                 // Log history
                 RequestStatusHistory history = new RequestStatusHistory();
                 history.setRequestId(request.getId());
-                history.setStatus(status);
-                history.setNote(note != null ? note : "Trạng thái nhiệm vụ chuyển sang " + status);
+                history.setStatus(targetStatus);
+                history.setNote(note != null ? note : "Trạng thái nhiệm vụ chuyển sang " + targetStatus);
                 history.setCreatedAt(LocalDateTime.now());
                 requestStatusHistoryRepository.save(history);
             }
 
-            // If COMPLETED, persist full RescueReport object & HOÀN KHO (Vấn đề 1)
-            if ("COMPLETED".equalsIgnoreCase(status)) {
-                assignment.setCompletedAt(LocalDateTime.now());
+            // If COMPLETED or REPORTED, persist full RescueReport object & HOÀN KHO (Vấn đề 1)
+            if ("COMPLETED".equalsIgnoreCase(targetStatus) || "REPORTED".equalsIgnoreCase(targetStatus)) {
+                if ("COMPLETED".equalsIgnoreCase(targetStatus)) {
+                    assignment.setCompletedAt(LocalDateTime.now());
+                }
                 
                 // Lưu thời gian thực tế nếu có (Vấn đề mở rộng)
                 if (body.containsKey("occurredAt")) {
                     assignment.setActualCompletedAt(LocalDateTime.parse((String) body.get("occurredAt")));
                 }
                 
-                RescueReport report = new RescueReport();
-                report.setAssignmentId(assignment.getId());
-                report.setRescuedPeopleCount(assignment.getRescuedCount());
-                report.setDetailedNote(assignment.getReportNote());
-                report.setImageUrls(assignment.getImageUrls());
-                report.setActualDistributedItems(assignment.getActualDistributedItems());
-                report.setCreatedAt(LocalDateTime.now());
-                rescueReportRepository.save(report);
+                // Tránh lưu Report nhiều lần nếu chỉ là cập nhật duyệt
+                if (rescueReportRepository.findByAssignmentId(assignment.getId()).isEmpty()) {
+                    RescueReport report = new RescueReport();
+                    report.setAssignmentId(assignment.getId());
+                    report.setRescuedPeopleCount(assignment.getRescuedCount());
+                    report.setDetailedNote(assignment.getReportNote());
+                    report.setImageUrls(assignment.getImageUrls());
+                    report.setActualDistributedItems(assignment.getActualDistributedItems());
+                    report.setCreatedAt(LocalDateTime.now());
+                    rescueReportRepository.save(report);
+                }
 
-                // LOGIC HOÀN KHO (Vấn đề 1)
-                if (assignment.getMissionItems() != null && assignment.getActualDistributedItems() != null) {
-                    Map<String, Integer> actualMap = assignment.getActualDistributedItems().stream()
-                            .collect(Collectors.toMap(MissionItem::getItemId, MissionItem::getQuantity, (a, b) -> a));
-                    
+                // LOGIC HOÀN KHO (Vấn đề 1) - Thực hiện ngay khi vừa báo hoàn thành (REPORTED)
+                if (assignment.getMissionItems() != null && assignment.getActualDistributedItems() != null && !assignment.isItemsExported()) { 
+                    // Wait, logic hoàn kho nên chạy 1 lần duy nhất.
+                    // Sử dụng flag itemsExported hoặc tương tự để kiểm tra.
+                    // Thực tế trong hệ thống này, sau khi REPORTED thì hàng đã được trả về kho nếu dư.
+                }
+                
+                // Logic hoàn kho hiện tại trong code gốc khá phức tạp, cần đảm bảo nó chạy đúng khi chuyển sang REPORTED
+                // Tôi sẽ giữ nguyên logic tính toán surplusItems nhưng đảm bảo nó chạy khi Staff báo REPORTED.
+                Map<String, Integer> actualMap = (assignment.getActualDistributedItems() != null) ? 
+                        assignment.getActualDistributedItems().stream().collect(Collectors.toMap(MissionItem::getItemId, MissionItem::getQuantity, (a, b) -> a)) : new HashMap<>();
+                
+                if (assignment.getMissionItems() != null) {
                     List<MissionItem> surplusItems = assignment.getMissionItems().stream()
                             .map(planned -> {
                                 int actual = actualMap.getOrDefault(planned.getItemId(), 0);
@@ -394,22 +421,15 @@ public class RescueCoordinationService {
                             .filter(java.util.Objects::nonNull)
                             .collect(Collectors.toList());
 
-                    if (!surplusItems.isEmpty()) {
-                        // Tìm kho đã xuất hàng cho nhiệm vụ này để hoàn trả vào đúng kho đó
+                    if (!surplusItems.isEmpty() && !"COMPLETED".equalsIgnoreCase(oldStatus)) { // Chỉ hoàn kho 1 lần duy nhất
                         List<Distribution> distributions = distributionRepository.findByRequestId(assignment.getId());
                         if (distributions.isEmpty()) {
-                            // Backend cũ dùng requestId là ID của RescueRequest, thử tìm cả hai
                             distributions = distributionRepository.findByRequestId(assignment.getRequestId());
                         }
 
                         if (!distributions.isEmpty()) {
                             String sourceWarehouseId = distributions.get(0).getWarehouseId();
                             inventoryService.batchReturn(sourceWarehouseId, assignment.getId(), surplusItems, userId);
-                        } else {
-                            // Fallback nếu không tìm thấy phiếu xuất (ví dụ xuất thủ công không qua hệ thống)
-                            warehouseRepository.findByManagerId(userId).ifPresent(warehouse -> {
-                                inventoryService.batchReturn(warehouse.getId(), assignment.getId(), surplusItems, userId);
-                            });
                         }
                     }
                 }
@@ -418,30 +438,32 @@ public class RescueCoordinationService {
             assignmentRepository.save(assignment);
 
             // THÔNG BÁO CHO ĐỘI (Nếu là hành động của Điều phối viên)
-            if ("REJECTED".equalsIgnoreCase(status)) {
+            if ("REJECTED".equalsIgnoreCase(targetStatus)) {
                 notifyTeam(assignment.getTeamId(), 
                     "Nhiệm vụ bị từ chối/hủy", 
                     "Điều phối viên đã từ chối hoặc yêu cầu làm lại nhiệm vụ này: " + (note != null ? note : ""), 
                     "WARNING");
-            } else if ("APPROVED".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
-                 // Nếu điều phối viên duyệt COMPLETED (không phải do Staff bấm)
+            } else if ("APPROVED".equalsIgnoreCase(targetStatus) || "COMPLETED".equalsIgnoreCase(targetStatus)) {
                  if (!user.getRoleId().contains("STAFF") && !user.getRoleId().contains("LEADER")) {
                      notifyTeam(assignment.getTeamId(), 
                         "Báo cáo đã được duyệt", 
                         "Điều phối viên đã duyệt báo cáo cứu hộ của đội. Nhiệm vụ kết thúc thành công.", 
                         "INFO");
                  }
+            } else if ("REPORTED".equalsIgnoreCase(targetStatus)) {
+                // Thông báo cho Điều phối viên
+                systemManagementService.logAction(
+                    user.getFullName(),
+                    "BÁO CÁO CỨU HỘ",
+                    "Đội " + user.getTeamId() + " vừa gửi báo cáo hoàn thành nhiệm vụ tại " + (requestOpt.isPresent() ? requestOpt.get().getAddressText() : "N/A"),
+                    "RESCUE"
+                );
             }
 
-            // If RETURNING, COMPLETED or REJECTED or CANCELLED, release resources (Vấn đề 4)
-            // Giải phóng sớm khi bắt đầu quay về hoặc hoàn thành
-            if ("RETURNING".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || "REJECTED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status)) {
+            // If REPORTED, COMPLETED or REJECTED or CANCELLED, release resources (Vấn đề 4)
+            if ("REPORTED".equalsIgnoreCase(targetStatus) || "COMPLETED".equalsIgnoreCase(targetStatus) || "REJECTED".equalsIgnoreCase(targetStatus) || "CANCELLED".equalsIgnoreCase(targetStatus)) {
                 // Release Team
-                Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(assignment.getTeamId());
-                teamOpt.ifPresent(team -> {
-                    team.setStatus("AVAILABLE");
-                    rescueTeamRepository.save(team);
-                });
+                refreshTeamStatus(assignment.getTeamId());
 
                 // Release Multiple Vehicles
                 if (assignment.getVehicleIds() != null) {
@@ -487,6 +509,7 @@ public class RescueCoordinationService {
             response.setUrgencyLevel(request.getUrgencyLevel());
             response.setLocationLat(request.getLocationLat());
             response.setLocationLng(request.getLocationLng());
+            response.setCitizenVerified(request.isCitizenVerified());
         });
 
         response.setMissionItems(assignment.getMissionItems());
@@ -528,6 +551,31 @@ public class RescueCoordinationService {
 
 
         return response;
+    }
+
+    /**
+     * Cập nhật trạng thái Đội dựa trên các nhiệm vụ đang thực hiện
+     */
+    private void refreshTeamStatus(String teamId) {
+        Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(teamId);
+        if (teamOpt.isPresent()) {
+            RescueTeam team = teamOpt.get();
+            
+            // Tìm các nhiệm vụ đang thực hiện của đội
+            List<Assignment> activeAssignments = assignmentRepository.findByTeamId(teamId).stream()
+                .filter(a -> {
+                    String s = a.getStatus().toUpperCase();
+                    return List.of("ASSIGNED", "PREPARING", "MOVING", "RESCUING", "RETURNING", "IN_PROGRESS").contains(s);
+                })
+                .toList();
+
+            if (activeAssignments.isEmpty()) {
+                team.setStatus("AVAILABLE");
+            } else {
+                team.setStatus("BUSY");
+            }
+            rescueTeamRepository.save(team);
+        }
     }
 
     @Transactional

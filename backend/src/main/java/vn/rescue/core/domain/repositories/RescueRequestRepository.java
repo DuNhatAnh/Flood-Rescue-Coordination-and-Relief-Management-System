@@ -16,6 +16,7 @@ public interface RescueRequestRepository extends MongoRepository<RescueRequest, 
     long countByStatus(String status);
     Optional<RescueRequest> findFirstByCustomId(String customId);
     long countByCustomIdIsNotNull();
+    List<RescueRequest> findByCitizenPhone(String citizenPhone);
 
     boolean existsByTeamIdAndStatusIn(String teamId, Collection<String> statuses);
 

@@ -20,7 +20,7 @@ public interface VehiclesRepository extends MongoRepository<Vehicles, String> {
     long countByStatusIgnoreCase(String status);
     long countByWarehouseIdAndStatusIgnoreCase(String warehouseId, String status);
 
-    Optional<Vehicles> findByTeamId(String teamId);
+    List<Vehicles> findByTeamId(String teamId);
     List<Vehicles> findByTeamIdAndStatus(String teamId, String status);
 
     // Hàm tìm kiếm chính xác để dùng trong Service (Sửa lỗi "Cannot resolve")

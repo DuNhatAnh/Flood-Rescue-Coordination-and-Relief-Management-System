@@ -56,6 +56,7 @@ class Assignment {
   final List<String>? imageUrls;
   final List<MissionItem> actualDistributedItems;
   final List<VehicleSummary> vehicles;
+  final bool citizenVerified;
 
   Assignment({
     required this.id,
@@ -83,6 +84,7 @@ class Assignment {
     this.imageUrls,
     this.actualDistributedItems = const [],
     this.vehicles = const [],
+    this.citizenVerified = false,
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
@@ -126,6 +128,7 @@ class Assignment {
       vehicles: json['vehicles'] != null 
           ? (json['vehicles'] as List).map((v) => VehicleSummary.fromJson(v)).toList() 
           : [],
+      citizenVerified: json['citizenVerified'] ?? false,
     );
   }
 

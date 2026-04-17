@@ -69,5 +69,8 @@ public class RescueRequest {
     @Field("citizen_verified_at")
     private LocalDateTime citizenVerifiedAt;
 
+    @Field("reported_at")
+    private LocalDateTime reportedAt;
+
     private String note;
 }

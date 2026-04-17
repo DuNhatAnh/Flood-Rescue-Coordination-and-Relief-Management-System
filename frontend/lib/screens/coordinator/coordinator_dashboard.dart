@@ -13,6 +13,7 @@ import 'package:flood_rescue_app/screens/home_screen.dart';
 import 'package:flood_rescue_app/screens/coordinator/notification_screen.dart'; 
 import 'package:flood_rescue_app/screens/coordinator/tracking_screen.dart';
 import 'package:flood_rescue_app/services/auth_service.dart';
+import 'package:flood_rescue_app/screens/auth/login_screen.dart';
 class CoordinatorDashboard extends StatefulWidget {
   final int initialIndex;
   const CoordinatorDashboard({Key? key, this.initialIndex = 0}) : super(key: key);
@@ -202,16 +203,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
         ),
         backgroundColor: const Color(0xFF0288D1),
         foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-              (route) => false,
-            );
-          },
-        ),
+        automaticallyImplyLeading: false,
         actions: [
           _buildAppBarAction(
             Icons.notifications, 
@@ -235,6 +227,33 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
             Navigator.pushNamed(context, '/coordinator/analytics');
           }),
           _buildAppBarAction(Icons.refresh, 'Tải lại', _refreshData),
+          _buildAppBarAction(Icons.logout, 'Đăng xuất', () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Xác nhận đăng xuất'),
+                content: const Text('Bạn có chắc muốn đăng xuất khỏi hệ thống?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                    child: const Text('Đăng xuất'),
+                  ),
+                ],
+              ),
+            );
+            
+            if (confirm == true) {
+              await AuthService.logout();
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            }
+          }),
           const SizedBox(width: 8),
         ],
       ),

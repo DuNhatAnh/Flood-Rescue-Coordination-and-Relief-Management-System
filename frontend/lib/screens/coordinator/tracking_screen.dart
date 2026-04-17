@@ -358,6 +358,29 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ],
             ),
             const SizedBox(height: 12),
+            if (task.citizenVerified)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.verified, size: 14, color: Colors.green.shade700),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Dân đã báo an toàn',
+                        style: TextStyle(color: Colors.green.shade700, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             Text(
               task.citizenName ?? 'N/A',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

@@ -3,7 +3,10 @@ import 'package:flood_rescue_app/models/safety_report.dart';
 import 'package:flood_rescue_app/services/rescue_service.dart';
 
 class SafetyReportScreen extends StatefulWidget {
-  const SafetyReportScreen({super.key});
+  final String? initialPhone;
+  final String? initialName;
+
+  const SafetyReportScreen({super.key, this.initialPhone, this.initialName});
 
   @override
   State<SafetyReportScreen> createState() => _SafetyReportScreenState();
@@ -11,12 +14,19 @@ class SafetyReportScreen extends StatefulWidget {
 
 class _SafetyReportScreenState extends State<SafetyReportScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
   final _addressController = TextEditingController();
   final _noteController = TextEditingController();
   final RescueService _rescueService = RescueService();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _phoneController = TextEditingController(text: widget.initialPhone);
+  }
 
   Future<void> _submitReport() async {
     if (_formKey.currentState!.validate()) {

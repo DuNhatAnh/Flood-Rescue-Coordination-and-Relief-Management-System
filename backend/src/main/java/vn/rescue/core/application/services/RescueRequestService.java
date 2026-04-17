@@ -146,8 +146,9 @@ public class RescueRequestService {
     public RescueRequest confirmSafety(String id) {
         RescueRequest request = getById(id);
         
-        if (!"COMPLETED".equalsIgnoreCase(request.getStatus())) {
-            throw new RuntimeException("Chỉ có thể xác nhận an toàn cho các yêu cầu đã hoàn thành cứu hộ!");
+        // Cho phép xác nhận an toàn khi đã xong cứu hộ (REPORTED) hoặc đã hoàn thành (COMPLETED)
+        if (!"COMPLETED".equalsIgnoreCase(request.getStatus()) && !"REPORTED".equalsIgnoreCase(request.getStatus())) {
+            throw new RuntimeException("Chỉ có thể xác nhận an toàn cho các yêu cầu đã báo cáo hoàn thành cứu hộ!");
         }
 
         request.setCitizenVerified(true);
@@ -172,28 +173,79 @@ public class RescueRequestService {
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void autoVerifyOldRequests() {
-        LocalDateTime threshold = LocalDateTime.now().minusHours(48);
+        LocalDateTime threshold = LocalDateTime.now().minusHours(24);
         List<RescueRequest> oldRequests = rescueRequestRepository.findAll().stream()
-                .filter(r -> "COMPLETED".equalsIgnoreCase(r.getStatus()) 
-                        && !r.isCitizenVerified() 
-                        && r.getCreatedAt().isBefore(threshold)) // Simplified: using createdAt but better would be statusUpdatedAt
+                .filter(r -> "REPORTED".equalsIgnoreCase(r.getStatus()) 
+                        && r.getReportedAt() != null 
+                        && r.getReportedAt().isBefore(threshold)) 
                 .toList();
 
         for (RescueRequest request : oldRequests) {
+            request.setStatus("COMPLETED"); // Tự động hoàn thành
             request.setCitizenVerified(true);
             request.setCitizenVerifiedAt(LocalDateTime.now());
             rescueRequestRepository.save(request);
 
             RequestStatusHistory history = new RequestStatusHistory();
             history.setRequestId(request.getId());
-            history.setStatus("AUTO_VERIFIED");
-            history.setNote("Hệ thống tự động xác nhận an toàn sau 48 giờ");
+            history.setStatus("COMPLETED");
+            history.setNote("Hệ thống tự động hoàn thành sau 24 giờ chờ duyệt");
             history.setCreatedAt(LocalDateTime.now());
             statusHistoryRepository.save(history);
+
+            // Thông báo cho Điều phối viên
+            systemManagementService.logAction(
+                "SYSTEM",
+                "TỰ ĐỘNG HOÀN THÀNH",
+                "Yêu cầu #" + request.getCustomId() + " đã tự động hoàn thành sau 24 giờ không có phản hồi.",
+                "RESCUE"
+            );
         }
         
         if (!oldRequests.isEmpty()) {
-            System.out.println("DEBUG: Auto-verified " + oldRequests.size() + " requests.");
+            System.out.println("DEBUG: Auto-completed " + oldRequests.size() + " requests.");
+        }
+    }
+
+    public void linkSafetyReportByPhone(String phone) {
+        if (phone == null || phone.isEmpty()) return;
+        
+        // Chuẩn hóa số điện thoại: chỉ lấy các chữ số
+        String normalizedPhone = phone.replaceAll("\\D", "");
+        
+        // Tìm các yêu cầu có liên quan
+        List<RescueRequest> requests = rescueRequestRepository.findAll().stream()
+                .filter(r -> {
+                    if (r.getCitizenPhone() == null) return false;
+                    String rPhone = r.getCitizenPhone().replaceAll("\\D", "");
+                    // So khớp phần đuôi (đề phòng mã quốc gia)
+                    return rPhone.endsWith(normalizedPhone) || normalizedPhone.endsWith(rPhone);
+                })
+                .filter(r -> List.of("RESCUING", "RETURNING", "IN_PROGRESS", "REPORTED", "COMPLETED").contains(r.getStatus().toUpperCase()))
+                .toList();
+
+        for (RescueRequest request : requests) {
+            if (!request.isCitizenVerified()) {
+                request.setCitizenVerified(true);
+                request.setCitizenVerifiedAt(LocalDateTime.now());
+                rescueRequestRepository.save(request);
+
+                // Ghi log lịch sử
+                RequestStatusHistory history = new RequestStatusHistory();
+                history.setRequestId(request.getId());
+                history.setStatus("CITIZEN_SAFE_REPORTED");
+                history.setNote("Hệ thống tự động xác nhận an toàn qua tính năng Báo an toàn chung (SĐT: " + phone + ")");
+                history.setCreatedAt(LocalDateTime.now());
+                statusHistoryRepository.save(history);
+
+                // Thông báo cho Điều phối viên
+                systemManagementService.logAction(
+                    "SYSTEM",
+                    "DÂN BÁO AN TOÀN",
+                    "Yêu cầu #" + request.getCustomId() + " vừa được người dân xác nhận an toàn thông qua tính năng Báo an toàn chung.",
+                    "RESCUE"
+                );
+            }
         }
     }
 

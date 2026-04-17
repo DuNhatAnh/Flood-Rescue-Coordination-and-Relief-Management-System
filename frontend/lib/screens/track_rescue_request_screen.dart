@@ -3,6 +3,7 @@ import '../services/rescue_service.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
+import 'citizen/safety_report_screen.dart';
 
 
 class TrackRescueRequestScreen extends StatefulWidget {
@@ -50,39 +51,6 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
     }
   }
 
-  Future<void> _confirmSafety() async {
-    final requestId = _requestData!['id'];
-    
-    setState(() => _isLoading = true);
-    
-    try {
-      final success = await _rescueService.confirmSafety(requestId);
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Xác nhận an toàn thành công! Cảm ơn bạn."),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-        _trackRequest(); // Refresh data
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Lỗi khi xác nhận an toàn. Vui lòng thử lại."),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      print('Error: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -245,23 +213,58 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
           const Text("Tiến trình", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 16),
           _buildTimeline(status),
-          if (status == 'COMPLETED' && (_requestData!['citizenVerified'] != true))
+          if ((status == 'REPORTED' || status == 'COMPLETED') && (_requestData!['citizenVerified'] != true))
             Padding(
               padding: const EdgeInsets.only(top: 32),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _confirmSafety,
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text("XÁC NHẬN TÔI ĐÃ AN TOÀN", 
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[600],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue[700]),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "Vui lòng gửi báo cáo an toàn để hệ thống khớp dữ liệu và thông báo cho Điều phối viên hoàn thành nhiệm vụ.",
+                            style: TextStyle(fontSize: 13, color: Colors.blue),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SafetyReportScreen(
+                              initialPhone: _requestData!['citizenPhone'],
+                              initialName: _requestData!['citizenName'],
+                            ),
+                          ),
+                        ).then((_) => _trackRequest()); // Refresh data when back
+                      },
+                      icon: const Icon(Icons.security),
+                      label: const Text("ĐI ĐẾN BÁO AN TOÀN", 
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[600],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           if (_requestData!['citizenVerified'] == true)
@@ -307,12 +310,23 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
         text = "Đã xác minh";
         break;
       case 'ASSIGNED':
+      case 'PREPARING':
         color = Colors.purple;
-        text = "Đã phân công";
+        text = status == 'PREPARING' ? "Đang chuẩn bị" : "Đã phân công";
         break;
+      case 'MOVING':
+      case 'RESCUING':
       case 'IN_PROGRESS':
         color = Colors.indigo;
-        text = "Đang cứu hộ";
+        text = status == 'MOVING' ? "Đang di chuyển" : "Đang cứu hộ";
+        break;
+      case 'RETURNING':
+        color = Colors.teal;
+        text = "Đang quay về";
+        break;
+      case 'REPORTED':
+        color = Colors.orange;
+        text = "Chờ xác nhận & duyệt";
         break;
       case 'COMPLETED':
         color = Colors.green;
@@ -362,14 +376,31 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
       {'id': 'VERIFIED', 'label': 'Đã xác minh'},
       {'id': 'ASSIGNED', 'label': 'Đã phân công'},
       {'id': 'IN_PROGRESS', 'label': 'Đang thực hiện'},
+      {'id': 'REPORTED', 'label': 'Chờ xác nhận & duyệt'},
       {'id': 'COMPLETED', 'label': 'Đã hoàn thành'},
     ];
 
     if (_requestData!['citizenVerified'] == true) {
-      stages.add({'id': 'VERIFIED', 'label': 'Dân báo an toàn'});
+      stages.add({'id': 'CITIZEN_VERIFIED', 'label': 'Dân báo an toàn'});
     }
 
-    int currentIndex = stages.indexWhere((s) => s['id'] == (currentStatus == 'COMPLETED' && _requestData!['citizenVerified'] == true ? 'VERIFIED' : currentStatus));
+    String mappedStatus = currentStatus;
+    if (currentStatus == 'PREPARING') {
+      mappedStatus = 'ASSIGNED';
+    } else if (['MOVING', 'RESCUING', 'RETURNING'].contains(currentStatus)) {
+      mappedStatus = 'IN_PROGRESS';
+    }
+
+    int currentIndex = stages.indexWhere((s) =>
+        s['id'] ==
+        (currentStatus == 'COMPLETED' && _requestData!['citizenVerified'] == true
+            ? 'CITIZEN_VERIFIED'
+            : mappedStatus));
+            
+    if (currentIndex == -1) {
+      // Fallback cho trạng thái REPORTED nều không tìm thấy do citizenVerified giả
+      currentIndex = stages.indexWhere((s) => s['id'] == mappedStatus);
+    }
     if (currentIndex == -1) currentIndex = 0;
 
     return Column(
