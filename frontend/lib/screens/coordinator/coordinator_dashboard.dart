@@ -12,6 +12,7 @@ import 'package:flood_rescue_app/screens/coordinator/request_history_screen.dart
 import 'package:flood_rescue_app/screens/home_screen.dart';
 import 'package:flood_rescue_app/screens/coordinator/notification_screen.dart'; 
 import 'package:flood_rescue_app/screens/coordinator/tracking_screen.dart';
+import 'package:flood_rescue_app/services/auth_service.dart';
 class CoordinatorDashboard extends StatefulWidget {
   final int initialIndex;
   const CoordinatorDashboard({Key? key, this.initialIndex = 0}) : super(key: key);
@@ -201,7 +202,16 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
         ),
         backgroundColor: const Color(0xFF0288D1),
         foregroundColor: Colors.white,
-        automaticallyImplyLeading: true, // Cho phép nút quay lại từ Dashboard Admin
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+              (route) => false,
+            );
+          },
+        ),
         actions: [
           _buildAppBarAction(
             Icons.notifications, 
@@ -214,13 +224,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
             },
             hasBadge: _requests.any((r) => !r.isVerified),
           ),
-          _buildAppBarAction(Icons.home, 'Trang chủ', () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-              (route) => false,
-            );
-          }),
+
           _buildAppBarAction(Icons.history, 'Theo dõi', () {
             Navigator.push(
               context,
@@ -564,17 +568,35 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                       if (!request.isVerified)
                         IconButton(
                           onPressed: () async {
-                            final success = await _rescueService.verifyRequest(request.id, 'Điều phối viên A');
-                            if (!mounted) return;
-                            if (success) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Yêu cầu đã được xác minh thành công')),
-                              );
-                              _refreshData();
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Lỗi khi xác minh yêu cầu')),
-                              );
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Xác nhận xác minh'),
+                                content: Text('Bạn có chắc chắn muốn xác minh yêu cầu của "${request.citizenName}" không?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                                    child: const Text('Xác nhận'),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmed == true) {
+                              final success = await _rescueService.verifyRequest(request.id, AuthService.currentUser?.fullName ?? 'Điều phối viên');
+                              if (!mounted) return;
+                              if (success) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Yêu cầu đã được xác minh thành công')),
+                                );
+                                _refreshData();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Lỗi khi xác minh yêu cầu')),
+                                );
+                              }
                             }
                           },
                           icon: const Icon(Icons.check_circle_outline, color: Colors.blue, size: 20),
@@ -689,12 +711,14 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
     showDialog(
       context: parentContext,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Từ chối Yêu cầu', style: TextStyle(color: Colors.red)),
+        title: const Text('Xác nhận Từ chối', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Vui lòng nhập lý do từ chối yêu cầu. Hành động này không thể hoàn tác.'),
+            Text('Bạn có chắc chắn muốn từ chối yêu cầu của "${request.citizenName}" không?'),
+            const SizedBox(height: 16),
+            const Text('Vui lòng nhập lý do (không thể hoàn tác):', style: TextStyle(fontSize: 13, color: Colors.grey)),
             const SizedBox(height: 16),
             TextField(
               controller: noteController,
@@ -775,7 +799,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Chi tiết yêu cứu', 
+                    const Text('Chi tiết yêu cầu', 
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     const Spacer(),
                     TextButton.icon(
@@ -949,16 +973,34 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            final success = await _rescueService.verifyRequest(currentRequest.id, 'Điều phối viên');
-                            if (!mounted) return;
-                            if (success) {
-                              setModalState(() {
-                                currentRequest = currentRequest.copyWith(isVerified: true);
-                              });
-                              _refreshData(); // To keep main list updated
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Đã xác minh yêu cầu'))
-                              );
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                title: const Text('Xác nhận xác minh'),
+                                content: Text('Bạn có chắc chắn muốn xác minh yêu cầu của "${currentRequest.citizenName}" không?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Hủy')),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(dialogContext, true),
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                                    child: const Text('Xác nhận'),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmed == true) {
+                              final success = await _rescueService.verifyRequest(currentRequest.id, AuthService.currentUser?.fullName ?? 'Điều phối viên');
+                              if (!mounted) return;
+                              if (success) {
+                                setModalState(() {
+                                  currentRequest = currentRequest.copyWith(isVerified: true);
+                                });
+                                _refreshData(); // To keep main list updated
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Đã xác minh yêu cầu'))
+                                );
+                              }
                             }
                           },
                           icon: const Icon(Icons.verified),

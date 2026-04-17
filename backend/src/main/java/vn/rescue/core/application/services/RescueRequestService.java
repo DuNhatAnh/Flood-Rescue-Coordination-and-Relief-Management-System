@@ -80,6 +80,7 @@ public class RescueRequestService {
         String oldStatus = request.getStatus();
 
         request.setStatus(dto.getStatus());
+        request.setNote(dto.getNote());
         RescueRequest savedRequest = rescueRequestRepository.save(request);
 
         // 1. Ghi log lịch sử thay đổi trạng thái

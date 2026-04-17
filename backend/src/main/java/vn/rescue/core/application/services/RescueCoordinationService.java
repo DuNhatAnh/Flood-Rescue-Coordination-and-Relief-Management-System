@@ -343,6 +343,7 @@ public class RescueCoordinationService {
                     rescueRequestRepository.save(request);
                 } else {
                     request.setStatus(status);
+                    request.setNote(note);
                     rescueRequestRepository.save(request);
                 }
 

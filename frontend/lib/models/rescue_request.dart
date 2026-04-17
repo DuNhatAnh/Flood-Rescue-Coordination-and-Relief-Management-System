@@ -16,6 +16,7 @@ class RescueRequest {
   final int numberOfPeople;
   final DateTime createdAt;
   final bool isVerified;
+  final String? note;
 
   RescueRequest({
     required this.id,
@@ -30,6 +31,7 @@ class RescueRequest {
     required this.numberOfPeople,
     required this.createdAt,
     this.isVerified = false,
+    this.note,
   });
 
   factory RescueRequest.fromJson(Map<String, dynamic> json) {
@@ -48,6 +50,7 @@ class RescueRequest {
           ? DateTime.parse(json['createdAt']) 
           : DateTime.now(),
       isVerified: json['isVerified'] ?? false,
+      note: json['note'],
     );
   }
 
@@ -144,6 +147,7 @@ class RescueRequest {
       numberOfPeople: numberOfPeople ?? this.numberOfPeople,
       createdAt: createdAt ?? this.createdAt,
       isVerified: isVerified ?? this.isVerified,
+      note: note ?? this.note,
     );
   }
 }

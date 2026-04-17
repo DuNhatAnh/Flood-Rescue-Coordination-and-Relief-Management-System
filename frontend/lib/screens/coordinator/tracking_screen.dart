@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flood_rescue_app/models/assignment.dart';
+import 'package:flood_rescue_app/models/rescue_request.dart';
 import 'package:flood_rescue_app/services/rescue_service.dart';
 import 'package:flood_rescue_app/services/auth_service.dart';
 import 'package:flood_rescue_app/utils/constants.dart';
 
 class TrackingScreen extends StatefulWidget {
-  const TrackingScreen({Key? key}) : super(key: key);
+  final int initialIndex;
+  const TrackingScreen({Key? key, this.initialIndex = 0}) : super(key: key);
 
   @override
   State<TrackingScreen> createState() => _TrackingScreenState();
@@ -15,6 +17,7 @@ class TrackingScreen extends StatefulWidget {
 class _TrackingScreenState extends State<TrackingScreen> {
   final RescueService _rescueService = RescueService();
   List<Assignment> _assignments = [];
+  List<RescueRequest> _allRequests = [];
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -30,11 +33,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
       _errorMessage = null;
     });
     try {
-      final list = await _rescueService.getAllAssignments();
-      print('DEBUG: TrackingScreen loaded ${list.length} assignments');
+      final results = await Future.wait([
+        _rescueService.getAllAssignments(),
+        _rescueService.getAllRequests(),
+      ]);
+      
+      final assignments = results[0] as List<Assignment>;
+      final requests = results[1] as List<RescueRequest>;
+
+      print('DEBUG: TrackingScreen loaded ${assignments.length} assignments and ${requests.length} requests');
       if (mounted) {
         setState(() {
-          _assignments = list;
+          _assignments = assignments;
+          _allRequests = requests;
           _isLoading = false;
         });
       }
@@ -88,16 +99,28 @@ class _TrackingScreenState extends State<TrackingScreen> {
       return ['ASSIGNED', 'MOVING', 'ARRIVED', 'REPORTED', 'PREPARING', 'RESCUING', 'RETURNING', 'IN_PROGRESS'].contains(s);
     }).toList();
     
-    final historyTasks = _assignments.where((a) {
+    final historyAssignments = _assignments.where((a) {
       final s = a.status.trim().toUpperCase();
       return ['COMPLETED', 'CANCELLED', 'REJECTED'].contains(s);
     }).toList();
 
+    final rejectedRequests = _allRequests.where((r) => r.status == RequestStatus.rejected).toList();
+
+    // Gộp cả 2 loại vào 1 danh sách duy nhất để hiển thị trong Tab Lịch sử
+    final List<dynamic> historyItems = [...historyAssignments, ...rejectedRequests];
+
     activeTasks.sort((a, b) => b.assignedAt.compareTo(a.assignedAt));
-    historyTasks.sort((a, b) => b.assignedAt.compareTo(a.assignedAt));
+    
+    // Sắp xếp Lịch sử: Cái nào mới hơn (assignedAt hoặc createdAt) hiện lên trước
+    historyItems.sort((a, b) {
+      final dateA = a is Assignment ? a.assignedAt : (a as RescueRequest).createdAt;
+      final dateB = b is Assignment ? b.assignedAt : (b as RescueRequest).createdAt;
+      return dateB.compareTo(dateA);
+    });
 
     return DefaultTabController(
       length: 2,
+      initialIndex: widget.initialIndex,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Theo dõi & Lịch sử'),
@@ -109,7 +132,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
               Tab(text: 'Lịch sử'),
             ],
             indicatorColor: Colors.white,
-            labelStyle: TextStyle(fontWeight: FontWeight.bold),
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            unselectedLabelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           actions: [
             IconButton(onPressed: _loadAssignments, icon: const Icon(Icons.refresh)),
@@ -143,15 +169,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 : TabBarView(
                     children: [
                       _buildTaskList(activeTasks, 'Không có nhiệm vụ đang thực hiện', true),
-                      _buildTaskList(historyTasks, 'Chưa có lịch sử nhiệm vụ', false),
+                      _buildTaskList(historyItems, 'Chưa có lịch sử nhiệm vụ hoặc yêu cầu bị từ chối', false),
                     ],
                   ),
       ),
     );
   }
 
-  Widget _buildTaskList(List<Assignment> tasks, String emptyMsg, bool isActive) {
-    if (tasks.isEmpty) {
+  Widget _buildTaskList(List<dynamic> items, String emptyMsg, bool isActive) {
+    if (items.isEmpty) {
       return RefreshIndicator(
         onRefresh: _loadAssignments,
         child: SingleChildScrollView(
@@ -179,11 +205,117 @@ class _TrackingScreenState extends State<TrackingScreen> {
       onRefresh: _loadAssignments,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: tasks.length,
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          final task = tasks[index];
-          return _buildAssignmentCard(task, isActive);
+          final item = items[index];
+          if (item is Assignment) {
+            return _buildAssignmentCard(item, isActive);
+          } else if (item is RescueRequest) {
+            return _buildRejectedRequestCard(item);
+          }
+          return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _buildRejectedRequestCard(RescueRequest request) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.red.shade100, width: 1),
+      ),
+      elevation: 0,
+      color: Colors.red.shade50.withOpacity(0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'YÊU CẦU BỊ TỪ CHỐI',
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                ),
+                Text(
+                  DateFormat('HH:mm dd/MM').format(request.createdAt),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              request.citizenName,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    request.address,
+                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Row(
+              children: [
+                const Icon(Icons.info_outline, size: 16, color: Colors.red),
+                const SizedBox(width: 8),
+                const Text('Trạng thái:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                const SizedBox(width: 4),
+                Text(
+                  'Điều phối viên đã từ chối',
+                  style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Mô tả: ${request.description.isEmpty ? "Không có mô tả" : request.description}',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+            if (request.note != null && request.note!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.comment_outlined, size: 14, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Lý do từ chối: ${request.note}',
+                        style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

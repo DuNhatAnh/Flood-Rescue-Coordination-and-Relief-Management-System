@@ -11,6 +11,7 @@ import 'package:flood_rescue_app/screens/rescue_request_screen.dart';
 import 'package:flood_rescue_app/screens/track_rescue_request_screen.dart';
 import 'package:flood_rescue_app/screens/auth/login_screen.dart';
 import 'package:flood_rescue_app/screens/citizen/safety_report_screen.dart';
+import 'package:flood_rescue_app/screens/coordinator/tracking_screen.dart';
 import 'package:flood_rescue_app/services/auth_service.dart';
 import 'package:flood_rescue_app/services/rescue_service.dart';
 import 'package:flood_rescue_app/models/rescue_request.dart';
@@ -885,7 +886,20 @@ class _ProfileTabState extends State<ProfileTab> {
                   Navigator.pushNamed(context, '/staff/dashboard');
                 }
               }),
-              _menuItem(Icons.history, 'Lịch sử yêu cầu cứu trợ', () {}),
+              _menuItem(Icons.history, 'Lịch sử yêu cầu cứu trợ', () {
+                final role = user.role;
+                if (role == UserRole.coordinator) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TrackingScreen(initialIndex: 1)),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TrackRescueRequestScreen()),
+                  );
+                }
+              }),
               _menuItem(Icons.logout, 'Đăng xuất', () async {
                 await AuthService.logout();
                 if (mounted) setState(() {});
