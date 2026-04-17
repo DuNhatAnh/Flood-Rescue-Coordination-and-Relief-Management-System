@@ -590,7 +590,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(vehicle.vehicleType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis),
+                Text(vehicle.vehicleType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis, maxLines: 1),
                 Text(vehicle.licensePlate, style: TextStyle(fontSize: 11, color: Colors.grey[600], letterSpacing: 0.5)),
                 const SizedBox(height: 6),
                 Container(

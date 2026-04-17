@@ -775,7 +775,15 @@ Widget build(BuildContext context) {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(vehicle.vehicleType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      Expanded(
+                        child: Text(
+                          vehicle.vehicleType, 
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(

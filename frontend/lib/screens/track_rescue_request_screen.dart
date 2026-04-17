@@ -217,14 +217,21 @@ class _TrackRescueRequestScreenState extends State<TrackRescueRequestScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Mã yêu cầu", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  Text(_requestData!['customId'] ?? _requestData!['id'],
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Mã yêu cầu", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(
+                      _requestData!['customId'] ?? _requestData!['id'],
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               _buildStatusBadge(status),
             ],
           ),

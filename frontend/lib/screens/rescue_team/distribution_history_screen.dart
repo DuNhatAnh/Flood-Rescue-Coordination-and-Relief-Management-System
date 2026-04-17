@@ -124,7 +124,15 @@ class _DistributionHistoryScreenState extends State<DistributionHistoryScreen> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(goods.itemName, style: const TextStyle(fontWeight: FontWeight.w500)),
+                                    Expanded(
+                                      child: Text(
+                                        goods.itemName, 
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
                                     Text('x${goods.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
                                   ],
                                 ),

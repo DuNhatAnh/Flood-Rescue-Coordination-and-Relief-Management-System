@@ -222,7 +222,15 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(item.itemName, style: const TextStyle(fontSize: 13)),
+                      Expanded(
+                        child: Text(
+                          item.itemName, 
+                          style: const TextStyle(fontSize: 13), 
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text('${item.quantity} ${item.unit}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     ],
                   ),
@@ -511,7 +519,12 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: const TextStyle(fontSize: 11, color: StaffTheme.textLight, fontWeight: FontWeight.bold)),
-              Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: StaffTheme.textDark), overflow: TextOverflow.ellipsis),
+              Text(
+                value, 
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: StaffTheme.textDark), 
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ],
           ),
         ),
@@ -840,7 +853,15 @@ class TeamTasksScreenState extends State<TeamTasksScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('NHIỆM VỤ #${task.id.length > 4 ? task.id.substring(0, 4).toUpperCase() : task.id.toUpperCase()}', style: StaffTheme.cardTitle),
+                          Expanded(
+                            child: Text(
+                              'NHIỆM VỤ #${task.id.length > 4 ? task.id.substring(0, 4).toUpperCase() : task.id.toUpperCase()}', 
+                              style: StaffTheme.cardTitle,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           Text(timeStr, style: const TextStyle(color: StaffTheme.textLight, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),

@@ -713,15 +713,22 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
               if (isSuccess) const Icon(Icons.check_circle, color: StaffTheme.successGreen, size: 18),
               if (isWarning) const Icon(Icons.warning_amber_rounded, color: StaffTheme.errorRed, size: 18),
               if (isSuccess || isWarning) const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item['itemName'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text('Số lượng: ${item['quantity']}', style: StaffTheme.cardSubtitle),
-                  if (item['quantity'] > item['stock'])
-                    Text('Vượt mức tồn kho (${item['stock']})', style: const TextStyle(color: StaffTheme.errorRed, fontSize: 10)),
-                ],
-              ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['itemName'], 
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text('Số lượng: ${item['quantity']}', style: StaffTheme.cardSubtitle),
+                        if (item['quantity'] > item['stock'])
+                          Text('Vượt mức tồn kho (${item['stock']})', style: const TextStyle(color: StaffTheme.errorRed, fontSize: 10)),
+                      ],
+                    ),
+                  ),
             ],
           ),
           if (widget.mode != 'QUICK')

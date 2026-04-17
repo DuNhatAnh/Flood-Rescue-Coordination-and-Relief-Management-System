@@ -365,7 +365,16 @@ class StaffVehicleManagementScreenState extends State<StaffVehicleManagementScre
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value, 
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
         ],
       ),
     );
