@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
+import 'package:flood_rescue_app/models/assignment.dart';
 import 'package:flood_rescue_app/models/rescue_request.dart';
 import 'package:flood_rescue_app/models/safety_report.dart';
 import 'package:flood_rescue_app/services/rescue_service.dart';
@@ -25,11 +27,80 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
   List<SafetyReport> _safetyReports = [];
   bool _isLoading = true;
   bool _isDescending = true; // Mặc định: Cao xuống Thấp (Ưu tiên khẩn cấp)
+  Timer? _pollingTimer;
+  Set<String> _notifiedReportedIds = {};
 
   @override
   void initState() {
     super.initState();
     _refreshData();
+    _startPollingForReports();
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPollingForReports() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (timer) async {
+      try {
+        final list = await _rescueService.getAllAssignments();
+        final reportedTasks = list.where((t) => t.status.toUpperCase() == 'REPORTED').toList();
+        
+        for (var task in reportedTasks) {
+          if (!_notifiedReportedIds.contains(task.id)) {
+            _notifiedReportedIds.add(task.id);
+            _showReportNotification(task);
+          }
+        }
+        
+        // Clean up ids that are no longer reported
+        _notifiedReportedIds.retainWhere((id) => reportedTasks.any((t) => t.id == id));
+      } catch (e) {
+        // Ignore polling errors
+      }
+    });
+  }
+
+  void _showReportNotification(Assignment task) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Bắt buộc người dùng phải chú ý
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.notifications_active, color: Colors.red, size: 28),
+            const SizedBox(width: 8),
+            const Text('Báo Cáo Nhiệm Vụ Mới', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'Đội "${task.teamName}" vừa hoàn thành cứu hộ và gửi báo cáo nhiệm vụ! Vui lòng kiểm tra thực tế hàng hóa và xác nhận hoàn thành.',
+          style: const TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ĐỂ SAU', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () {
+              Navigator.pop(context); // Đóng Dialog
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TrackingScreen()),
+              );
+            },
+            child: const Text('XEM & XÁC NHẬN NGAY'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _refreshData() async {

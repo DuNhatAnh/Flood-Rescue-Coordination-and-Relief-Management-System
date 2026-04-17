@@ -16,6 +16,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   final RescueService _rescueService = RescueService();
   List<Assignment> _assignments = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -24,7 +25,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   Future<void> _loadAssignments() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
       final list = await _rescueService.getAllAssignments();
       print('DEBUG: TrackingScreen loaded ${list.length} assignments');
@@ -32,18 +36,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
         setState(() {
           _assignments = list;
           _isLoading = false;
-          // Log chi tiết từng nhiệm vụ để gỡ lỗi
-          for (var task in _assignments) {
-            print('DEBUG Task: ID=${task.id}, Status="${task.status}", isReported=${task.status.trim().toUpperCase() == 'REPORTED'}');
-          }
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải danh sách nhiệm vụ: $e')),
-        );
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
       }
     }
   }
@@ -83,12 +83,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Phân loại nhiệm vụ
-    final activeTasks = _assignments.where((a) => 
-      ['ASSIGNED', 'MOVING', 'ARRIVED', 'REPORTED', 'PREPARING', 'RESCUING', 'RETURNING', 'IN_PROGRESS'].contains(a.status.toUpperCase())).toList();
+    final activeTasks = _assignments.where((a) {
+      final s = a.status.trim().toUpperCase();
+      return ['ASSIGNED', 'MOVING', 'ARRIVED', 'REPORTED', 'PREPARING', 'RESCUING', 'RETURNING', 'IN_PROGRESS'].contains(s);
+    }).toList();
     
-    final historyTasks = _assignments.where((a) => 
-      ['COMPLETED', 'CANCELLED', 'REJECTED'].contains(a.status.toUpperCase())).toList();
+    final historyTasks = _assignments.where((a) {
+      final s = a.status.trim().toUpperCase();
+      return ['COMPLETED', 'CANCELLED', 'REJECTED'].contains(s);
+    }).toList();
 
     activeTasks.sort((a, b) => b.assignedAt.compareTo(a.assignedAt));
     historyTasks.sort((a, b) => b.assignedAt.compareTo(a.assignedAt));
@@ -112,39 +115,76 @@ class _TrackingScreenState extends State<TrackingScreen> {
             IconButton(onPressed: _loadAssignments, icon: const Icon(Icons.refresh)),
           ],
         ),
-        body: _isLoading 
+        body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                children: [
-                  _buildTaskList(activeTasks, 'Không có nhiệm vụ đang thực hiện', true),
-                  _buildTaskList(historyTasks, 'Chưa có lịch sử nhiệm vụ', false),
-                ],
-              ),
+            : _errorMessage != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.cloud_off, size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          const Text('Không tải được dữ liệu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Text('Vui lòng kiểm tra kết nối mạng và thử lại.', style: TextStyle(color: Colors.grey[600])),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _loadAssignments,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Thử lại'),
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0288D1), foregroundColor: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : TabBarView(
+                    children: [
+                      _buildTaskList(activeTasks, 'Không có nhiệm vụ đang thực hiện', true),
+                      _buildTaskList(historyTasks, 'Chưa có lịch sử nhiệm vụ', false),
+                    ],
+                  ),
       ),
     );
   }
 
   Widget _buildTaskList(List<Assignment> tasks, String emptyMsg, bool isActive) {
     if (tasks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.assignment_outlined, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(emptyMsg, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-          ],
+      return RefreshIndicator(
+        onRefresh: _loadAssignments,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: 400,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.assignment_outlined, size: 64, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  Text(emptyMsg, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                  const SizedBox(height: 12),
+                  Text('Kéo xuống để tải lại', style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: tasks.length,
-      itemBuilder: (context, index) {
-        final task = tasks[index];
-        return _buildAssignmentCard(task, isActive);
-      },
+    return RefreshIndicator(
+      onRefresh: _loadAssignments,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final task = tasks[index];
+          return _buildAssignmentCard(task, isActive);
+        },
+      ),
     );
   }
 
@@ -340,10 +380,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toUpperCase()) {
+    switch (status.trim().toUpperCase()) {
       case 'PREPARING': return Colors.blue;
       case 'MOVING': return Colors.orange;
       case 'ARRIVED': return Colors.purple;
+      case 'RESCUING': return Colors.teal;
+      case 'RETURNING': return Colors.cyan;
+      case 'IN_PROGRESS': return Colors.lightBlue;
       case 'REPORTED': return Colors.red; // Màu đỏ để gây chú ý cho điều phối viên
       case 'COMPLETED': return Colors.green;
       case 'REJECTED': return Colors.red;
@@ -408,16 +451,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   String _getStatusLabel(String status) {
-    switch (status.toUpperCase()) {
+    switch (status.trim().toUpperCase()) {
       case 'PREPARING': return 'Đang chuẩn bị';
       case 'MOVING': return 'Đang di chuyển';
       case 'ARRIVED': return 'Đã đến nơi';
+      case 'RESCUING': return 'Đang cứu hộ';
+      case 'RETURNING': return 'Đang quay về';
+      case 'IN_PROGRESS': return 'Đang tiến hành';
       case 'REPORTED': return 'Chờ xác nhận';
       case 'COMPLETED': return 'Đã hoàn thành';
       case 'REJECTED': return 'Bị từ chối';
       case 'CANCELLED': return 'Đã hủy';
       case 'ASSIGNED': return 'Đã phân công';
-      default: return status;
+      default: return status.trim();
     }
   }
 }

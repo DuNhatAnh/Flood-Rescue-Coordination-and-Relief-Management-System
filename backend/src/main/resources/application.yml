@@ -4,6 +4,10 @@ spring:
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb+srv://nhatanhdu_db_user:BFkndzP3xqW3x9Wu@cluster0.jmi5ufx.mongodb.net/flood_rescue_db?retryWrites=true&w=majority}
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    date-format: "yyyy-MM-dd'T'HH:mm:ss.SSS"
 
 jwt:
   secret: Y2hhbmdlbWVjaGFuZ2VtZWNoYW5nZW1lY2hhbmdlbWVjaGFuZ2VtZQ==

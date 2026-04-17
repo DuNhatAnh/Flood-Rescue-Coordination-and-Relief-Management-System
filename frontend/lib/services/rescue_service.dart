@@ -14,9 +14,26 @@ class RescueService {
   final String baseUrl = Constants.apiV1;
   final Dio _dio = Dio(BaseOptions(
     baseUrl: Constants.apiV1,
-    connectTimeout: const Duration(seconds: 5),
-    receiveTimeout: const Duration(seconds: 3),
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
   ));
+
+  RescueService() {
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await AuthService.getToken();
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        return handler.next(options);
+      },
+      onError: (DioException e, handler) {
+        print('DEBUG Dio Error: ${e.response?.statusCode} - ${e.requestOptions.path}');
+        print('DEBUG Dio Error body: ${e.response?.data}');
+        return handler.next(e);
+      },
+    ));
+  }
 
   // Lấy danh sách yêu cầu chờ xử lý
   Future<List<RescueRequest>> getPendingRequests() async {
@@ -221,12 +238,22 @@ class RescueService {
         print('DEBUG: getAllAssignments raw data: $responseData');
         if (responseData['success'] == true) {
           final List<dynamic> data = responseData['data'] ?? [];
-          return data.map((json) => Assignment.fromJson(json)).toList();
+          List<Assignment> result = [];
+          for (var item in data) {
+            try {
+              result.add(Assignment.fromJson(item));
+            } catch (e, stacktrace) {
+              print('DEBUG: Error parsing Assignment: $e');
+              print('DEBUG: Assignment data: $item');
+              print('DEBUG: Stacktrace: $stacktrace');
+            }
+          }
+          return result;
         }
       }
       return [];
-    } catch (e) {
-      print('Error fetching all assignments: $e');
+    } catch (e, stacktrace) {
+      print('Error fetching all assignments: $e\n$stacktrace');
       return [];
     }
   }

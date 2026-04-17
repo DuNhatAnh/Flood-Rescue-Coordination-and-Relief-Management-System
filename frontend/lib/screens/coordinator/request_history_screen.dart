@@ -136,24 +136,40 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toUpperCase()) {
+    switch (status.trim().toUpperCase()) {
       case 'PENDING': return Colors.grey;
       case 'VERIFIED': return Colors.blue;
-      case 'ASSIGNED': return Colors.orange;
-      case 'IN_PROGRESS': return Colors.blueAccent;
+      case 'ASSIGNED': return Colors.indigo;
+      case 'PREPARING': return Colors.blue;
+      case 'MOVING': return Colors.orange;
+      case 'ARRIVED': return Colors.purple;
+      case 'RESCUING': return Colors.teal;
+      case 'RETURNING': return Colors.cyan;
+      case 'IN_PROGRESS': return Colors.lightBlue;
+      case 'REPORTED': return Colors.red;
       case 'COMPLETED': return Colors.green;
+      case 'REJECTED': return Colors.red;
+      case 'CANCELLED': return Colors.grey;
       default: return Colors.blueGrey;
     }
   }
 
   String _getStatusLabel(String status) {
-    switch (status.toUpperCase()) {
+    switch (status.trim().toUpperCase()) {
       case 'PENDING': return 'Đã tiếp nhận';
       case 'VERIFIED': return 'Đã xác minh';
       case 'ASSIGNED': return 'Đã phân công';
-      case 'IN_PROGRESS': return 'Đang thực hiện';
+      case 'PREPARING': return 'Đang chuẩn bị';
+      case 'MOVING': return 'Đang di chuyển';
+      case 'ARRIVED': return 'Đã đến nơi';
+      case 'RESCUING': return 'Đang cứu hộ';
+      case 'RETURNING': return 'Đang quay về';
+      case 'IN_PROGRESS': return 'Đang tiến hành';
+      case 'REPORTED': return 'Chờ xác nhận';
       case 'COMPLETED': return 'Hoàn thành';
-      default: return status;
+      case 'REJECTED': return 'Bị từ chối';
+      case 'CANCELLED': return 'Đã hủy';
+      default: return status.trim();
     }
   }
 }

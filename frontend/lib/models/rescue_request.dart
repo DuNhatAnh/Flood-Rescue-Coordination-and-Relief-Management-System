@@ -69,11 +69,19 @@ class RescueRequest {
   }
 
   static RequestStatus _parseStatus(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'ASSIGNED': return RequestStatus.assigned;
-      case 'COMPLETED': return RequestStatus.completed;
-      case 'REJECTED': return RequestStatus.rejected;
-      default: return RequestStatus.pending;
+    if (status == null) return RequestStatus.pending;
+    switch (status.trim().toUpperCase()) {
+      case 'PENDING':
+      case 'VERIFIED':
+        return RequestStatus.pending; // Cần điều phối viên xử lý
+      case 'COMPLETED': 
+        return RequestStatus.completed;
+      case 'REJECTED': 
+      case 'CANCELLED':
+        return RequestStatus.rejected;
+      default: 
+        // Bao gồm: ASSIGNED, PREPARING, MOVING, ARRIVED, RESCUING, RETURNING, IN_PROGRESS, REPORTED
+        return RequestStatus.assigned; // Đã giao cho đội, không hiện trên danh sách cần điều phối nữa
     }
   }
 
