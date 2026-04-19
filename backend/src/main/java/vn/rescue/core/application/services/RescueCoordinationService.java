@@ -19,6 +19,7 @@ import vn.rescue.core.domain.entities.RescueReport;
 import vn.rescue.core.domain.entities.MissionItem;
 import vn.rescue.core.domain.entities.User;
 import vn.rescue.core.domain.repositories.RescueReportRepository;
+import vn.rescue.core.domain.repositories.ReliefItemRepository;
 import vn.rescue.core.domain.repositories.UserRepository;
 import vn.rescue.core.domain.repositories.DistributionRepository;
 import vn.rescue.core.domain.entities.Distribution;
@@ -71,6 +72,9 @@ public class RescueCoordinationService {
 
     @Autowired
     private DistributionRepository distributionRepository;
+
+    @Autowired
+    private ReliefItemRepository reliefItemRepository;
 
     public List<RescueRequest> getPendingRequests() {
         return rescueRequestRepository.findByStatus("PENDING");
@@ -216,7 +220,8 @@ public class RescueCoordinationService {
             assignment.setAssignedBy(assignedBy);
             assignment.setAssignedAt(LocalDateTime.now());
             assignment.setStatus("ASSIGNED");
-            assignment.setMissionItems(missionItems);
+            assignment.setMissionItems(missionItems != null ? missionItems : new ArrayList<>());
+            assignment.setAssignedItems(missionItems != null ? new ArrayList<>(missionItems) : new ArrayList<>());
 
             Assignment saved = assignmentRepository.save(assignment);
             
@@ -293,10 +298,25 @@ public class RescueCoordinationService {
             boolean isActiveStatus = List.of("MOVING", "RESCUING", "RETURNING", "REPORTED").contains(targetStatus.toUpperCase());
             if (isActiveStatus && !assignment.isItemsExported() && itemsRaw != null) {
                 List<MissionItem> missionItems = itemsRaw.stream().map(m -> {
+                    String itId = (String) m.get("itemId");
+                    String itName = (String) m.get("itemName");
+                    String itUnit = (String) m.get("unit");
+
+                    // Fallback to existing mission items
+                    if ((itName == null || itName.isEmpty()) && assignment.getMissionItems() != null) {
+                        for (MissionItem existing : assignment.getMissionItems()) {
+                            if (existing.getItemId().equals(itId)) {
+                                itName = existing.getItemName();
+                                itUnit = existing.getUnit();
+                                break;
+                            }
+                        }
+                    }
+
                     MissionItem item = new MissionItem();
-                    item.setItemId((String) m.get("itemId"));
-                    item.setItemName((String) m.get("itemName"));
-                    item.setUnit((String) m.get("unit"));
+                    item.setItemId(itId);
+                    item.setItemName(itName != null ? itName : "Vật phẩm");
+                    item.setUnit(itUnit != null ? itUnit : "-");
                     
                     Object qtyObj = m.get("quantity");
                     if (qtyObj instanceof Number) {
@@ -327,10 +347,34 @@ public class RescueCoordinationService {
             if (body.containsKey("actualItems")) {
                 List<Map<String, Object>> itemsRawActual = (List<Map<String, Object>>) body.get("actualItems");
                 List<MissionItem> actualItems = itemsRawActual.stream().map(m -> {
+                    String itId = (String) m.get("itemId");
+                    String itName = (String) m.get("itemName");
+                    String itUnit = (String) m.get("unit");
+
+                    // Fallback to existing items if name/unit missing
+                    if ((itName == null || itName.isEmpty()) && assignment.getMissionItems() != null) {
+                        for (MissionItem existing : assignment.getMissionItems()) {
+                            if (existing.getItemId().equals(itId)) {
+                                itName = existing.getItemName();
+                                itUnit = existing.getUnit();
+                                break;
+                            }
+                        }
+                    }
+                    if ((itName == null || itName.isEmpty()) && assignment.getAssignedItems() != null) {
+                        for (MissionItem existing : assignment.getAssignedItems()) {
+                            if (existing.getItemId().equals(itId)) {
+                                itName = existing.getItemName();
+                                itUnit = existing.getUnit();
+                                break;
+                            }
+                        }
+                    }
+
                     MissionItem item = new MissionItem();
-                    item.setItemId((String) m.get("itemId"));
-                    item.setItemName((String) m.get("itemName"));
-                    item.setUnit((String) m.get("unit"));
+                    item.setItemId(itId);
+                    item.setItemName(itName != null ? itName : "Vật phẩm");
+                    item.setUnit(itUnit != null ? itUnit : "-");
                     
                     Object qtyObj = m.get("quantity");
                     if (qtyObj instanceof Number) {
@@ -512,13 +556,12 @@ public class RescueCoordinationService {
             response.setCitizenVerified(request.isCitizenVerified());
         });
 
-        response.setMissionItems(assignment.getMissionItems());
-        response.setAssignedItems(assignment.getAssignedItems());
+        response.setMissionItems(enrichItems(assignment.getMissionItems()));
+        response.setAssignedItems(enrichItems(assignment.getAssignedItems()));
         response.setItemsExported(assignment.isItemsExported());
         response.setRescuedCount(assignment.getRescuedCount());
         response.setReportNote(assignment.getReportNote());
-        response.setImageUrls(assignment.getImageUrls());
-        response.setActualDistributedItems(assignment.getActualDistributedItems());
+        response.setActualDistributedItems(enrichItems(assignment.getActualDistributedItems()));
 
         // Join with RescueTeam
         rescueTeamRepository.findById(assignment.getTeamId()).ifPresent(team -> {
@@ -611,5 +654,29 @@ public class RescueCoordinationService {
             logger.info("Vehicles replaced for assignment {}: new vehicles {} (Reason: {})", 
                 assignmentId, newVehicleIds, reason);
         }
+    }
+
+    private java.util.List<MissionItem> enrichItems(java.util.List<MissionItem> items) {
+        if (items == null) return new java.util.ArrayList<>();
+        java.util.List<MissionItem> enriched = new java.util.ArrayList<>();
+        for (MissionItem itemBase : items) {
+            // Tạo bản sao để tránh làm thay đổi đối tượng gốc trong DB nếu là entity
+            MissionItem item = MissionItem.builder()
+                .itemId(itemBase.getItemId())
+                .itemName(itemBase.getItemName())
+                .unit(itemBase.getUnit())
+                .quantity(itemBase.getQuantity())
+                .build();
+                
+            String name = item.getItemName();
+            if (name == null || name.isEmpty() || name.contains("Chưa có tên") || name.equals("Vật phẩm")) {
+                reliefItemRepository.findById(item.getItemId()).ifPresent(ri -> {
+                    item.setItemName(ri.getItemName());
+                    item.setUnit(ri.getUnit());
+                });
+            }
+            enriched.add(item);
+        }
+        return enriched;
     }
 }

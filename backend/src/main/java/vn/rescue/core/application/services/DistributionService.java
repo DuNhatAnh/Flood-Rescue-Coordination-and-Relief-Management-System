@@ -1,6 +1,7 @@
 package vn.rescue.core.application.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.rescue.core.application.dto.DistributionRequest;
@@ -12,21 +13,29 @@ import vn.rescue.core.domain.repositories.DistributionDetailRepository;
 import vn.rescue.core.domain.repositories.DistributionRepository;
 import vn.rescue.core.domain.repositories.InventoryRepository;
 import vn.rescue.core.domain.repositories.AssignmentRepository;
+import vn.rescue.core.domain.repositories.ReliefItemRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class DistributionService {
 
-    private final DistributionRepository distributionRepository;
-    private final DistributionDetailRepository detailRepository;
-    private final InventoryRepository inventoryRepository;
-    private final AssignmentRepository assignmentRepository;
-    private final RescueCoordinationService rescueCoordinationService;
-    private final InventoryService inventoryService;
+    @Autowired
+    private DistributionRepository distributionRepository;
+    @Autowired
+    private DistributionDetailRepository detailRepository;
+    @Autowired
+    private InventoryRepository inventoryRepository;
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+    @Autowired
+    private RescueCoordinationService rescueCoordinationService;
+    @Autowired
+    private InventoryService inventoryService;
+    @Autowired
+    private ReliefItemRepository reliefItemRepository;
 
     @Transactional
     public Distribution createDistribution(DistributionRequest request, String userId) {
@@ -89,12 +98,23 @@ public class DistributionService {
                             request.getWarehouseId(), itemReq.getItemId()
                     ).orElse(null);
                     
-                    actualMissionItems.add(MissionItem.builder()
-                            .itemId(itemReq.getItemId())
-                            .itemName(inventory != null ? inventory.getItemName() : "Vật phẩm")
-                            .unit(inventory != null ? inventory.getUnit() : "-")
+                    if (inventory == null || inventory.getItemName() == null || inventory.getItemName().isEmpty()) {
+                        final String itemId = itemReq.getItemId();
+                        vn.rescue.core.domain.entities.ReliefItem globalItem = reliefItemRepository.findById(itemId).orElse(null);
+                        actualMissionItems.add(MissionItem.builder()
+                            .itemId(itemId)
+                            .itemName(globalItem != null ? globalItem.getItemName() : (inventory != null ? inventory.getItemName() : "Vật phẩm"))
+                            .unit(globalItem != null ? globalItem.getUnit() : (inventory != null ? inventory.getUnit() : "-"))
                             .quantity(itemReq.getQuantity())
                             .build());
+                    } else {
+                        actualMissionItems.add(MissionItem.builder()
+                            .itemId(itemReq.getItemId())
+                            .itemName(inventory.getItemName())
+                            .unit(inventory.getUnit())
+                            .quantity(itemReq.getQuantity())
+                            .build());
+                    }
                 }
                 assignment.setMissionItems(actualMissionItems);
                 assignmentRepository.save(assignment);

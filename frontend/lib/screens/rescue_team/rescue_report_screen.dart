@@ -60,10 +60,37 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
       );
 
       // HỢP NHẤT: Lấy cả vật phẩm nhiệm vụ VÀ vật phẩm do điều phối viên gán thêm
-      final allReqItems = {
-        ...{for (var i in task.assignedItems) i.itemId: i},
-        ...{for (var i in task.missionItems) i.itemId: i}
-      }.values.where((i) => i.itemId.isNotEmpty).toList();
+      // HỢP NHẤT THÔNG MINH: Ưu tiên lấy thông tin có tên và đơn vị đầy đủ
+      final Map<String, MissionItem> mergedItems = {};
+      
+      // Tập hợp tất cả item từ cả 2 danh sách
+      final allRawItems = [...task.assignedItems, ...task.missionItems];
+      
+      for (var item in allRawItems) {
+        if (item.itemId.isEmpty) continue;
+        
+        if (!mergedItems.containsKey(item.itemId)) {
+          mergedItems[item.itemId] = item;
+        } else {
+          // Nếu đã tồn tại, chỉ ghi đè nếu item mới có thông tin đầy đủ hơn (tên không trống)
+          final existing = mergedItems[item.itemId]!;
+          if (existing.itemName.isEmpty && item.itemName.isNotEmpty) {
+            mergedItems[item.itemId] = item;
+          }
+          // Luôn lấy số lượng lớn nhất hoặc cập nhật nếu cần (tùy nghiệp vụ, ở đây ưu tiên missionItems)
+          if (task.missionItems.contains(item)) {
+             // Nếu là item từ missionItems, cập nhật số lượng chuẩn
+             mergedItems[item.itemId] = MissionItem(
+               itemId: item.itemId,
+               itemName: item.itemName.isNotEmpty ? item.itemName : existing.itemName,
+               unit: item.unit.isNotEmpty ? item.unit : existing.unit,
+               quantity: item.quantity
+             );
+          }
+        }
+      }
+      
+      final allReqItems = mergedItems.values.toList();
       
       // Reset controllers
       for (var c in _controllers) {
@@ -77,8 +104,8 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
         // Khởi tạo danh sách hàng thực tế dựa trên Items đã xuất kho
         _actualItems = allReqItems.map((item) => {
           'itemId': item.itemId,
-          'itemName': item.itemName,
-          'unit': item.unit,
+          'itemName': item.itemName.isNotEmpty ? item.itemName : 'Vật phẩm',
+          'unit': item.unit.isNotEmpty ? item.unit : '-',
           'quantity': item.quantity,
         }).toList();
         _isLoading = false;
@@ -387,48 +414,56 @@ class _RescueReportScreenState extends State<RescueReportScreen> {
           ..._actualItems.asMap().entries.map((entry) {
             int idx = entry.key;
             var item = entry.value;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                children: [
-                  // Tên vật phẩm
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item['itemName'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        Text(item['unit'], style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                      ],
-                    ),
-                  ),
-                  // Số lượng đã xuất
-                  Expanded(
-                    flex: 1,
-                    child: Center(
-                      child: Text('${item['quantity']}', style: const TextStyle(fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
-                    ),
-                  ),
-                  // Ô nhập thực tế
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      controller: _controllers[idx],
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: StaffTheme.border)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: StaffTheme.primaryBlue)),
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item['itemName'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text(item['unit'], style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          ],
+                        ),
                       ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) {
-                        _actualItems[idx]['quantity'] = int.tryParse(val) ?? 0;
-                      },
-                    ),
+                      // Số lượng đã xuất
+                      Expanded(
+                        flex: 1,
+                        child: Center(
+                          child: Text('${item['quantity']}', style: const TextStyle(fontWeight: FontWeight.bold, color: StaffTheme.primaryBlue)),
+                        ),
+                      ),
+                      // Ô nhập thực tế
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _controllers[idx],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: StaffTheme.border)),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: StaffTheme.primaryBlue)),
+                            fillColor: StaffTheme.background,
+                            filled: true,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) {
+                            _actualItems[idx]['quantity'] = int.tryParse(val) ?? 0;
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                if (idx < _actualItems.length - 1) 
+                  const Divider(height: 16, thickness: 0.5, color: StaffTheme.border),
+              ],
             );
           }).toList(),
         ],

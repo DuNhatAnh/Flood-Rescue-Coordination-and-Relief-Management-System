@@ -6,6 +6,7 @@ import 'staff_report_screen.dart';
 import '../relief_item_screen.dart';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
+import '../home_screen.dart';
 import '../../utils/staff_theme.dart';
 import '../../services/rescue_service.dart';
 import '../../models/user_model.dart';
@@ -165,13 +166,40 @@ class StaffMainScreenState extends State<StaffMainScreen> {
     });
   }
 
-  void _handleLogout() {
-    AuthService.currentUser = null;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Xác nhận đăng xuất'),
+        content: const Text('Bạn có chắc muốn đăng xuất khỏi hệ thống?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: StaffTheme.errorRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Đăng xuất'),
+          ),
+        ],
+      ),
     );
+
+    if (confirm == true) {
+      await AuthService.logout();
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override

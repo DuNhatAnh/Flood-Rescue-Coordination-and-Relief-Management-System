@@ -267,11 +267,25 @@ class StaffReportScreenState extends State<StaffReportScreen> {
               : LineChart(
                   LineChartData(
                     minY: 0,
-                    maxY: 5000,
+                    maxY: 500,
                     gridData: const FlGridData(show: true, drawVerticalLine: false),
                     titlesData: FlTitlesData(
                       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 100,
+                          reservedSize: 35,
+                          getTitlesWidget: (value, meta) {
+                            if (value == 0) return const Text('0', style: TextStyle(fontSize: 10, color: Colors.grey));
+                            if (value % 100 == 0) {
+                              return Text(value.toInt().toString(), style: const TextStyle(fontSize: 10, color: Colors.grey));
+                            }
+                            return const Text('');
+                          },
+                        ),
+                      ),
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,

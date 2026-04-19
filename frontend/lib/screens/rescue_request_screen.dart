@@ -578,13 +578,7 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
               _buildTextField(_peopleController, null, "1",
                   keyboardType: TextInputType.number),
               const SizedBox(height: 24),
-              _buildSectionTitle(Icons.priority_high, "Mức độ khẩn cấp",
-                  trailing: IconButton(
-                    icon: const Icon(Icons.info_outline, color: Colors.blue),
-                    onPressed: () => _showUrgencyInfo(),
-                    constraints: const BoxConstraints(),
-                    padding: EdgeInsets.zero,
-                  )),
+              _buildSectionTitle(Icons.priority_high, "Mức độ khẩn cấp"),
               _buildUrgencyOptions(),
               const SizedBox(height: 24),
               _buildSectionTitle(Icons.camera_alt, "Hình ảnh hiện trường"),
@@ -634,51 +628,6 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
     );
   }
 
-  void _showUrgencyInfo() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Chú thích mức độ khẩn cấp"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildUrgencyInfoItem(
-                "CAO",
-                "Nguy hiểm tính mạng, nước dâng cao nhanh, có người già/trẻ em, không có lương thực.",
-                Colors.red),
-            const SizedBox(width: 12),
-            _buildUrgencyInfoItem(
-                "TRUNG BÌNH",
-                "Nhà bị ngập nhưng chưa nguy cơ cao, có lương thực ít, cần di dời sớm.",
-                Colors.orange),
-            const SizedBox(height: 12),
-            _buildUrgencyInfoItem(
-                "THẤP",
-                "Khu vực lân cận ngập, giao thông chia cắt, cần hỗ trợ nhu yếu phẩm.",
-                Colors.blue),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Đóng"))
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUrgencyInfoItem(String title, String desc, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: TextStyle(
-                color: color, fontWeight: FontWeight.bold, fontSize: 13)),
-        Text(desc, style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
 
   Widget _buildSectionTitle(IconData icon, String title, {Widget? trailing}) {
     return Row(
@@ -740,20 +689,37 @@ class _RescueRequestScreenState extends State<RescueRequestScreen> {
   Widget _buildUrgencyOptions() {
     return Column(
       children: [
-        _urgencyTile("Cao (Nguy hiểm tính mạng)", "HIGH"),
-        _urgencyTile("Trung bình", "MEDIUM"),
-        _urgencyTile("Thấp", "LOW"),
+        _urgencyTile(
+            "Cao (Nguy hiểm tính mạng)",
+            "Nguy hiểm tính mạng, nước dâng cao nhanh, có người già/trẻ em, không có lương thực.",
+            "HIGH"),
+        _urgencyTile(
+            "Trung bình",
+            "Nhà bị ngập nhưng chưa nguy cơ cao, có lương thực ít, cần di dời sớm.",
+            "MEDIUM"),
+        _urgencyTile(
+            "Thấp",
+            "Khu vực lân cận ngập, giao thông chia cắt, cần hỗ trợ nhu yếu phẩm.",
+            "LOW"),
       ],
     );
   }
 
-  Widget _urgencyTile(String title, String value) {
+  Widget _urgencyTile(String title, String subtitle, String value) {
     return RadioListTile<String>(
       title: Text(title,
           style: TextStyle(
-              color: value == "HIGH" ? Colors.red : Colors.black,
-              fontWeight:
-                  value == "HIGH" ? FontWeight.bold : FontWeight.normal)),
+              fontSize: 17,
+              color: value == "HIGH" ? Colors.red : Colors.blue[900],
+              fontWeight: FontWeight.bold)),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(subtitle,
+            style: TextStyle(
+                fontSize: 15,
+                fontStyle: FontStyle.italic,
+                color: value == "HIGH" ? Colors.red.withOpacity(0.7) : Colors.black87)),
+      ),
       value: value,
       groupValue: _urgencyLevel,
       onChanged: (val) => setState(() => _urgencyLevel = val!),

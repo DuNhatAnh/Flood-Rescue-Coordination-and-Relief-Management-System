@@ -207,10 +207,31 @@ class _DistributionExportFormState extends State<DistributionExportForm> {
           _selectedItems = []; // Đảm bảo reset trước khi fill
           
           // HỢP NHẤT: missionItems + assignedItems
-          final reqItems = {
-            ...{for (var i in widget.mission!.assignedItems) i.itemId: i},
-            ...{for (var i in widget.mission!.missionItems) i.itemId: i}
-          }.values;
+          // HỢP NHẤT THÔNG MINH: Ưu tiên lấy thông tin có tên đầy đủ
+          final Map<String, MissionItem> mergedReqs = {};
+          final allPossibleItems = [...widget.mission!.assignedItems, ...widget.mission!.missionItems];
+          
+          for (var item in allPossibleItems) {
+            if (item.itemId.isEmpty) continue;
+            if (!mergedReqs.containsKey(item.itemId)) {
+              mergedReqs[item.itemId] = item;
+            } else {
+              final existing = mergedReqs[item.itemId]!;
+              if (existing.itemName.isEmpty && item.itemName.isNotEmpty) {
+                mergedReqs[item.itemId] = item;
+              }
+              // Ưu tiên số lượng từ missionItems nếu trùng
+              if (widget.mission!.missionItems.contains(item)) {
+                mergedReqs[item.itemId] = MissionItem(
+                  itemId: item.itemId,
+                  itemName: item.itemName.isNotEmpty ? item.itemName : existing.itemName,
+                  unit: item.unit.isNotEmpty ? item.unit : existing.unit,
+                  quantity: item.quantity
+                );
+              }
+            }
+          }
+          final reqItems = mergedReqs.values.toList();
 
           for (var item in reqItems) {
             final stockIter = inv.where((s) => s.itemId == item.itemId);

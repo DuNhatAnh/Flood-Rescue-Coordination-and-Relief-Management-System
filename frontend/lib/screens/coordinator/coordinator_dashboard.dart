@@ -248,7 +248,7 @@ class _CoordinatorDashboardState extends State<CoordinatorDashboard> {
               await AuthService.logout();
               if (mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
                   (route) => false,
                 );
               }
