@@ -17,6 +17,7 @@ import vn.rescue.core.domain.repositories.VehiclesRepository;
 import vn.rescue.core.domain.repositories.WarehouseRepository;
 import vn.rescue.core.domain.entities.RescueReport;
 import vn.rescue.core.domain.entities.MissionItem;
+import vn.rescue.core.domain.entities.ReliefItem;
 import vn.rescue.core.domain.entities.User;
 import vn.rescue.core.domain.repositories.RescueReportRepository;
 import vn.rescue.core.domain.repositories.ReliefItemRepository;
@@ -238,12 +239,57 @@ public class RescueCoordinationService {
 
     public List<TaskAssignmentResponse> getAssignmentsByTeam(String teamId) {
         List<Assignment> assignments = assignmentRepository.findByTeamId(teamId);
-        return assignments.stream().map(this::convertToResponse).collect(Collectors.toList());
+        return convertToResponses(assignments);
     }
 
     public List<TaskAssignmentResponse> getAllAssignments() {
-        return assignmentRepository.findAll().stream()
-                .map(this::convertToResponse)
+        List<Assignment> assignments = assignmentRepository.findAll();
+        return convertToResponses(assignments);
+    }
+
+    private List<TaskAssignmentResponse> convertToResponses(List<Assignment> assignments) {
+        if (assignments.isEmpty()) return new ArrayList<>();
+
+        // 1. Collect all IDs for batch fetching
+        java.util.Set<String> requestIds = assignments.stream().map(Assignment::getRequestId).collect(Collectors.toSet());
+        java.util.Set<String> teamIds = assignments.stream().map(Assignment::getTeamId).collect(Collectors.toSet());
+        java.util.Set<String> vehicleIds = assignments.stream()
+                .filter(a -> a.getVehicleIds() != null)
+                .flatMap(a -> a.getVehicleIds().stream())
+                .collect(Collectors.toSet());
+        java.util.Set<String> itemIds = assignments.stream()
+                .flatMap(a -> {
+                    java.util.List<MissionItem> all = new ArrayList<>();
+                    if (a.getMissionItems() != null) all.addAll(a.getMissionItems());
+                    if (a.getAssignedItems() != null) all.addAll(a.getAssignedItems());
+                    if (a.getActualDistributedItems() != null) all.addAll(a.getActualDistributedItems());
+                    return all.stream();
+                })
+                .map(MissionItem::getItemId)
+                .collect(Collectors.toSet());
+
+        // 2. Batch fetch from DB
+        Map<String, RescueRequest> requestMap = rescueRequestRepository.findAllById(requestIds).stream()
+                .collect(Collectors.toMap(RescueRequest::getId, r -> r));
+        
+        // Fallback for custom IDs if some requests weren't found by internal ID
+        java.util.Set<String> missingRequestIds = requestIds.stream()
+                .filter(id -> !requestMap.containsKey(id))
+                .collect(Collectors.toSet());
+        for (String missingId : missingRequestIds) {
+            rescueRequestRepository.findFirstByCustomId(missingId).ifPresent(r -> requestMap.put(missingId, r));
+        }
+
+        Map<String, RescueTeam> teamMap = rescueTeamRepository.findAllById(teamIds).stream()
+                .collect(Collectors.toMap(RescueTeam::getId, t -> t));
+        Map<String, Vehicles> vehicleMap = vehiclesRepository.findAllById(vehicleIds).stream()
+                .collect(Collectors.toMap(Vehicles::getId, v -> v));
+        Map<String, ReliefItem> reliefItemMap = reliefItemRepository.findAllById(itemIds).stream()
+                .collect(Collectors.toMap(ReliefItem::getId, i -> i));
+
+        // 3. Convert all with pre-loaded data
+        return assignments.stream()
+                .map(a -> convertToResponse(a, requestMap, teamMap, vehicleMap, reliefItemMap))
                 .collect(Collectors.toList());
     }
 
@@ -529,7 +575,11 @@ public class RescueCoordinationService {
         return requestStatusHistoryRepository.findByRequestId(requestId);
     }
 
-    private TaskAssignmentResponse convertToResponse(Assignment assignment) {
+    private TaskAssignmentResponse convertToResponse(Assignment assignment, 
+                                                   Map<String, RescueRequest> requestMap,
+                                                   Map<String, RescueTeam> teamMap,
+                                                   Map<String, Vehicles> vehicleMap,
+                                                   Map<String, ReliefItem> reliefItemMap) {
         TaskAssignmentResponse response = new TaskAssignmentResponse();
         response.setId(assignment.getId());
         response.setRequestId(assignment.getRequestId());
@@ -538,13 +588,9 @@ public class RescueCoordinationService {
         response.setAssignedAt(assignment.getAssignedAt());
         response.setStatus(assignment.getStatus());
 
-        // Join with RescueRequest for dashboard info
-        Optional<RescueRequest> requestOpt = rescueRequestRepository.findById(assignment.getRequestId());
-        if (requestOpt.isEmpty()) {
-            requestOpt = rescueRequestRepository.findFirstByCustomId(assignment.getRequestId());
-        }
-        
-        requestOpt.ifPresent(request -> {
+        // Use pre-loaded RescueRequest
+        RescueRequest request = requestMap.get(assignment.getRequestId());
+        if (request != null) {
             response.setCitizenName(request.getCitizenName());
             response.setCitizenPhone(request.getCitizenPhone());
             response.setAddressText(request.getAddressText());
@@ -554,21 +600,22 @@ public class RescueCoordinationService {
             response.setLocationLat(request.getLocationLat());
             response.setLocationLng(request.getLocationLng());
             response.setCitizenVerified(request.isCitizenVerified());
-        });
+        }
 
-        response.setMissionItems(enrichItems(assignment.getMissionItems()));
-        response.setAssignedItems(enrichItems(assignment.getAssignedItems()));
+        response.setMissionItems(enrichItems(assignment.getMissionItems(), reliefItemMap));
+        response.setAssignedItems(enrichItems(assignment.getAssignedItems(), reliefItemMap));
         response.setItemsExported(assignment.isItemsExported());
         response.setRescuedCount(assignment.getRescuedCount());
         response.setReportNote(assignment.getReportNote());
-        response.setActualDistributedItems(enrichItems(assignment.getActualDistributedItems()));
+        response.setActualDistributedItems(enrichItems(assignment.getActualDistributedItems(), reliefItemMap));
 
-        // Join with RescueTeam
-        rescueTeamRepository.findById(assignment.getTeamId()).ifPresent(team -> {
+        // Use pre-loaded RescueTeam
+        RescueTeam team = teamMap.get(assignment.getTeamId());
+        if (team != null) {
             response.setTeamName(team.getTeamName());
-        });
+        }
 
-        // Join with Vehicles (Multiple)
+        // Use pre-loaded Vehicles
         if (assignment.getVehicleIds() != null && !assignment.getVehicleIds().isEmpty()) {
             response.setVehicleIds(assignment.getVehicleIds());
             java.util.List<String> types = new java.util.ArrayList<>();
@@ -576,7 +623,8 @@ public class RescueCoordinationService {
             java.util.List<vn.rescue.core.application.dto.VehicleSummary> vehicleSummaries = new java.util.ArrayList<>();
             
             for (String vId : assignment.getVehicleIds()) {
-                vehiclesRepository.findById(vId).ifPresent(v -> {
+                Vehicles v = vehicleMap.get(vId);
+                if (v != null) {
                     types.add(v.getVehicleType());
                     plates.add(v.getLicensePlate());
                     vehicleSummaries.add(new vn.rescue.core.application.dto.VehicleSummary(
@@ -584,7 +632,7 @@ public class RescueCoordinationService {
                         v.getVehicleType(), 
                         v.getLicensePlate()
                     ));
-                });
+                }
             }
             
             response.setVehicleType(types.stream().distinct().collect(java.util.stream.Collectors.joining(", ")));
@@ -592,8 +640,26 @@ public class RescueCoordinationService {
             response.setVehicles(vehicleSummaries);
         }
 
-
         return response;
+    }
+
+    private TaskAssignmentResponse convertToResponse(Assignment assignment) {
+        // Fallback or for single assignment conversion
+        Map<String, RescueRequest> requestMap = new HashMap<>();
+        rescueRequestRepository.findById(assignment.getRequestId()).ifPresent(r -> requestMap.put(r.getId(), r));
+        if (!requestMap.containsKey(assignment.getRequestId())) {
+            rescueRequestRepository.findFirstByCustomId(assignment.getRequestId()).ifPresent(r -> requestMap.put(assignment.getRequestId(), r));
+        }
+
+        Map<String, RescueTeam> teamMap = new HashMap<>();
+        rescueTeamRepository.findById(assignment.getTeamId()).ifPresent(t -> teamMap.put(t.getId(), t));
+
+        Map<String, Vehicles> vehicleMap = new HashMap<>();
+        if (assignment.getVehicleIds() != null) {
+            vehiclesRepository.findAllById(assignment.getVehicleIds()).forEach(v -> vehicleMap.put(v.getId(), v));
+        }
+
+        return convertToResponse(assignment, requestMap, teamMap, vehicleMap, new HashMap<>());
     }
 
     /**
@@ -656,7 +722,7 @@ public class RescueCoordinationService {
         }
     }
 
-    private java.util.List<MissionItem> enrichItems(java.util.List<MissionItem> items) {
+    private java.util.List<MissionItem> enrichItems(java.util.List<MissionItem> items, Map<String, ReliefItem> preloadedItems) {
         if (items == null) return new java.util.ArrayList<>();
         java.util.List<MissionItem> enriched = new java.util.ArrayList<>();
         for (MissionItem itemBase : items) {
@@ -670,13 +736,21 @@ public class RescueCoordinationService {
                 
             String name = item.getItemName();
             if (name == null || name.isEmpty() || name.contains("Chưa có tên") || name.equals("Vật phẩm")) {
-                reliefItemRepository.findById(item.getItemId()).ifPresent(ri -> {
+                ReliefItem ri = preloadedItems.get(item.getItemId());
+                if (ri == null) {
+                    ri = reliefItemRepository.findById(item.getItemId()).orElse(null);
+                }
+                if (ri != null) {
                     item.setItemName(ri.getItemName());
                     item.setUnit(ri.getUnit());
-                });
+                }
             }
             enriched.add(item);
         }
         return enriched;
+    }
+
+    private java.util.List<MissionItem> enrichItems(java.util.List<MissionItem> items) {
+        return enrichItems(items, new HashMap<>());
     }
 }

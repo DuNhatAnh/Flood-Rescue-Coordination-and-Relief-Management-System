@@ -28,10 +28,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   Future<void> _loadAssignments() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    final bool isInitialLoad = _assignments.isEmpty && _allRequests.isEmpty;
+    
+    if (isInitialLoad) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
     try {
       final results = await Future.wait([
         _rescueService.getAllAssignments(),
@@ -47,13 +52,26 @@ class _TrackingScreenState extends State<TrackingScreen> {
           _assignments = assignments;
           _allRequests = requests;
           _isLoading = false;
+          _errorMessage = null;
         });
       }
     } catch (e) {
+      print('DEBUG: TrackingScreen load error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString();
+          if (isInitialLoad) {
+            _errorMessage = e.toString();
+          } else {
+            // Hiển thị thông báo lỗi nhẹ nhàng nếu đang làm mới dữ liệu
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Không thể cập nhật dữ liệu mới: $e'),
+                backgroundColor: Colors.red.shade700,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         });
       }
     }

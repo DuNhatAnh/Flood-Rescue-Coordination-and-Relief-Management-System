@@ -64,10 +64,10 @@ class RescueService {
           return data.map((json) => RescueRequest.fromJson(json)).toList();
         }
       }
-      return [];
+      throw Exception('Không thể tải danh sách yêu cầu');
     } catch (e) {
       print('Error fetching all requests: $e');
-      return [];
+      rethrow;
     }
   }
 
@@ -251,10 +251,10 @@ class RescueService {
           return result;
         }
       }
-      return [];
+      throw Exception('Không thể tải danh sách nhiệm vụ');
     } catch (e, stacktrace) {
       print('Error fetching all assignments: $e\n$stacktrace');
-      return [];
+      rethrow;
     }
   }
 
