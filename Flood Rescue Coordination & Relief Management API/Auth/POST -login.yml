@@ -1,0 +1,47 @@
+info:
+  name: POST /login
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/login"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "admin@rescue.vn",
+        "password": "admin123"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 200 OK", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+
+        // Tự động trích xuất JWT Token và lưu vào Environment
+        try {
+            var jsonData = res.getBody();
+            var token = jsonData.token || jsonData.accessToken || jsonData.jwt;
+            if (token) {
+                bru.setEnvVar("bearerToken", token);
+                bru.setCollectionVar("bearerToken", token);
+                console.log("Đã lưu token thành công:", token);
+            }
+        } catch (e) {
+            console.log("Lỗi lấy token:", e);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

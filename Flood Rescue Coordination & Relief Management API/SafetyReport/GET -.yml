@@ -1,0 +1,24 @@
+info:
+  name: GET /
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/safety-reports"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Phản hồi thành công (200, 201, 204)", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

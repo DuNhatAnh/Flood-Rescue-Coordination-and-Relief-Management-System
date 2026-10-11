@@ -1,0 +1,40 @@
+info:
+  name: POST /
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/distributions"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "contactName": "Nguyễn Văn A",
+        "phoneNumber": "0987654321",
+        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
+        "latitude": 15.88,
+        "longitude": 108.05,
+        "peopleCount": 4,
+        "urgency": "HIGH",
+        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Phản hồi thành công (200, 201, 204)", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
