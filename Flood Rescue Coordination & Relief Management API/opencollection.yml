@@ -1,0 +1,24 @@
+opencollection: 1.0.0
+
+info:
+  name: Flood Rescue Coordination & Relief Management API
+
+request:
+  auth:
+    type: bearer
+    token: "{{bearerToken}}"
+  variables:
+    - name: baseUrl
+      value: http://localhost:8080
+    - name: bearerToken
+      value: ""
+
+docs:
+  content: Toàn bộ REST API của dự án Hệ thống điều phối cứu hộ và quản lý cứu trợ lũ lụt (Flood Rescue Coordination & Relief Management System) bao gồm 22 Controller, Authentication JWT, Quản lý yêu cầu cứu hộ, Điều phối đội cứu trợ, Quản lý kho và hàng hóa cứu trợ.
+  type: text/markdown
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
