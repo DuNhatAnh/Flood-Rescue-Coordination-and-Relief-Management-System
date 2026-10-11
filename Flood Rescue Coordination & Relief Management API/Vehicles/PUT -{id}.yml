@@ -5,22 +5,26 @@ info:
 
 http:
   method: PUT
-  url: "{{baseUrl}}/api/v1/vehicles/:id"
+  url: "{{baseUrl}}/api/v1/vehicles/:id?userId=6ac8a492b3505b0db326b89e"
   headers:
     - name: Content-Type
       value: application/json
   params:
     - name: id
-      value: "1"
+      value: "6ac8a49bb3505b0db326b8c3"
       type: path
       description: ID of id
+    - name: userId
+      value: "6ac8a492b3505b0db326b89e"
+      type: query
   body:
     type: json
     data: |-
       {
-        "name": "Mẫu dữ liệu",
-        "description": "Mô tả chi tiết",
-        "status": "ACTIVE"
+        "vehicleType": "CANO",
+        "licensePlate": "43A-001.23",
+        "currentLocation": "Ben Cua Dai",
+        "teamId": "6ac8a49ab3505b0db326b8c0"
       }
   auth: inherit
 

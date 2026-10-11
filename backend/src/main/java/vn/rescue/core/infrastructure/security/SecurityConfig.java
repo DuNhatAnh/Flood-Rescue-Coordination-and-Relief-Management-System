@@ -39,15 +39,13 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/**").permitAll()
                         .requestMatchers("/api/notifications/**").permitAll()
-                        .requestMatchers("/api/admin/system/**").permitAll()
+                        .requestMatchers("/api/admin/**").permitAll()
                         .requestMatchers("/api/inventory/**").permitAll()
-                        .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/upload/**", "/uploads/**",
-                                "/api/v1/rescue-requests/stats")
-                        .permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/warehouses/**", "/api/relief-items/**", "/api/upload/**", "/uploads/**").permitAll()
+                        .anyRequest().permitAll())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

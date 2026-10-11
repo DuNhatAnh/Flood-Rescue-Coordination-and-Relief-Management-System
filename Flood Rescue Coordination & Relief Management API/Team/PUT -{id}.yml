@@ -11,16 +11,14 @@ http:
       value: application/json
   params:
     - name: id
-      value: "1"
+      value: "6ac8a49ab3505b0db326b8c0"
       type: path
       description: ID of id
   body:
     type: json
     data: |-
       {
-        "name": "Mẫu dữ liệu",
-        "description": "Mô tả chi tiết",
-        "status": "ACTIVE"
+        "teamName": "Đội Cứu Hộ Đặc Nhiệm 1"
       }
   auth: inherit
 

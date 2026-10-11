@@ -1,0 +1,10 @@
+# Qodana configuration for Backend (Java / Spring Boot)
+version: "1.0"
+linter: jetbrains/qodana-jvm-community:latest
+profile:
+  name: qodana.starter
+exclude:
+  - name: All
+    paths:
+      - target
+      - uploads

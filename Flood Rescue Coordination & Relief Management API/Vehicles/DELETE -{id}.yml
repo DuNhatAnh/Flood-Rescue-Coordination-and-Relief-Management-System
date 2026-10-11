@@ -5,12 +5,15 @@ info:
 
 http:
   method: DELETE
-  url: "{{baseUrl}}/api/v1/vehicles/:id"
+  url: "{{baseUrl}}/api/v1/vehicles/:id?userId=6ac8a492b3505b0db326b89e"
   params:
     - name: id
-      value: "1"
+      value: "{{createdVehicleId}}"
       type: path
       description: ID of id
+    - name: userId
+      value: "6ac8a492b3505b0db326b89e"
+      type: query
   auth: inherit
 
 runtime:

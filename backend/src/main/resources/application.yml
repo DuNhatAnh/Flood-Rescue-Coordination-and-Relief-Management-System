@@ -1,9 +1,18 @@
 spring:
   application:
     name: flood-rescue-api
+  autoconfigure:
+    exclude:
+      - de.flapdoodle.embed.mongo.spring.autoconfigure.EmbeddedMongoAutoConfiguration
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI:mongodb+srv://nhatanhdu_db_user:BFkndzP3xqW3x9Wu@cluster0.jmi5ufx.mongodb.net/flood_rescue_db?retryWrites=true&w=majority}
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/flood_rescue_db}
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 6.0.5
   jackson:
     serialization:
       write-dates-as-timestamps: false

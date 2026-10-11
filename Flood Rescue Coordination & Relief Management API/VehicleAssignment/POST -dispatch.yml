@@ -13,9 +13,9 @@ http:
     type: json
     data: |-
       {
-        "name": "Mẫu dữ liệu",
-        "description": "Mô tả chi tiết",
-        "status": "ACTIVE"
+        "requestId": "6ac8a496b3505b0db326b8a3",
+        "teamId": "6ac8a49ab3505b0db326b8c2",
+        "vehicleIds": ["6ac8a49bb3505b0db326b8c7"]
       }
   auth: inherit
 

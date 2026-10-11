@@ -5,22 +5,22 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/api/v1/vehicles"
+  url: "{{baseUrl}}/api/v1/vehicles?userId=6ac8a492b3505b0db326b89e"
   headers:
     - name: Content-Type
       value: application/json
+  params:
+    - name: userId
+      value: "6ac8a492b3505b0db326b89e"
+      type: query
   body:
     type: json
     data: |-
       {
-        "contactName": "Nguyễn Văn A",
-        "phoneNumber": "0987654321",
-        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
-        "latitude": 15.88,
-        "longitude": 108.05,
-        "peopleCount": 4,
-        "urgency": "HIGH",
-        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+        "vehicleType": "CANO",
+        "licensePlate": "43A-888.99",
+        "currentLocation": "Ben song Thu Bon",
+        "teamId": "6ac8a49ab3505b0db326b8c1"
       }
   auth: inherit
 
@@ -31,6 +31,13 @@ runtime:
         test("Phản hồi thành công (200, 201, 204)", function () {
             expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
         });
+
+        try {
+            var resData = res.getBody();
+            if (resData && resData.data && resData.data.id) {
+                bru.setCollectionVar("createdVehicleId", resData.data.id);
+            }
+        } catch (e) {}
 
 settings:
   encodeUrl: true

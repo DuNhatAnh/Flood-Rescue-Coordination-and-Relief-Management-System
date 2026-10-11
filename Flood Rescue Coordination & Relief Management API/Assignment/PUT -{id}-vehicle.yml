@@ -6,11 +6,21 @@ info:
 http:
   method: PUT
   url: "{{baseUrl}}/api/v1/assignments/:id/vehicle"
+  headers:
+    - name: Content-Type
+      value: application/json
   params:
     - name: id
-      value: "1"
+      value: "6aca005835acdb55aae31192"
       type: path
       description: ID of id
+  body:
+    type: json
+    data: |-
+      {
+        "newVehicleIds": ["6ac8a49bb3505b0db326b8c4"],
+        "reason": "Xe thay the do hu hong"
+      }
   auth: inherit
 
 runtime:

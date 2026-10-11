@@ -6,11 +6,21 @@ info:
 http:
   method: PUT
   url: "{{baseUrl}}/api/v1/assignments/:id/status"
+  headers:
+    - name: Content-Type
+      value: application/json
   params:
     - name: id
-      value: "1"
+      value: "6aca005835acdb55aae31192"
       type: path
       description: ID of id
+  body:
+    type: json
+    data: |-
+      {
+        "status": "IN_PROGRESS",
+        "userId": "6ac8a492b3505b0db326b89e"
+      }
   auth: inherit
 
 runtime:

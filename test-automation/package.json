@@ -1,0 +1,16 @@
+{
+  "name": "flood-rescue-api-tests",
+  "version": "1.0.0",
+  "description": "CodeceptJS API Automation Testing for Flood Rescue System (16 APIs)",
+  "main": "codecept.conf.js",
+  "scripts": {
+    "test:api": "codeceptjs run --steps",
+    "test:report": "codeceptjs run --steps --reporter mochawesome",
+    "test:team-vehicles": "codeceptjs run team_vehicles_test.js --steps",
+    "test:assignments": "codeceptjs run assignment_dispatch_test.js --steps"
+  },
+  "devDependencies": {
+    "codeceptjs": "^3.6.5",
+    "axios": "^1.7.9"
+  }
+}

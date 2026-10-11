@@ -6,6 +6,10 @@ info:
 http:
   method: GET
   url: "{{baseUrl}}/api/v1/assignments/my-tasks"
+  params:
+    - name: teamId
+      value: "6ac8a49ab3505b0db326b8c0"
+      type: query
   auth: inherit
 
 runtime:

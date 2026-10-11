@@ -13,14 +13,11 @@ http:
     type: json
     data: |-
       {
-        "contactName": "Nguyễn Văn A",
-        "phoneNumber": "0987654321",
-        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
-        "latitude": 15.88,
-        "longitude": 108.05,
-        "peopleCount": 4,
-        "urgency": "HIGH",
-        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+        "requestId": "6ac8a496b3505b0db326b8a3",
+        "teamId": "6ac8a49ab3505b0db326b8c1",
+        "vehicleIds": ["6ac8a49bb3505b0db326b8c4"],
+        "assignedBy": "admin@rescue.vn",
+        "note": "Dieu dong cano ho tro khan cap"
       }
   auth: inherit
 
