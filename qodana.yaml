@@ -1,7 +1,5 @@
-# Qodana configuration for Flood Rescue Management System
 version: "1.0"
-linter: jetbrains/qodana-jvm-community:latest
-projectDir: backend
+linter: qodana-jvm-community
 profile:
   name: qodana.starter
 exclude:
