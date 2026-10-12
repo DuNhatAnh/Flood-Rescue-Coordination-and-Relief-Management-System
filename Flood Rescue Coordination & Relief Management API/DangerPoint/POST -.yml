@@ -1,0 +1,41 @@
+info:
+  name: POST /
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/danger-points"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Khu vực ngập sâu Cầu Đỏ",
+        "address": "Xã Đại Cường, Huyện Đại Lộc",
+        "latitude": 15.895,
+        "longitude": 108.065,
+        "depth": 2.5
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Tạo điểm nguy hiểm thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data).to.have.property("id");
+            bru.setEnvVar("dangerPointId", body.data.id);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
