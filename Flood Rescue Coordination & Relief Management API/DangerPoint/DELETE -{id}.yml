@@ -5,12 +5,7 @@ info:
 
 http:
   method: DELETE
-  url: "{{baseUrl}}/api/v1/danger-points/:id"
-  params:
-    - name: id
-      value: "1"
-      type: path
-      description: ID of id
+  url: "{{baseUrl}}/api/v1/danger-points/{{dangerPointId}}"
   auth: inherit
 
 runtime:
