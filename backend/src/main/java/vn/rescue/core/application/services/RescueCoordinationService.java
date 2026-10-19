@@ -135,7 +135,7 @@ public class RescueCoordinationService {
                 
             return updated;
         }
-        throw new RuntimeException("Không tìm thấy đội cứu hộ với ID: " + id);
+        throw new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Không tìm thấy đội cứu hộ với ID: " + id);
     }
 
     /**
