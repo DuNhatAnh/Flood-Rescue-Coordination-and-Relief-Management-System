@@ -7,7 +7,8 @@
     "test:api": "npx codeceptjs run --steps",
     "test:report": "npx codeceptjs run --steps --reporter mochawesome",
     "test:team-vehicles": "npx codeceptjs run team_vehicles_test.js --steps",
-    "test:assignments": "npx codeceptjs run assignment_dispatch_test.js --steps"
+    "test:assignments": "npx codeceptjs run assignment_dispatch_test.js --steps",
+    "test:kcpm8": "npx codeceptjs run upload_notification_report_test.js --steps"
   },
   "devDependencies": {
     "codeceptjs": "^3.6.5",

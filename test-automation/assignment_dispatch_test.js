@@ -6,7 +6,7 @@ const testUserId = 'test-admin-uid-001';
 Scenario('TC-ASN-01: Lấy danh sách toàn bộ các nhiệm vụ phân công [GET /api/v1/assignments/all]', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/assignments/all');
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['status', 'data']);
+  I.seeResponseContainsKeys(['code', 'data']);
 });
 
 Scenario('TC-ASN-02: Lấy nhiệm vụ theo đội [GET /api/v1/assignments/my-tasks?teamId=...]', async ({ I }) => {

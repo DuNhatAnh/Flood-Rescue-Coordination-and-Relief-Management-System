@@ -114,10 +114,17 @@ class ReportService {
     return {};
   }
 
-  /// Lấy lịch sử cứu hộ
-  Future<List<dynamic>> getRescueHistory() async {
+  /// Lấy lịch sử cứu hộ (Hỗ trợ lọc theo khoảng ngày, chặn khi ngày bắt đầu > ngày kết thúc)
+  Future<List<dynamic>> getRescueHistory({DateTime? startDate, DateTime? endDate}) async {
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      throw ArgumentError('Ngày bắt đầu không được lớn hơn ngày kết thúc');
+    }
     try {
-      final url = Uri.parse('$baseUrl/rescue-history');
+      final queryParams = <String, String>{};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+
+      final url = Uri.parse('$baseUrl/rescue-history').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
       final headers = await _getHeaders();
       final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
@@ -128,10 +135,17 @@ class ReportService {
     return [];
   }
 
-  /// Lấy lịch sử kho
-  Future<List<dynamic>> getWarehouseHistory(String type) async {
+  /// Lấy lịch sử kho (Hỗ trợ lọc theo khoảng ngày, chặn khi ngày bắt đầu > ngày kết thúc)
+  Future<List<dynamic>> getWarehouseHistory(String type, {DateTime? startDate, DateTime? endDate}) async {
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      throw ArgumentError('Ngày bắt đầu không được lớn hơn ngày kết thúc');
+    }
     try {
-      final url = Uri.parse('$baseUrl/warehouse-history?type=$type');
+      final queryParams = <String, String>{'type': type};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+
+      final url = Uri.parse('$baseUrl/warehouse-history').replace(queryParameters: queryParams);
       final headers = await _getHeaders();
       final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
@@ -142,10 +156,17 @@ class ReportService {
     return [];
   }
 
-  /// Lấy lịch sử phương tiện
-  Future<List<dynamic>> getVehicleHistory() async {
+  /// Lấy lịch sử phương tiện (Hỗ trợ lọc theo khoảng ngày, chặn khi ngày bắt đầu > ngày kết thúc)
+  Future<List<dynamic>> getVehicleHistory({DateTime? startDate, DateTime? endDate}) async {
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      throw ArgumentError('Ngày bắt đầu không được lớn hơn ngày kết thúc');
+    }
     try {
-      final url = Uri.parse('$baseUrl/vehicle-history');
+      final queryParams = <String, String>{};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+
+      final url = Uri.parse('$baseUrl/vehicle-history').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
       final headers = await _getHeaders();
       final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {

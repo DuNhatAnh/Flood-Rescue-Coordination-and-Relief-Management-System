@@ -18,8 +18,8 @@ public class FileController {
     private final String uploadDir = "uploads";
 
     @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<String>> uploadFile(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
+    public ResponseEntity<ApiResponse<String>> uploadFile(@RequestParam(value = "file", required = false) MultipartFile file) {
+        if (file == null || file.isEmpty() || file.getSize() == 0) {
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "File is empty"));
         }
 

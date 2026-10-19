@@ -1,6 +1,5 @@
 package vn.rescue.core.application.services;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import vn.rescue.core.application.dto.ItemConsumptionDTO;
 import vn.rescue.core.domain.repositories.*;
@@ -12,7 +11,6 @@ import java.util.stream.Collectors;
 import java.time.LocalDate;
 
 @Service
-@RequiredArgsConstructor
 public class ReportService {
     private final RescueRequestRepository rescueRequestRepository;
     private final UserRepository userRepository;
@@ -24,6 +22,29 @@ public class ReportService {
     private final AssignmentRepository assignmentRepository;
     private final VehiclesRepository vehiclesRepository;
     private final StockTransactionRepository stockTransactionRepository;
+
+    public ReportService(
+            RescueRequestRepository rescueRequestRepository,
+            UserRepository userRepository,
+            RescueTeamRepository rescueTeamRepository,
+            DistributionRepository distributionRepository,
+            DistributionDetailRepository distributionDetailRepository,
+            InventoryRepository inventoryRepository,
+            ReliefItemRepository reliefItemRepository,
+            AssignmentRepository assignmentRepository,
+            VehiclesRepository vehiclesRepository,
+            StockTransactionRepository stockTransactionRepository) {
+        this.rescueRequestRepository = rescueRequestRepository;
+        this.userRepository = userRepository;
+        this.rescueTeamRepository = rescueTeamRepository;
+        this.distributionRepository = distributionRepository;
+        this.distributionDetailRepository = distributionDetailRepository;
+        this.inventoryRepository = inventoryRepository;
+        this.reliefItemRepository = reliefItemRepository;
+        this.assignmentRepository = assignmentRepository;
+        this.vehiclesRepository = vehiclesRepository;
+        this.stockTransactionRepository = stockTransactionRepository;
+    }
 
     /**
      * Helper: Lấy bối cảnh người dùng hiện tại (Team và Warehouse)
@@ -369,9 +390,29 @@ public class ReportService {
     }
 
     /**
-     * Lấy lịch sử cứu hộ
+     * Báo cáo tổng hợp có lọc theo khoảng thời gian
+     */
+    public Map<String, Object> getGeneralReportFiltered(LocalDateTime start, LocalDateTime end) {
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("generalStats", getGeneralStats());
+        report.put("rescueHistory", getRescueHistory(start, end));
+        report.put("vehicleHistory", getVehicleUsageHistory(start, end));
+        report.put("warehouseHistoryExport", getWarehouseHistory("EXPORT", start, end));
+        report.put("warehouseHistoryImport", getWarehouseHistory("IMPORT", start, end));
+        return report;
+    }
+
+    /**
+     * Lấy lịch sử cứu hộ (mặc định không lọc ngày)
      */
     public List<Map<String, Object>> getRescueHistory() {
+        return getRescueHistory(null, null);
+    }
+
+    /**
+     * Lấy lịch sử cứu hộ có lọc theo khoảng thời gian
+     */
+    public List<Map<String, Object>> getRescueHistory(LocalDateTime start, LocalDateTime end) {
         Map<String, String> context = getCurrentUserContext();
         if (context != null && context.containsKey("empty")) return new ArrayList<>();
 
@@ -379,8 +420,15 @@ public class ReportService {
 
         return assignmentRepository.findAll().stream()
                 .filter(a -> teamId == null || teamId.equals(a.getTeamId()))
+                .filter(a -> {
+                    LocalDateTime time = a.getCompletedAt() != null ? a.getCompletedAt() : a.getAssignedAt();
+                    if (time == null) return start == null && end == null;
+                    if (start != null && time.isBefore(start)) return false;
+                    if (end != null && time.isAfter(end)) return false;
+                    return true;
+                })
                 .sorted(Comparator.comparing(Assignment::getAssignedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(20)
+                .limit(50)
                 .map(a -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("assignmentId", a.getId());
@@ -412,18 +460,33 @@ public class ReportService {
     }
 
     /**
-     * Lấy lịch sử kho (Nhập/Xuất)
+     * Lấy lịch sử kho (Nhập/Xuất) - mặc định không lọc ngày
      */
     public List<Map<String, Object>> getWarehouseHistory(String type) {
+        return getWarehouseHistory(type, null, null);
+    }
+
+    /**
+     * Lấy lịch sử kho (Nhập/Xuất) có lọc theo khoảng thời gian
+     */
+    public List<Map<String, Object>> getWarehouseHistory(String type, LocalDateTime start, LocalDateTime end) {
         Map<String, String> context = getCurrentUserContext();
         if (context != null && context.containsKey("empty")) return new ArrayList<>();
 
         String warehouseId = context != null ? context.get("warehouseId") : null;
+        String normalizedType = (type != null && !type.isBlank()) ? type.toUpperCase() : "EXPORT";
 
-        return stockTransactionRepository.findByTransactionType(type.toUpperCase()).stream()
+        return stockTransactionRepository.findByTransactionType(normalizedType).stream()
                 .filter(tx -> warehouseId == null || warehouseId.equals(tx.getWarehouseId()))
+                .filter(tx -> {
+                    LocalDateTime time = tx.getTimestamp();
+                    if (time == null) return start == null && end == null;
+                    if (start != null && time.isBefore(start)) return false;
+                    if (end != null && time.isAfter(end)) return false;
+                    return true;
+                })
                 .sorted(Comparator.comparing(StockTransaction::getTimestamp, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(20)
+                .limit(50)
                 .map(tx -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", tx.getId());
@@ -445,9 +508,16 @@ public class ReportService {
     }
 
     /**
-     * Lấy lịch sử sử dụng phương tiện
+     * Lấy lịch sử sử dụng phương tiện (mặc định không lọc ngày)
      */
     public List<Map<String, Object>> getVehicleUsageHistory() {
+        return getVehicleUsageHistory(null, null);
+    }
+
+    /**
+     * Lấy lịch sử sử dụng phương tiện có lọc theo khoảng thời gian
+     */
+    public List<Map<String, Object>> getVehicleUsageHistory(LocalDateTime start, LocalDateTime end) {
         Map<String, String> context = getCurrentUserContext();
         if (context != null && context.containsKey("empty")) return new ArrayList<>();
 
@@ -455,8 +525,15 @@ public class ReportService {
 
         return assignmentRepository.findAll().stream()
                 .filter(a -> (teamId == null || teamId.equals(a.getTeamId())) && a.getVehicleIds() != null && !a.getVehicleIds().isEmpty())
+                .filter(a -> {
+                    LocalDateTime time = a.getAssignedAt();
+                    if (time == null) return start == null && end == null;
+                    if (start != null && time.isBefore(start)) return false;
+                    if (end != null && time.isAfter(end)) return false;
+                    return true;
+                })
                 .sorted(Comparator.comparing(Assignment::getAssignedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(20)
+                .limit(50)
                 .map(a -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("assignmentId", a.getId());
