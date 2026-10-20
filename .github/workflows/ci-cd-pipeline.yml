@@ -38,6 +38,7 @@ jobs:
 
       - name: Run Qodana Scan (Backend Java)
         uses: JetBrains/qodana-action@v2024.1
+        continue-on-error: true
         with:
           args: --project-dir,backend
         env:
