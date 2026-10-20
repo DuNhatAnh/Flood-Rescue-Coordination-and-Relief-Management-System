@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import vn.rescue.core.application.dto.RoleDto;
 import vn.rescue.core.domain.entities.Role;
 import vn.rescue.core.domain.repositories.RoleRepository;
+import vn.rescue.core.presentation.exceptions.DuplicateResourceException;
+import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,13 +25,13 @@ public class RoleService {
 
     public RoleDto getRoleById(String id) {
         Role role = roleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Role với ID: " + id));
         return mapToDto(role);
     }
 
     public RoleDto createRole(RoleDto roleDto) {
         if (roleRepository.findByName(roleDto.getName()).isPresent()) {
-            throw new RuntimeException("Role name already exists");
+            throw new DuplicateResourceException("Tên Role '" + roleDto.getName() + "' đã tồn tại trong hệ thống");
         }
         Role role = Role.builder()
                 .name(roleDto.getName() != null ? roleDto.getName().toUpperCase() : null)
@@ -44,11 +46,11 @@ public class RoleService {
 
     public RoleDto updateRole(String id, RoleDto roleDto) {
         Role role = roleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Role với ID: " + id));
         
         if (roleDto.getName() != null && !roleDto.getName().equalsIgnoreCase(role.getName())) {
             if (roleRepository.findByName(roleDto.getName()).isPresent()) {
-                throw new RuntimeException("Role name already exists");
+                throw new DuplicateResourceException("Tên Role '" + roleDto.getName() + "' đã tồn tại trong hệ thống");
             }
             role.setName(roleDto.getName().toUpperCase());
         }
@@ -68,7 +70,7 @@ public class RoleService {
 
     public void deleteRole(String id) {
         Role role = roleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Role với ID: " + id));
         roleRepository.delete(role);
         systemManagementService.logAction("ADMIN", "DELETE_ROLE", "Deleted role " + role.getName());
     }

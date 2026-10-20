@@ -14,6 +14,8 @@ import vn.rescue.core.domain.repositories.VehiclesRepository;
 import vn.rescue.core.domain.repositories.WarehouseRepository;
 import vn.rescue.core.application.dto.UserDto;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import vn.rescue.core.presentation.exceptions.DuplicateResourceException;
+import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,12 +46,13 @@ public class UserService {
         if (id == null) throw new IllegalArgumentException("ID cannot be null");
         return userRepository.findById(id)
                 .map(this::mapToDto)
-                .orElseThrow(() -> new RuntimeException("User not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + id));
     }
 
     public UserDto updateUser(String id, UserDto dto) {
         if (id == null) throw new IllegalArgumentException("ID cannot be null");
-        User user = userRepository.findById(id).orElseThrow();
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + id));
         user.setFullName(dto.getFullName());
         user.setPhone(dto.getPhone());
         user.setRoleId(dto.getRoleId());
@@ -59,7 +62,7 @@ public class UserService {
 
     public UserDto createUser(UserDto dto) {
         if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists: " + dto.getEmail());
+            throw new DuplicateResourceException("Email '" + dto.getEmail() + "' đã tồn tại trong hệ thống");
         }
         User user = new User();
         user.setFullName(dto.getFullName());
@@ -89,7 +92,7 @@ public class UserService {
 
     @Transactional
     public UserDto updateUserRole(String id, String roleId) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + id));
         String oldRoleId = user.getRoleId();
         
         // Luồng 1: Nếu từ NHÂN VIÊN chuyển sang vai trò khác (Xóa đội, giải phóng kho/phương tiện)
@@ -147,7 +150,8 @@ public class UserService {
 
     public UserDto updateUserStatus(String userId, String status) {
         if (userId == null) throw new IllegalArgumentException("User ID cannot be null");
-        User user = userRepository.findById(userId).orElseThrow();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + userId));
         user.setStatus(status);
         return mapToDto(userRepository.save(user));
     }
