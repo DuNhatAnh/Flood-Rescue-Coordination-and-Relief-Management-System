@@ -202,15 +202,17 @@ public class RescueCoordinationService {
                 rescueTeamRepository.save(team);
             }
 
-            // Update multiple vehicles status
-            if (vehicleIds != null) {
+            // Validate and update multiple vehicles status
+            if (vehicleIds != null && !vehicleIds.isEmpty()) {
                 for (String vId : vehicleIds) {
-                    Optional<Vehicles> vOpt = vehiclesRepository.findById(vId);
-                    if (vOpt.isPresent()) {
-                        Vehicles vehicle = vOpt.get();
-                        vehicle.setStatus("BUSY");
-                        vehiclesRepository.save(vehicle);
+                    Vehicles vehicle = vehiclesRepository.findById(vId)
+                            .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Phương tiện " + vId + " không tồn tại!"));
+                    if (!"AVAILABLE".equalsIgnoreCase(vehicle.getStatus())) {
+                        throw new vn.rescue.core.presentation.exceptions.BadRequestException(
+                                "Phương tiện " + vehicle.getLicensePlate() + " đang bận hoặc không ở trạng thái sẵn sàng (AVAILABLE) để điều phối.");
                     }
+                    vehicle.setStatus("BUSY");
+                    vehiclesRepository.save(vehicle);
                 }
             }
 
@@ -704,13 +706,17 @@ public class RescueCoordinationService {
                 }
             }
                 
-            // Gán toàn bộ xe mới
-            if (newVehicleIds != null) {
+            // Gán toàn bộ xe mới sau khi kiểm tra trạng thái
+            if (newVehicleIds != null && !newVehicleIds.isEmpty()) {
                 for (String newId : newVehicleIds) {
-                    vehiclesRepository.findById(newId).ifPresent(v -> {
-                        v.setStatus("BUSY");
-                        vehiclesRepository.save(v);
-                    });
+                    Vehicles vehicle = vehiclesRepository.findById(newId)
+                            .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Phương tiện " + newId + " không tồn tại!"));
+                    if (!"AVAILABLE".equalsIgnoreCase(vehicle.getStatus())) {
+                        throw new vn.rescue.core.presentation.exceptions.BadRequestException(
+                                "Phương tiện " + vehicle.getLicensePlate() + " đang bận hoặc không ở trạng thái sẵn sàng (AVAILABLE) để điều phối.");
+                    }
+                    vehicle.setStatus("BUSY");
+                    vehiclesRepository.save(vehicle);
                 }
             }
             

@@ -40,9 +40,9 @@ public class AssignmentService {
         java.util.List<Vehicles> vehicles = new java.util.ArrayList<>();
         for (String vId : vehicleIds) {
             Vehicles v = vehicleRepo.findById(vId)
-                    .orElseThrow(() -> new RuntimeException("Phương tiện " + vId + " không tồn tại!"));
+                    .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Phương tiện " + vId + " không tồn tại!"));
             if (!"AVAILABLE".equalsIgnoreCase(v.getStatus())) {
-                throw new RuntimeException("Phương tiện " + v.getLicensePlate() + " hiện đang bận hoặc bảo trì.");
+                throw new vn.rescue.core.presentation.exceptions.BadRequestException("Phương tiện " + v.getLicensePlate() + " đang bận hoặc không ở trạng thái sẵn sàng (AVAILABLE) để điều phối.");
             }
             vehicles.add(v);
         }
