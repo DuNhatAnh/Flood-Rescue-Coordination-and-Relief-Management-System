@@ -28,6 +28,12 @@ public class DangerPointController {
         return ResponseEntity.ok(ApiResponse.success(dangerPointService.createDangerPoint(dangerPoint), "Danger point created"));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<DangerPoint>> updateDangerPoint(@PathVariable String id, @RequestBody DangerPoint dangerPoint) {
+        return ResponseEntity.ok(ApiResponse.success(dangerPointService.updateDangerPoint(id, dangerPoint), "Danger point updated"));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteDangerPoint(@PathVariable String id) {

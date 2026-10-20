@@ -188,11 +188,18 @@ public class RescueCoordinationService {
             requestOpt = rescueRequestRepository.findFirstByCustomId(requestId);
         }
 
-        if (requestOpt.isPresent()) {
-            RescueRequest request = requestOpt.get();
-            request.setStatus("ASSIGNED");
-            request.setTeamId(teamId);
-            rescueRequestRepository.save(request);
+        if (requestOpt.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy yêu cầu cứu hộ với ID: " + requestId);
+        }
+
+        RescueRequest request = requestOpt.get();
+        if ("COMPLETED".equalsIgnoreCase(request.getStatus()) || "CANCELLED".equalsIgnoreCase(request.getStatus())) {
+            throw new IllegalStateException("Không thể điều phối yêu cầu cứu hộ đã ở trạng thái: " + request.getStatus());
+        }
+
+        request.setStatus("ASSIGNED");
+        request.setTeamId(teamId);
+        rescueRequestRepository.save(request);
 
             // Update team status
             Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(teamId);
@@ -235,8 +242,6 @@ public class RescueCoordinationService {
                 "SOS");
                 
             return saved;
-        }
-        return null;
     }
 
     public List<TaskAssignmentResponse> getAssignmentsByTeam(String teamId) {
