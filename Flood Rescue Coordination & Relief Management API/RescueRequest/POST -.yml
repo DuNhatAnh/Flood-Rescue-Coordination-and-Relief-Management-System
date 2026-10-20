@@ -13,14 +13,14 @@ http:
     type: json
     data: |-
       {
-        "contactName": "Nguyễn Văn A",
-        "phoneNumber": "0987654321",
-        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
-        "latitude": 15.88,
-        "longitude": 108.05,
-        "peopleCount": 4,
-        "urgency": "HIGH",
-        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+        "citizenName": "Nguyễn Văn A",
+        "citizenPhone": "0987654321",
+        "addressText": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
+        "locationLat": 15.88,
+        "locationLng": 108.05,
+        "numberOfPeople": 4,
+        "urgencyLevel": "HIGH",
+        "description": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
       }
   auth: inherit
 
