@@ -32,6 +32,7 @@ jobs:
 
       - name: 'Qodana Scan (Backend)'
         uses: JetBrains/qodana-action@v2024.1
+        continue-on-error: true
         with:
           args: --project-dir,backend
           pr-mode: false

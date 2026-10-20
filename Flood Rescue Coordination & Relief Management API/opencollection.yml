@@ -22,7 +22,7 @@ request:
     - name: baseUrl
       value: http://localhost:8080
     - name: bearerToken
-      value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNjdWUudm4iLCJpYXQiOjE3OTE3NDA0NzYsImV4cCI6MTc5MTgyNjg3Nn0.uNNWvDYvFofybU6Nha7mPn-t7wrxokGI-MDM86sPq_Y
+      value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNjdWUudm4iLCJpYXQiOjE3OTI0NzQwODUsImV4cCI6MTc5MjU2MDQ4NX0.uLWAxYIJpEtZJfjd6EX4pih0koTHg35LTI8p4rWew48
     - name: createdVehicleId
       value: 6acbce917fe0672921cb32cf
 
