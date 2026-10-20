@@ -8,7 +8,7 @@ http:
   url: "{{baseUrl}}/api/v1/relief-items/:id"
   params:
     - name: id
-      value: "1"
+      value: "{{itemId}}"
       type: path
       description: ID of id
   auth: inherit

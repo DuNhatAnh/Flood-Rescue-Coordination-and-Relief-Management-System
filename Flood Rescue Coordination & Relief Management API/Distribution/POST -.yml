@@ -13,14 +13,16 @@ http:
     type: json
     data: |-
       {
-        "contactName": "Nguyễn Văn A",
-        "phoneNumber": "0987654321",
-        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
-        "latitude": 15.88,
-        "longitude": 108.05,
-        "peopleCount": 4,
-        "urgency": "HIGH",
-        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+        "warehouseId": "6ac5fed5346e4a02fdcf9644",
+        "requestId": "rescue-req-01",
+        "type": "TRANSFER",
+        "destinationWarehouseId": "6ac5fed5346e4a02fdcf9645",
+        "items": [
+          {
+            "itemId": "6ac5fed5346e4a02fdcf9647",
+            "quantity": 10
+          }
+        ]
       }
   auth: inherit
 
@@ -30,6 +32,9 @@ runtime:
       code: |-
         test("Phản hồi thành công (200, 201, 204)", function () {
             expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+            if (res.getBody() && res.getBody().id) {
+                bru.setVar("distributionId", res.getBody().id);
+            }
         });
 
 settings:

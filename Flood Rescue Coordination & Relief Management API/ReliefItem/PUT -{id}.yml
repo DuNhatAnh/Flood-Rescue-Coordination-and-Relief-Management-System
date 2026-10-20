@@ -8,9 +8,21 @@ http:
   url: "{{baseUrl}}/api/v1/relief-items/:id"
   params:
     - name: id
-      value: "1"
+      value: "{{itemId}}"
       type: path
       description: ID of id
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "itemName": "Mì tôm Hảo Hảo (Cập nhật)",
+        "unit": "Thùng",
+        "description": "Thùng 30 gói mì tôm chua cay",
+        "imageUrl": "https://example.com/mi-tom-update.jpg"
+      }
   auth: inherit
 
 runtime:

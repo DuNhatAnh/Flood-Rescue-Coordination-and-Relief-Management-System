@@ -13,14 +13,10 @@ http:
     type: json
     data: |-
       {
-        "contactName": "Nguyễn Văn A",
-        "phoneNumber": "0987654321",
-        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
-        "latitude": 15.88,
-        "longitude": 108.05,
-        "peopleCount": 4,
-        "urgency": "HIGH",
-        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+        "itemName": "Mì tôm Hảo Hảo",
+        "unit": "Thùng",
+        "description": "Thùng 30 gói mì tôm cứu trợ",
+        "imageUrl": "https://example.com/mi-tom.jpg"
       }
   auth: inherit
 
@@ -30,6 +26,9 @@ runtime:
       code: |-
         test("Phản hồi thành công (200, 201, 204)", function () {
             expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+            if (res.getBody() && res.getBody().data && res.getBody().data.id) {
+                bru.setVar("itemId", res.getBody().data.id);
+            }
         });
 
 settings:
