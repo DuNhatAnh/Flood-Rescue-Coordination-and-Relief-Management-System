@@ -19,13 +19,11 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     // ============================================================
-    // BUG-FIX KCPM-32: Các handler mới bổ sung
+    // 1. CÁC NGOẠI LỆ NGHIỆP VỤ & TÀI NGUYÊN (404, 409, 400)
     // ============================================================
 
     /**
-     * BUG-ROLE-01: GET /api/v1/admin/roles/{id} với ID không tồn tại
-     * Trước: 500 Internal Server Error
-     * Sau:   404 Not Found
+     * Bắt lỗi không tìm thấy tài nguyên (Role, User, Team, DangerPoint, Vehicle...) -> HTTP 404
      */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
@@ -35,9 +33,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * BUG-ROLE-02: POST /api/v1/admin/roles với tên Role đã tồn tại
-     * Trước: 500 Internal Server Error
-     * Sau:   409 Conflict
+     * Bắt lỗi trùng lặp tài nguyên (Tên Role, Email...) -> HTTP 409
      */
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiResponse<Object>> handleDuplicateResourceException(DuplicateResourceException ex) {
@@ -47,33 +43,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * BUG-ADMIN-01: POST request với JSON sai định dạng (thiếu dấu {}, sai kiểu dữ liệu)
-     * Trước: 500 Internal Server Error
-     * Sau:   400 Bad Request
+     * Bắt lỗi nghiệp vụ BadRequest (Biển số xe trùng, xe đang bận...) -> HTTP 400
      */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
-        log.warn("Malformed JSON request: {}", ex.getMessage());
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse<Object>> handleBadRequest(BadRequestException ex) {
+        log.warn("Bad request: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(400, "Request body không đúng định dạng JSON hoặc bị thiếu"));
+                .body(ApiResponse.error(400, ex.getMessage()));
     }
 
     /**
-     * BUG-ADMIN-02: GET request thiếu query param bắt buộc (vd: ?type=...)
-     * Trước: 500 Internal Server Error
-     * Sau:   400 Bad Request
+     * Bắt lỗi vi phạm quy tắc trạng thái nghiệp vụ (Đơn cứu hộ đã COMPLETED / CANCELLED...) -> HTTP 400
      */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMissingParams(MissingServletRequestParameterException ex) {
-        log.warn("Missing request parameter: {}", ex.getParameterName());
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(IllegalStateException ex) {
+        log.warn("Business rule violation: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(400, "Tham số '" + ex.getParameterName() + "' là bắt buộc nhưng bị thiếu"));
+                .body(ApiResponse.error(400, ex.getMessage()));
     }
 
     /**
-     * BUG-ADMIN-03: Các thao tác AdminUser với ID null hoặc không hợp lệ
-     * Trước: 500 Internal Server Error
-     * Sau:   400 Bad Request
+     * Bắt lỗi đối số không hợp lệ (ID null, ID không hợp lệ...) -> HTTP 400
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Object>> handleIllegalArgument(IllegalArgumentException ex) {
@@ -83,9 +73,12 @@ public class GlobalExceptionHandler {
     }
 
     // ============================================================
-    // Các handler cũ (giữ nguyên)
+    // 2. CÁC NGOẠI LỆ ĐỊNH DẠNG REQUEST (400)
     // ============================================================
 
+    /**
+     * Bắt lỗi validate DTO (@NotNull, @NotBlank, @Pattern, @DecimalMin...)
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getFieldErrors().stream()
@@ -98,13 +91,29 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, "Dữ liệu không hợp lệ: " + errorMessage));
     }
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse<Object>> handleBadRequest(BadRequestException ex) {
-        log.warn("Bad request: {}", ex.getMessage());
+    /**
+     * Bắt lỗi Request body không đúng định dạng JSON
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("Malformed JSON request: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(400, ex.getMessage()));
+                .body(ApiResponse.error(400, "Request body không đúng định dạng JSON hoặc bị thiếu"));
     }
 
+    /**
+     * Bắt lỗi thiếu Query Param bắt buộc
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMissingParams(MissingServletRequestParameterException ex) {
+        log.warn("Missing request parameter: {}", ex.getParameterName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "Tham số '" + ex.getParameterName() + "' là bắt buộc nhưng bị thiếu"));
+    }
+
+    // ============================================================
+    // 3. CÁC NGOẠI LỆ ĐIỀU HƯỚNG & BẢO MẬT (404, 401, 403, 500)
+    // ============================================================
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleNoResourceFound(NoResourceFoundException ex) {
@@ -134,4 +143,3 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(500, "Đã xảy ra lỗi hệ thống: " + ex.getMessage()));
     }
 }
-
