@@ -25,16 +25,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+
+      - name: Copy .git into backend for Qodana VCS support
+        run: cp -r .git backend/.git
 
       - name: 'Qodana Scan (Backend)'
         uses: JetBrains/qodana-action@v2024.1
         continue-on-error: true
         with:
           args: --project-dir,backend
+          pr-mode: false
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+
+      - name: Cleanup .git copy in backend
+        if: always()
+        run: rm -rf backend/.git
 
       - name: Upload Qodana Report
         if: always()
