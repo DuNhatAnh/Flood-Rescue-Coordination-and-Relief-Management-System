@@ -25,13 +25,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: 'Qodana Scan (Backend)'
         uses: JetBrains/qodana-action@v2024.1
         with:
-          args: --project-dir,backend
+          project-dir: backend
           pr-mode: false
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
