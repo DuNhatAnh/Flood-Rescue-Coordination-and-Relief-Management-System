@@ -32,6 +32,7 @@ jobs:
         uses: JetBrains/qodana-action@v2024.1
         with:
           args: --project-dir,backend
+          pr-mode: false
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
 
