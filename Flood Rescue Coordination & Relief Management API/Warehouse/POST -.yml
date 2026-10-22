@@ -1,7 +1,7 @@
 info:
   name: POST /
   type: http
-  seq: 4
+  seq: 3
 
 http:
   method: POST
@@ -13,14 +13,12 @@ http:
     type: json
     data: |-
       {
-        "contactName": "Nguyễn Văn A",
-        "phoneNumber": "0987654321",
-        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
-        "latitude": 15.88,
-        "longitude": 108.05,
-        "peopleCount": 4,
-        "urgency": "HIGH",
-        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+        "warehouseName": "Kho Cứu Trợ Trung Tâm Đà Nẵng",
+        "location": "Huyện Hòa Vang, TP. Đà Nẵng",
+        "managerId": "manager-01",
+        "status": "ACTIVE",
+        "latitude": 16.0544,
+        "longitude": 108.2022
       }
   auth: inherit
 
@@ -30,6 +28,9 @@ runtime:
       code: |-
         test("Phản hồi thành công (200, 201, 204)", function () {
             expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+            if (res.getBody() && res.getBody().data && res.getBody().data.id) {
+                bru.setVar("warehouseId", res.getBody().data.id);
+            }
         });
 
 settings:

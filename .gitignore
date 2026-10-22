@@ -58,3 +58,8 @@ qodana-results/
 node_modules/
 test-automation/output/
 **/output/
+
+# Postman
+backend/postman/
+backend/.postman/
+

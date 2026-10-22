@@ -15,7 +15,8 @@ import vn.rescue.core.domain.repositories.NotificationRepository;
 import vn.rescue.core.domain.repositories.ReliefItemRepository;
 import vn.rescue.core.domain.repositories.StockTransactionRepository;
 import vn.rescue.core.domain.repositories.WarehouseRepository;
-import vn.rescue.core.application.dto.NotificationDto;
+import vn.rescue.core.presentation.exceptions.BadRequestException;
+import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +34,19 @@ public class InventoryService {
 
     @Transactional
     public InventoryResponse importStock(StockInRequest request, String userId) {
+        if (request == null) {
+            throw new BadRequestException("Dữ liệu nhập kho không được để trống");
+        }
+        if (request.getWarehouseId() == null || request.getWarehouseId().trim().isEmpty()) {
+            throw new BadRequestException("Mã kho không được để trống");
+        }
+        if (!warehouseRepository.existsById(request.getWarehouseId())) {
+            throw new ResourceNotFoundException("Không tìm thấy kho hàng với ID: " + request.getWarehouseId());
+        }
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new BadRequestException("Số lượng nhập kho phải lớn hơn 0");
+        }
+
         // 0. Lấy thông tin Item từ danh mục để đồng bộ dữ liệu (tránh bị null/Vật phẩm)
         ReliefItem item = request.getItemId() != null ? reliefItemRepository.findById(request.getItemId()).orElse(null) : null;
         String itemName = (item != null) ? item.getItemName() : "Vật phẩm";
@@ -92,6 +106,9 @@ public class InventoryService {
 
     // Lấy danh sách hàng hóa của kho (Dùng cho SCRUM-55 Dashboard)
     public List<InventoryResponse> getWarehouseInventory(String warehouseId) {
+        if (warehouseId == null || !warehouseRepository.existsById(warehouseId)) {
+            throw new ResourceNotFoundException("Không tìm thấy kho hàng với ID: " + warehouseId);
+        }
         return inventoryRepository.findByWarehouseId(warehouseId)
                 .stream()
                 .map(this::mapToResponse)
@@ -100,6 +117,9 @@ public class InventoryService {
 
     // Lấy danh sách hàng sắp hết để cảnh báo trên Dashboard
     public List<InventoryResponse> getLowStockItems(String warehouseId) {
+        if (warehouseId == null || !warehouseRepository.existsById(warehouseId)) {
+            throw new ResourceNotFoundException("Không tìm thấy kho hàng với ID: " + warehouseId);
+        }
         return inventoryRepository.findLowStockItemsByWarehouse(warehouseId)
                 .stream()
                 .map(this::mapToResponse)

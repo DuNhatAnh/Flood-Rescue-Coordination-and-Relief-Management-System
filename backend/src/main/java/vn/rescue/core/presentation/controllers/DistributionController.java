@@ -21,7 +21,7 @@ public class DistributionController {
     @PostMapping
     public ResponseEntity<Distribution> create(@RequestBody DistributionRequest request,
             Authentication authentication) {
-        String userId = authentication.getName();
+        String userId = (authentication != null && authentication.getName() != null) ? authentication.getName() : "system";
         return ResponseEntity.ok(distributionService.createDistribution(request, userId));
     }
 

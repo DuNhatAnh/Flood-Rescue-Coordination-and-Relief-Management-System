@@ -135,7 +135,7 @@ public class RescueCoordinationService {
                 
             return updated;
         }
-        throw new RuntimeException("Không tìm thấy đội cứu hộ với ID: " + id);
+        throw new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Không tìm thấy đội cứu hộ với ID: " + id);
     }
 
     /**
@@ -188,11 +188,18 @@ public class RescueCoordinationService {
             requestOpt = rescueRequestRepository.findFirstByCustomId(requestId);
         }
 
-        if (requestOpt.isPresent()) {
-            RescueRequest request = requestOpt.get();
-            request.setStatus("ASSIGNED");
-            request.setTeamId(teamId);
-            rescueRequestRepository.save(request);
+        if (requestOpt.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy yêu cầu cứu hộ với ID: " + requestId);
+        }
+
+        RescueRequest request = requestOpt.get();
+        if ("COMPLETED".equalsIgnoreCase(request.getStatus()) || "CANCELLED".equalsIgnoreCase(request.getStatus())) {
+            throw new IllegalStateException("Không thể điều phối yêu cầu cứu hộ đã ở trạng thái: " + request.getStatus());
+        }
+
+        request.setStatus("ASSIGNED");
+        request.setTeamId(teamId);
+        rescueRequestRepository.save(request);
 
             // Update team status
             Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(teamId);
@@ -202,15 +209,17 @@ public class RescueCoordinationService {
                 rescueTeamRepository.save(team);
             }
 
-            // Update multiple vehicles status
-            if (vehicleIds != null) {
+            // Validate and update multiple vehicles status
+            if (vehicleIds != null && !vehicleIds.isEmpty()) {
                 for (String vId : vehicleIds) {
-                    Optional<Vehicles> vOpt = vehiclesRepository.findById(vId);
-                    if (vOpt.isPresent()) {
-                        Vehicles vehicle = vOpt.get();
-                        vehicle.setStatus("BUSY");
-                        vehiclesRepository.save(vehicle);
+                    Vehicles vehicle = vehiclesRepository.findById(vId)
+                            .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Phương tiện " + vId + " không tồn tại!"));
+                    if (!"AVAILABLE".equalsIgnoreCase(vehicle.getStatus())) {
+                        throw new vn.rescue.core.presentation.exceptions.BadRequestException(
+                                "Phương tiện " + vehicle.getLicensePlate() + " đang bận hoặc không ở trạng thái sẵn sàng (AVAILABLE) để điều phối.");
                     }
+                    vehicle.setStatus("BUSY");
+                    vehiclesRepository.save(vehicle);
                 }
             }
 
@@ -233,8 +242,6 @@ public class RescueCoordinationService {
                 "SOS");
                 
             return saved;
-        }
-        return null;
     }
 
     public List<TaskAssignmentResponse> getAssignmentsByTeam(String teamId) {
@@ -704,13 +711,17 @@ public class RescueCoordinationService {
                 }
             }
                 
-            // Gán toàn bộ xe mới
-            if (newVehicleIds != null) {
+            // Gán toàn bộ xe mới sau khi kiểm tra trạng thái
+            if (newVehicleIds != null && !newVehicleIds.isEmpty()) {
                 for (String newId : newVehicleIds) {
-                    vehiclesRepository.findById(newId).ifPresent(v -> {
-                        v.setStatus("BUSY");
-                        vehiclesRepository.save(v);
-                    });
+                    Vehicles vehicle = vehiclesRepository.findById(newId)
+                            .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Phương tiện " + newId + " không tồn tại!"));
+                    if (!"AVAILABLE".equalsIgnoreCase(vehicle.getStatus())) {
+                        throw new vn.rescue.core.presentation.exceptions.BadRequestException(
+                                "Phương tiện " + vehicle.getLicensePlate() + " đang bận hoặc không ở trạng thái sẵn sàng (AVAILABLE) để điều phối.");
+                    }
+                    vehicle.setStatus("BUSY");
+                    vehiclesRepository.save(vehicle);
                 }
             }
             

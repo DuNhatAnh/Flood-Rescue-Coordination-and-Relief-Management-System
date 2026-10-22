@@ -22,6 +22,67 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    // ============================================================
+    // 1. CÁC NGOẠI LỆ NGHIỆP VỤ & TÀI NGUYÊN (404, 409, 400)
+    // ============================================================
+
+    /**
+     * Bắt lỗi không tìm thấy tài nguyên (Role, User, Team, DangerPoint, Vehicle...) -> HTTP 404
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(404, ex.getMessage()));
+    }
+
+    /**
+     * Bắt lỗi trùng lặp tài nguyên (Tên Role, Email...) -> HTTP 409
+     */
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDuplicateResourceException(DuplicateResourceException ex) {
+        log.warn("Duplicate resource: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(409, ex.getMessage()));
+    }
+
+    /**
+     * Bắt lỗi nghiệp vụ BadRequest (Biển số xe trùng, xe đang bận...) -> HTTP 400
+     */
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse<Object>> handleBadRequest(BadRequestException ex) {
+        log.warn("Bad request: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, ex.getMessage()));
+    }
+
+    /**
+     * Bắt lỗi vi phạm quy tắc trạng thái nghiệp vụ (Đơn cứu hộ đã COMPLETED / CANCELLED...) -> HTTP 400
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(IllegalStateException ex) {
+        log.warn("Business rule violation: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, ex.getMessage()));
+    }
+
+    /**
+     * Bắt lỗi đối số không hợp lệ (ID null, ID không hợp lệ...) -> HTTP 400
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "Dữ liệu đầu vào không hợp lệ: " + ex.getMessage()));
+    }
+
+    // ============================================================
+    // 2. CÁC NGOẠI LỆ ĐỊNH DẠNG REQUEST (400)
+    // ============================================================
+
+    /**
+     * Bắt lỗi validate DTO (@NotNull, @NotBlank, @Pattern, @DecimalMin...)
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getFieldErrors().stream()
@@ -34,13 +95,29 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, "Dữ liệu không hợp lệ: " + errorMessage));
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
-        log.warn("Bad request / illegal argument: {}", ex.getMessage());
+    /**
+     * Bắt lỗi Request body không đúng định dạng JSON
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("Malformed JSON request: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(400, ex.getMessage()));
+                .body(ApiResponse.error(400, "Request body không đúng định dạng JSON hoặc bị thiếu"));
     }
 
+    /**
+     * Bắt lỗi thiếu Query Param bắt buộc
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMissingParams(MissingServletRequestParameterException ex) {
+        log.warn("Missing request parameter: {}", ex.getParameterName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "Tham số '" + ex.getParameterName() + "' là bắt buộc nhưng bị thiếu"));
+    }
+
+    /**
+     * Bắt lỗi Multipart / Upload file thiếu dữ liệu
+     */
     @ExceptionHandler({MultipartException.class, MissingServletRequestPartException.class})
     public ResponseEntity<ApiResponse<Object>> handleMultipartException(Exception ex) {
         log.warn("Multipart upload error: {}", ex.getMessage());
@@ -48,13 +125,9 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, "Yêu cầu tải lên không hợp lệ hoặc thiếu dữ liệu tệp (multipart/form-data): " + ex.getMessage()));
     }
 
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMissingParam(MissingServletRequestParameterException ex) {
-        log.warn("Missing request parameter: {}", ex.getParameterName());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(400, "Thiếu tham số bắt buộc: " + ex.getParameterName()));
-    }
-
+    /**
+     * Bắt lỗi dung lượng file upload vượt quá giới hạn
+     */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Object>> handleMaxSizeException(MaxUploadSizeExceededException ex) {
         log.warn("File size exceeded: {}", ex.getMessage());
@@ -62,6 +135,9 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, "Kích thước tệp tải lên vượt quá giới hạn cho phép"));
     }
 
+    /**
+     * Bắt lỗi kiểu dữ liệu tham số không hợp lệ
+     */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         log.warn("Type mismatch for param {}: {}", ex.getName(), ex.getMessage());
@@ -69,12 +145,9 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, "Tham số không đúng định dạng: " + ex.getName()));
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Object>> handleNotReadable(HttpMessageNotReadableException ex) {
-        log.warn("Http message not readable: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(400, "Dữ liệu yêu cầu (Request body) không hợp lệ hoặc sai cú pháp JSON"));
-    }
+    // ============================================================
+    // 3. CÁC NGOẠI LỆ ĐIỀU HƯỚNG & BẢO MẬT (404, 401, 403, 500)
+    // ============================================================
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleNoResourceFound(NoResourceFoundException ex) {

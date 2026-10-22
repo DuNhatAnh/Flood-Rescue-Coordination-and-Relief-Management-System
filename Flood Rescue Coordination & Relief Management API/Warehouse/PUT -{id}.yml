@@ -8,9 +8,23 @@ http:
   url: "{{baseUrl}}/api/v1/warehouses/:id"
   params:
     - name: id
-      value: "1"
+      value: "{{warehouseId}}"
       type: path
       description: ID of id
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "warehouseName": "Kho Cứu Trợ Đà Nẵng (Đã cập nhật)",
+        "location": "Quận Cẩm Lệ, TP. Đà Nẵng",
+        "managerId": "manager-01",
+        "status": "ACTIVE",
+        "latitude": 16.0544,
+        "longitude": 108.2022
+      }
   auth: inherit
 
 runtime:

@@ -48,7 +48,7 @@ public class VehiclesService {
     @Transactional
     public VehicleResponse createVehicle(VehicleRequest request, String userId) {
         if (vehiclesRepository.existsByLicensePlate(request.getLicensePlate())) {
-            throw new RuntimeException("Biển số xe đã tồn tại!");
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Biển số xe đã tồn tại trong hệ thống: " + request.getLicensePlate());
         }
         Vehicles vehicle = new Vehicles();
         mapRequestToEntity(vehicle, request);

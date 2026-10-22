@@ -1,0 +1,41 @@
+info:
+  name: POST / (Invalid GPS & Phone - 400)
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn Test",
+        "citizenPhone": "012345",
+        "locationLat": 95.0,
+        "locationLng": 108.20,
+        "addressText": "Quận Hải Châu, Đà Nẵng",
+        "numberOfPeople": 2
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Bắt lỗi dữ liệu không hợp lệ - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            expect(body.success).to.be.false;
+            expect(body.code).to.equal(400);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
