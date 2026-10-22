@@ -6,6 +6,8 @@ import vn.rescue.core.application.dto.WarehouseRequest;
 import vn.rescue.core.domain.entities.Warehouse;
 import vn.rescue.core.domain.repositories.WarehouseRepository;
 import vn.rescue.core.domain.repositories.RescueTeamRepository;
+import vn.rescue.core.presentation.exceptions.BadRequestException;
+import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,11 +24,14 @@ public class WarehouseService {
     }
 
     public Warehouse createWarehouse(WarehouseRequest request) {
+        if (request == null || request.getWarehouseName() == null || request.getWarehouseName().trim().isEmpty()) {
+            throw new BadRequestException("Tên kho bãi không được để trống");
+        }
         if (request.getManagerId() != null) {
             handleManagerReassignment(request.getManagerId());
         }
         Warehouse warehouse = new Warehouse();
-        warehouse.setWarehouseName(request.getWarehouseName());
+        warehouse.setWarehouseName(request.getWarehouseName().trim());
         warehouse.setLocation(request.getLocation());
         warehouse.setManagerId(request.getManagerId());
         warehouse.setStatus(request.getStatus() != null ? request.getStatus() : "ACTIVE");
@@ -40,8 +45,11 @@ public class WarehouseService {
     }
 
     public Warehouse updateWarehouse(String id, WarehouseRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Dữ liệu cập nhật kho không được để trống");
+        }
         Warehouse warehouse = warehouseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kho bãi với ID: " + id));
         
         if (request.getManagerId() != null && !request.getManagerId().equals(warehouse.getManagerId())) {
             handleManagerReassignment(request.getManagerId());
@@ -93,10 +101,14 @@ public class WarehouseService {
     }
 
     public Warehouse getWarehouseById(String id) {
-        return warehouseRepository.findById(id).orElse(null);
+        return warehouseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kho bãi với ID: " + id));
     }
 
     public void deleteWarehouse(String id) {
+        if (!warehouseRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Không tìm thấy kho bãi với ID: " + id);
+        }
         warehouseRepository.deleteById(id);
     }
 }

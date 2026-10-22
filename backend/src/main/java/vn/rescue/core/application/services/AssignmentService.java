@@ -25,24 +25,26 @@ public class AssignmentService {
 
         // 1. Kiểm tra nhiệm vụ có tồn tại và đang chờ không
         RescueRequest rescueRequest = requestRepo.findById(requestDto.getRequestId())
-                .orElseThrow(() -> new RuntimeException("Nhiệm vụ không tồn tại!"));
+                .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Nhiệm vụ không tồn tại với ID: " + requestDto.getRequestId()));
 
-        if ("ASSIGNED".equals(rescueRequest.getStatus())) {
-            throw new RuntimeException("Nhiệm vụ này đã được gán cho đội khác.");
+        if ("ASSIGNED".equalsIgnoreCase(rescueRequest.getStatus()) ||
+            "COMPLETED".equalsIgnoreCase(rescueRequest.getStatus()) ||
+            "CANCELLED".equalsIgnoreCase(rescueRequest.getStatus())) {
+            throw new IllegalStateException("Không thể điều phối yêu cầu cứu hộ đã ở trạng thái: " + rescueRequest.getStatus());
         }
 
         // 2. Kiểm tra danh sách phương tiện
         java.util.List<String> vehicleIds = requestDto.getVehicleIds();
         if (vehicleIds == null || vehicleIds.isEmpty()) {
-            throw new RuntimeException("Chưa chọn phương tiện nào!");
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Chưa chọn phương tiện nào!");
         }
 
         java.util.List<Vehicles> vehicles = new java.util.ArrayList<>();
         for (String vId : vehicleIds) {
             Vehicles v = vehicleRepo.findById(vId)
-                    .orElseThrow(() -> new RuntimeException("Phương tiện " + vId + " không tồn tại!"));
+                    .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Phương tiện " + vId + " không tồn tại!"));
             if (!"AVAILABLE".equalsIgnoreCase(v.getStatus())) {
-                throw new RuntimeException("Phương tiện " + v.getLicensePlate() + " hiện đang bận hoặc bảo trì.");
+                throw new vn.rescue.core.presentation.exceptions.BadRequestException("Phương tiện " + v.getLicensePlate() + " đang bận hoặc không ở trạng thái sẵn sàng (AVAILABLE) để điều phối.");
             }
             vehicles.add(v);
         }

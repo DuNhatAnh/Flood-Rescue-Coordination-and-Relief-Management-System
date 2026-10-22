@@ -1,0 +1,37 @@
+info:
+  name: PUT /{id}
+  type: http
+  seq: 3
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/danger-points/{{dangerPointId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Khu vực ngập sâu Cầu Đỏ - Đã cắm biển cảnh báo",
+        "depth": 3.0
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Cập nhật điểm nguy hiểm thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.depth).to.equal(3.0);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,6 +1,5 @@
 package vn.rescue.core.application.services;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +13,9 @@ import vn.rescue.core.domain.repositories.DistributionRepository;
 import vn.rescue.core.domain.repositories.InventoryRepository;
 import vn.rescue.core.domain.repositories.AssignmentRepository;
 import vn.rescue.core.domain.repositories.ReliefItemRepository;
+import vn.rescue.core.domain.repositories.WarehouseRepository;
+import vn.rescue.core.presentation.exceptions.BadRequestException;
+import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,9 +38,37 @@ public class DistributionService {
     private InventoryService inventoryService;
     @Autowired
     private ReliefItemRepository reliefItemRepository;
+    @Autowired
+    private WarehouseRepository warehouseRepository;
 
     @Transactional
     public Distribution createDistribution(DistributionRequest request, String userId) {
+        if (request == null) {
+            throw new BadRequestException("Dữ liệu phân phối hàng không được để trống");
+        }
+        if (request.getWarehouseId() == null || request.getWarehouseId().trim().isEmpty()) {
+            throw new BadRequestException("Mã kho (warehouseId) không được để trống");
+        }
+        if (!warehouseRepository.existsById(request.getWarehouseId())) {
+            throw new ResourceNotFoundException("Không tìm thấy kho hàng với ID: " + request.getWarehouseId());
+        }
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new BadRequestException("Danh sách mặt hàng phân phối không được để trống");
+        }
+
+        // Kiểm tra tồn kho trước khi phân phối (BUG-DIST-01)
+        for (DistributionRequest.ItemQuantity itemReq : request.getItems()) {
+            if (itemReq.getItemId() == null || itemReq.getQuantity() == null || itemReq.getQuantity() <= 0) {
+                throw new BadRequestException("Mặt hàng và số lượng phân phối không hợp lệ");
+            }
+            Inventory inventory = inventoryRepository.findByWarehouseIdAndItemId(request.getWarehouseId(), itemReq.getItemId()).orElse(null);
+            int available = (inventory != null && inventory.getQuantity() != null) ? inventory.getQuantity() : 0;
+            if (itemReq.getQuantity() > available) {
+                String itemName = (inventory != null && inventory.getItemName() != null) ? inventory.getItemName() : itemReq.getItemId();
+                throw new BadRequestException("Số lượng tồn kho không đủ cho mặt hàng '" + itemName + "' (Hiện có: " + available + ", Yêu cầu xuất: " + itemReq.getQuantity() + ")");
+            }
+        }
+
         Distribution distribution = new Distribution();
         distribution.setWarehouseId(request.getWarehouseId());
         distribution.setRequestId(request.getRequestId());
@@ -127,10 +157,10 @@ public class DistributionService {
     @Transactional
     public Distribution completeTransfer(String distributionId) {
         Distribution distribution = distributionRepository.findById(distributionId)
-                .orElseThrow(() -> new RuntimeException("Transfer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu điều chuyển với ID: " + distributionId));
         
         if (!"TRANSFER".equals(distribution.getType()) || !"IN_TRANSIT".equals(distribution.getStatus())) {
-            throw new RuntimeException("Invalid transfer status");
+            throw new BadRequestException("Trạng thái điều chuyển không hợp lệ để hoàn tất");
         }
 
         List<DistributionDetail> details = detailRepository.findAllByDistributionId(distribution.getId());

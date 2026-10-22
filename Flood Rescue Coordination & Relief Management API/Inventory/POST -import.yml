@@ -5,7 +5,12 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/api/v1/inventory/import"
+  url: "{{baseUrl}}/api/v1/inventory/import?userId=admin-01"
+  params:
+    - name: userId
+      value: "admin-01"
+      type: query
+      description: ID of user performing import
   headers:
     - name: Content-Type
       value: application/json
@@ -13,9 +18,12 @@ http:
     type: json
     data: |-
       {
-        "name": "Mẫu dữ liệu",
-        "description": "Mô tả chi tiết",
-        "status": "ACTIVE"
+        "warehouseId": "6ac5fed5346e4a02fdcf9644",
+        "itemId": "6ac5fed5346e4a02fdcf9647",
+        "quantity": 100,
+        "source": "Ủy ban Mặt trận Tổ quốc",
+        "referenceNumber": "PNK-2026-001",
+        "condition": "NEW"
       }
   auth: inherit
 

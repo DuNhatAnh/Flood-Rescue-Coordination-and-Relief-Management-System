@@ -8,7 +8,7 @@ http:
   url: "{{baseUrl}}/api/v1/warehouses/:id"
   params:
     - name: id
-      value: "1"
+      value: "{{warehouseId}}"
       type: path
       description: ID of id
   auth: inherit
