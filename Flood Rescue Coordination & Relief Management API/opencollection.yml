@@ -22,9 +22,9 @@ request:
     - name: baseUrl
       value: http://localhost:8080
     - name: bearerToken
-      value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNjdWUudm4iLCJpYXQiOjE3OTI0NzQwODUsImV4cCI6MTc5MjU2MDQ4NX0.uLWAxYIJpEtZJfjd6EX4pih0koTHg35LTI8p4rWew48
+      value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNjdWUudm4iLCJpYXQiOjE3OTI1NzU3MjgsImV4cCI6MTc5MjY2MjEyOH0.5NVEV6WWcP1UvbjBxORsPmoqMB-y-Q9AEArqCimvIHw
     - name: createdVehicleId
-      value: 6acbce917fe0672921cb32cf
+      value: 6ad888e7a1c6872749caab2e
 
 docs:
   content: Toàn bộ REST API của dự án Hệ thống điều phối cứu hộ và quản lý cứu trợ lũ lụt (Flood Rescue Coordination & Relief Management System) bao gồm 22 Controller, Authentication JWT, Quản lý yêu cầu cứu hộ, Điều phối đội cứu trợ, Quản lý kho và hàng hóa cứu trợ.
