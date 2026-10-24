@@ -14,8 +14,15 @@ exports.config = {
     JSONResponse: {}
   },
   include: {},
-  bootstrap: null,
-  mocha: {},
+  mocha: {
+    reporterOptions: {
+      reportDir: './output',
+      reportFilename: 'codeceptjs-report',
+      overwrite: true,
+      html: true,
+      json: true
+    }
+  },
   name: 'flood-rescue-api-tests',
   plugins: {
     retryFailedStep: {

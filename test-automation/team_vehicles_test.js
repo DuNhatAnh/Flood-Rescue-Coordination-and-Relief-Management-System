@@ -8,7 +8,7 @@ const testUserId = 'test-admin-uid-001';
 Scenario('TC-TEAM-01: Lấy danh sách tất cả các đội cứu hộ [GET /api/v1/teams]', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/teams');
   I.seeResponseCodeIsSuccessful(); // 200 OK
-  I.seeResponseContainsKeys(['status', 'data']);
+  I.seeResponseContainsKeys(['code', 'data']);
 });
 
 Scenario('TC-TEAM-02: Lọc danh sách đội cứu hộ sẵn sàng [GET /api/v1/teams/available]', async ({ I }) => {
@@ -41,7 +41,7 @@ Scenario('TC-TEAM-04: Cập nhật tên đội cứu hộ [PUT /api/v1/teams/{id
 Scenario('TC-VEH-01: Lấy thống kê số lượng phương tiện [GET /api/v1/vehicles/statistics-summary]', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/vehicles/statistics-summary');
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['status', 'data']);
+  I.seeResponseContainsKeys(['code', 'data']);
 });
 
 Scenario('TC-VEH-02: Tạo mới ca nô cứu hộ hợp lệ [POST /api/v1/vehicles?userId=...]', async ({ I }) => {

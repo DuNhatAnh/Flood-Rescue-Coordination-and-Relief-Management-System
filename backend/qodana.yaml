@@ -1,6 +1,6 @@
 # Qodana configuration for Backend (Java / Spring Boot)
 version: "1.0"
-linter: jetbrains/qodana-jvm-community:latest
+linter: qodana-jvm-community
 profile:
   name: qodana.starter
 exclude:

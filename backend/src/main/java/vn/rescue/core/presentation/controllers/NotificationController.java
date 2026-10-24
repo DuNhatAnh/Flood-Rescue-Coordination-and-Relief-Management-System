@@ -1,6 +1,6 @@
 package vn.rescue.core.presentation.controllers;
 
-import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.rescue.core.application.dto.NotificationDto;
@@ -11,14 +11,23 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
-@RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Cho phép Flutter kết nối
 public class NotificationController {
     private final SystemManagementService systemManagementService;
 
-    // SCRUM-56: Gửi thông báo
+    public NotificationController(SystemManagementService systemManagementService) {
+        this.systemManagementService = systemManagementService;
+    }
+
+    // SCRUM-56: Gửi thông báo (Validate người nhận và tiêu đề)
     @PostMapping
-    public ResponseEntity<ApiResponse<Notification>> sendNotification(@RequestBody NotificationDto dto) {
+    public ResponseEntity<ApiResponse<Notification>> sendNotification(@Valid @RequestBody NotificationDto dto) {
+        if (dto.getUserId() == null || dto.getUserId().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Người nhận không được để trống"));
+        }
+        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Tiêu đề không được để trống"));
+        }
         Notification notification = systemManagementService.sendNotification(dto);
         return ResponseEntity.ok(ApiResponse.success(notification, "Notification sent successfully"));
     }
@@ -46,7 +55,10 @@ public class NotificationController {
 
     // Đếm số thông báo chưa đọc
     @GetMapping("/unread-count")
-    public ResponseEntity<ApiResponse<Long>> getUnreadCount(@RequestParam String userId) {
+    public ResponseEntity<ApiResponse<Long>> getUnreadCount(@RequestParam(value = "userId", required = false) String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Tham số userId không được để trống"));
+        }
         long count = systemManagementService.getUnreadNotificationCount(userId);
         return ResponseEntity.ok(ApiResponse.success(count, "Unread count retrieved"));
     }

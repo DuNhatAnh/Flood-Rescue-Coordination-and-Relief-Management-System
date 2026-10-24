@@ -1,6 +1,5 @@
 package vn.rescue.core.application.services;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.rescue.core.domain.entities.*;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class SystemManagementService {
     private final RoleRepository roleRepository;
@@ -20,6 +18,21 @@ public class SystemManagementService {
     private final SystemConfigRepository systemConfigRepository;
     private final InventoryRepository inventoryRepository;
     private final VehiclesRepository vehiclesRepository;
+
+    public SystemManagementService(
+            RoleRepository roleRepository,
+            SystemLogRepository systemLogRepository,
+            NotificationRepository notificationRepository,
+            SystemConfigRepository systemConfigRepository,
+            InventoryRepository inventoryRepository,
+            VehiclesRepository vehiclesRepository) {
+        this.roleRepository = roleRepository;
+        this.systemLogRepository = systemLogRepository;
+        this.notificationRepository = notificationRepository;
+        this.systemConfigRepository = systemConfigRepository;
+        this.inventoryRepository = inventoryRepository;
+        this.vehiclesRepository = vehiclesRepository;
+    }
 
     // --- SCRUM-54: NHẬT KÝ HỆ THỐNG ---
     /**
@@ -90,15 +103,25 @@ public class SystemManagementService {
     }
 
     /**
-     * Gửi thông báo thủ công từ DTO
+     * Gửi thông báo thủ công từ DTO (Validate người nhận và tiêu đề)
      */
     public Notification sendNotification(NotificationDto dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Dữ liệu thông báo không được để trống");
+        }
+        if (dto.getUserId() == null || dto.getUserId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Người nhận không được để trống");
+        }
+        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tiêu đề không được để trống");
+        }
+
         Notification notification = Notification.builder()
-                .title(dto.getTitle())
+                .title(dto.getTitle().trim())
                 .content(dto.getContent())
-                .type(dto.getType())
-                .priority(dto.getPriority())
-                .userId(dto.getUserId())
+                .type(dto.getType() != null ? dto.getType() : "INFO")
+                .priority(dto.getPriority() != null ? dto.getPriority() : "NORMAL")
+                .userId(dto.getUserId().trim())
                 .isRead(false)
                 .createdAt(LocalDateTime.now())
                 .build();

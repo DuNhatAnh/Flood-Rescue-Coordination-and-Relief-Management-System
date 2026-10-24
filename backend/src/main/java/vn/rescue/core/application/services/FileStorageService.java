@@ -22,8 +22,13 @@ public class FileStorageService {
     }
 
     public String save(MultipartFile file) {
+        if (file == null || file.isEmpty() || file.getSize() == 0) {
+            throw new IllegalArgumentException("File tải lên không được để rỗng");
+        }
         try {
-            String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            String originalFilename = file.getOriginalFilename();
+            String cleanFilename = (originalFilename != null) ? Paths.get(originalFilename).getFileName().toString() : "file";
+            String filename = UUID.randomUUID().toString() + "_" + cleanFilename;
             Files.copy(file.getInputStream(), this.root.resolve(filename));
             return "/uploads/" + filename;
         } catch (Exception e) {

@@ -9,6 +9,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import vn.rescue.core.presentation.common.ApiResponse;
 
@@ -109,6 +113,36 @@ public class GlobalExceptionHandler {
         log.warn("Missing request parameter: {}", ex.getParameterName());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(400, "Tham số '" + ex.getParameterName() + "' là bắt buộc nhưng bị thiếu"));
+    }
+
+    /**
+     * Bắt lỗi Multipart / Upload file thiếu dữ liệu
+     */
+    @ExceptionHandler({MultipartException.class, MissingServletRequestPartException.class})
+    public ResponseEntity<ApiResponse<Object>> handleMultipartException(Exception ex) {
+        log.warn("Multipart upload error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "Yêu cầu tải lên không hợp lệ hoặc thiếu dữ liệu tệp (multipart/form-data): " + ex.getMessage()));
+    }
+
+    /**
+     * Bắt lỗi dung lượng file upload vượt quá giới hạn
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMaxSizeException(MaxUploadSizeExceededException ex) {
+        log.warn("File size exceeded: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "Kích thước tệp tải lên vượt quá giới hạn cho phép"));
+    }
+
+    /**
+     * Bắt lỗi kiểu dữ liệu tham số không hợp lệ
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        log.warn("Type mismatch for param {}: {}", ex.getName(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "Tham số không đúng định dạng: " + ex.getName()));
     }
 
     // ============================================================

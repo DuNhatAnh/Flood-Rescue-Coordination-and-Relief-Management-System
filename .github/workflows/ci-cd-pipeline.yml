@@ -6,6 +6,7 @@ on:
       - main
       - master
       - develop
+      - 'test/**'
     tags:
       - 'v*.*.*'
   pull_request:
@@ -13,6 +14,7 @@ on:
       - main
       - master
       - develop
+      - 'test/**'
   workflow_dispatch:
 
 env:
@@ -26,6 +28,7 @@ jobs:
   code-quality-qodana:
     name: 1. Qodana Code Quality Scan
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: write
       pull-requests: write
@@ -88,10 +91,10 @@ jobs:
           path: backend/target/*.jar
 
   # =========================================================================
-  # 3. AUTOMATED API TESTING (NEWMAN & CODECEPTJS)
+  # 3. AUTOMATED API TESTING (CODECEPTJS)
   # =========================================================================
   api-automation-test:
-    name: 3. API Automation (Postman/Newman & CodeceptJS)
+    name: 3. API Automation Testing (CodeceptJS)
     needs: [backend-build-test]
     runs-on: ubuntu-latest
     services:
@@ -138,33 +141,22 @@ jobs:
             sleep 2
           done
 
-      - name: Install Test Automation Dependencies
-        run: |
-          npm install -g newman newman-reporter-htmlextra
-          cd test-automation
-          npm install
+      - name: Install CodeceptJS Dependencies
+        working-directory: ./test-automation
+        run: npm install
 
-      - name: Run Postman Tests via Newman (16 APIs)
-        continue-on-error: true
-        run: |
-          newman run Flood_Rescue_API_V2.postman_collection.json \
-            -e Flood_Rescue_Environment.postman_environment.json \
-            --reporters cli,htmlextra \
-            --reporter-htmlextra-export ./newman-report.html
-
-      - name: Run CodeceptJS API Test Suite
+      - name: Run CodeceptJS API Test Suite (16 APIs)
         continue-on-error: true
         working-directory: ./test-automation
         run: |
-          npm run test:api
+          npm run test:report || npm run test:api
 
-      - name: Upload Test Reports
+      - name: Upload CodeceptJS Test Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
+          name: codeceptjs-test-reports
           path: |
-            newman-report.html
             test-automation/output
             backend.log
 

@@ -366,15 +366,19 @@ class RescueService {
     }
   }
 
-  // Lấy danh sách báo cáo an toàn
-  Future<List<SafetyReport>> getSafetyReports() async {
+  // Lấy danh sách báo cáo an toàn (Hỗ trợ lọc theo ngày, chặn khi ngày bắt đầu > ngày kết thúc)
+  Future<List<SafetyReport>> getSafetyReports({DateTime? startDate, DateTime? endDate}) async {
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      throw ArgumentError('Ngày bắt đầu không được lớn hơn ngày kết thúc');
+    }
     try {
-      final response = await _dio.get('/safety-reports');
+      final Map<String, dynamic> queryParams = {};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+
+      final response = await _dio.get('/safety-reports', queryParameters: queryParams.isNotEmpty ? queryParams : null);
       if (response.statusCode == 200) {
         final responseData = response.data;
-        // SafetyReport currently returns raw list in SafetyReportController
-        // Let's check SafetyReportController to be sure. 
-        // Assuming we'll standardize it to ApiResponse as well.
         if (responseData is Map && responseData['success'] == true) {
           List<dynamic> data = responseData['data'];
           return data.map((json) => SafetyReport.fromJson(json)).toList();

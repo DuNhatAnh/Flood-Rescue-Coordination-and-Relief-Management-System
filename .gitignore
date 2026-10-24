@@ -51,7 +51,15 @@ CLAUDE.md
 
 # Qodana
 .qodana/
+qodana-results/
 
+# Node / Test Automation
+**/node_modules/
+node_modules/
+test-automation/output/
+**/output/
 
+# Postman
 backend/postman/
 backend/.postman/
+
