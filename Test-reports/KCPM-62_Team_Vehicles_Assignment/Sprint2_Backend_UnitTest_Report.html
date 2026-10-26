@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint 2 Backend Unit Test Report - Flood Rescue System</title>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --success: #15803d;
+            --bg-success: #dcfce7;
+            --dark: #0f172a;
+            --light-bg: #f8fafc;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark);
+            margin: 0;
+            padding: 30px;
+        }
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 25px 40px;
+            background: #f1f5f9;
+            border-bottom: 1px solid var(--border);
+        }
+        .card {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .card .number {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .card .label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .card.passed .number { color: var(--success); }
+        .card.failed .number { color: #dc2626; }
+        .card.total .number { color: var(--primary); }
+        .card.rate .number { color: #0284c7; }
+
+        .content {
+            padding: 30px 40px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .test-table th {
+            background: #f8fafc;
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 2px solid var(--border);
+            color: #475569;
+            font-weight: 600;
+        }
+        .test-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.pass {
+            background: var(--bg-success);
+            color: var(--success);
+        }
+        .code-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-x: auto;
+            margin-top: 25px;
+        }
+        .footer {
+            padding: 20px 40px;
+            background: #f8fafc;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>BÁO CÁO KẾT QUẢ UNIT TEST BACKEND - SPRINT 2</h1>
+        <p>Hệ thống Điều phối Cứu hộ và Quản lý Cứu trợ Lũ lụt (Flood Rescue Management System)</p>
+    </div>
+
+    <div class="summary-cards">
+        <div class="card total">
+            <div class="number">3</div>
+            <div class="label">Tổng Test Cases</div>
+        </div>
+        <div class="card passed">
+            <div class="number">3</div>
+            <div class="label">Passed (Thành công)</div>
+        </div>
+        <div class="card failed">
+            <div class="number">0</div>
+            <div class="label">Failed (Thất bại)</div>
+        </div>
+        <div class="card rate">
+            <div class="number">100%</div>
+            <div class="label">Tỷ lệ Pass</div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="section-title">
+            <span>Chi tiết các Test Cases Kiểm thử Bug Fix Sprint 2 (Sprint2ModuleFixesTest)</span>
+        </div>
+
+        <table class="test-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Mã Bug / Module</th>
+                    <th style="width: 45%;">Tên Test Case & Mô tả</th>
+                    <th style="width: 25%;">Kết quả kỳ vọng</th>
+                    <th style="width: 15%; text-align: center;">Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>BUG-TEAM-01</strong><br><small style="color: #64748b;">Module Team</small></td>
+                    <td>
+                        <strong>testUpdateTeam_WhenTeamNotFound_ShouldThrowResourceNotFoundException</strong><br>
+                        Kiểm tra khi cập nhật đội cứu hộ với ID không tồn tại trong hệ thống.
+                    </td>
+                    <td>Ném ngoại lệ <code>ResourceNotFoundException</code> (HTTP 404), không văng lỗi 500.</td>
+                    <td style="text-align: center;"><span class="badge pass">PASSED</span></td>
+                </tr>
+                <tr>
+                    <td><strong>BUG-VEHICLE-01</strong><br><small style="color: #64748b;">Module Vehicles</small></td>
+                    <td>
+                        <strong>testCreateVehicle_WhenDuplicateLicensePlate_ShouldThrowBadRequestException</strong><br>
+                        Kiểm tra khi tạo mới phương tiện cứu hộ với biển số xe đã tồn tại trong database.
+                    </td>
+                    <td>Ném ngoại lệ <code>BadRequestException</code> (HTTP 400), chặn lưu trùng biển số.</td>
+                    <td style="text-align: center;"><span class="badge pass">PASSED</span></td>
+                </tr>
+                <tr>
+                    <td><strong>BUG-ASSIGNMENT-01</strong><br><small style="color: #64748b;">Module Assignment</small></td>
+                    <td>
+                        <strong>testAssignVehicle_WhenVehicleNotAvailable_ShouldThrowBadRequestException</strong><br>
+                        Kiểm tra khi điều phối phương tiện đang ở trạng thái BUSY hoặc MAINTENANCE.
+                    </td>
+                    <td>Ném ngoại lệ <code>BadRequestException</code> (HTTP 400), chặn không cho gán nhiệm vụ.</td>
+                    <td style="text-align: center;"><span class="badge pass">PASSED</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="code-box">
+[INFO] Running vn.rescue.core.application.services.Sprint2ModuleFixesTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.269 s
+[INFO] 
+[INFO] Results:
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+        </div>
+    </div>
+
+    <div class="footer">
+        Báo cáo kiểm thử tự động được tạo cho Ticket <strong>KCPM-62 (Sprint 3)</strong> &bull; Framework: JUnit 5, Mockito &bull; Môi trường: Java 17, Spring Boot
+    </div>
+</div>
+
+</body>
+</html>
