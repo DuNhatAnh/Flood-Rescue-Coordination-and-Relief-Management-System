@@ -19,10 +19,15 @@ import vn.rescue.core.domain.entities.RescueTeam;
 import vn.rescue.core.domain.repositories.RescueTeamRepository;
 
 
+import java.security.Principal;
 import java.util.stream.Collectors;
 import org.springframework.security.core.GrantedAuthority;
+import vn.rescue.core.application.dto.ChangePasswordRequest;
+import vn.rescue.core.application.services.UserService;
+import vn.rescue.core.presentation.common.ApiResponse;
+
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping({"/api/v1/auth", "/api/auth"})
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -31,7 +36,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final RescueTeamRepository rescueTeamRepository;
-
+    private final UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
@@ -61,6 +66,15 @@ public class AuthController {
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
                 .build());
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Principal principal) {
+        String email = principal != null ? principal.getName() : null;
+        userService.changePasswordByEmail(email, request);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đổi mật khẩu thành công"));
     }
 }
 

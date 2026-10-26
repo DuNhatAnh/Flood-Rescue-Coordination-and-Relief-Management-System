@@ -13,7 +13,9 @@ import vn.rescue.core.domain.repositories.RescueTeamRepository;
 import vn.rescue.core.domain.repositories.VehiclesRepository;
 import vn.rescue.core.domain.repositories.WarehouseRepository;
 import vn.rescue.core.application.dto.UserDto;
+import vn.rescue.core.application.dto.ChangePasswordRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import vn.rescue.core.presentation.exceptions.BadRequestException;
 import vn.rescue.core.presentation.exceptions.DuplicateResourceException;
 import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 import java.time.LocalDateTime;
@@ -154,6 +156,44 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + userId));
         user.setStatus(status);
         return mapToDto(userRepository.save(user));
+    }
+
+    public void changePassword(String userId, ChangePasswordRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Dữ liệu đổi mật khẩu không được để trống");
+        }
+        if (request.getOldPassword() == null || request.getOldPassword().trim().isEmpty()) {
+            throw new BadRequestException("Mật khẩu hiện tại không được để trống");
+        }
+        if (request.getNewPassword() == null || request.getNewPassword().trim().isEmpty()) {
+            throw new BadRequestException("Mật khẩu mới không được để trống");
+        }
+        if (request.getNewPassword().length() < 6) {
+            throw new BadRequestException("Mật khẩu mới phải có tối thiểu 6 ký tự");
+        }
+        if (request.getOldPassword().equals(request.getNewPassword())) {
+            throw new BadRequestException("Mật khẩu mới không được trùng với mật khẩu cũ");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new BadRequestException("Mật khẩu hiện tại không chính xác");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("Password changed successfully for user ID: {}", userId);
+    }
+
+    public void changePasswordByEmail(String email, ChangePasswordRequest request) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new BadRequestException("Email người dùng không hợp lệ hoặc chưa xác thực");
+        }
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + email));
+        changePassword(user.getId(), request);
     }
 
     private UserDto mapToDto(User user) {
