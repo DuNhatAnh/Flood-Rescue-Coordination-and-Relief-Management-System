@@ -5,10 +5,13 @@ info:
 
 http:
   method: PUT
-  url: "{{baseUrl}}/api/v1/admin/users/:id/status"
+  url: "{{baseUrl}}/api/v1/admin/users/:id/status?status=INACTIVE"
   params:
+    - name: status
+      value: INACTIVE
+      type: query
     - name: id
-      value: "1"
+      value: 6ac5fed4346e4a02fdcf963b
       type: path
       description: ID of id
   auth: inherit

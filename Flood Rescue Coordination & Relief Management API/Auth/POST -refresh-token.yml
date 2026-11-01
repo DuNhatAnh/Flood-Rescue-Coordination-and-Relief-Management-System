@@ -1,0 +1,26 @@
+info:
+  name: POST /refresh
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/refresh"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "sample_refresh_token_value"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
