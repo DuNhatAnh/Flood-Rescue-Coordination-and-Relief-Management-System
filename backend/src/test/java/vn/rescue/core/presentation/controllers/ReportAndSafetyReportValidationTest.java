@@ -63,6 +63,11 @@ class ReportAndSafetyReportValidationTest {
                     if ("findAll".equals(method.getName())) {
                         return mockReports;
                     }
+                    if ("save".equals(method.getName())) {
+                        SafetyReport report = (SafetyReport) args[0];
+                        if (report.getId() == null) report.setId("mock-id-1");
+                        return report;
+                    }
                     return null;
                 }
         );
@@ -211,5 +216,60 @@ class ReportAndSafetyReportValidationTest {
                 null
         );
         assertThat(vRes.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    @DisplayName("SafetyReport: Người dân báo an toàn thành công -> HTTP 200 OK")
+    void safetyReport_citizenReportsSafety_shouldReturnOk() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setCitizenPhone("0905123456");
+        report.setAddressText("123 Lê Duẩn, Hải Châu, Đà Nẵng");
+        report.setNote("Nước đã rút, gia đình an toàn");
+
+        ResponseEntity<ApiResponse<SafetyReport>> response = safetyReportController.createReport(report);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData().getCitizenPhone()).isEqualTo("0905123456");
+    }
+
+    @Test
+    @DisplayName("SafetyReport: Gửi thiếu số điện thoại -> Ném BadRequestException (HTTP 400 Bad Request)")
+    void safetyReport_missingPhone_shouldThrowBadRequestException() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setAddressText("123 Lê Duẩn, Hải Châu, Đà Nẵng");
+        report.setNote("Thiếu số điện thoại");
+
+        assertThatThrownBy(() -> safetyReportController.createReport(report))
+                .isInstanceOf(vn.rescue.core.presentation.exceptions.BadRequestException.class)
+                .hasMessageContaining("Số điện thoại người báo không được để trống");
+    }
+
+    @Test
+    @DisplayName("Report: Đội cứu hộ nộp báo cáo tổng kết (số người cứu được và số hàng đã phát) -> HTTP 200 OK")
+    void report_submitRescueReport_shouldReturnOk() {
+        vn.rescue.core.domain.entities.RescueReport rescueReport = new vn.rescue.core.domain.entities.RescueReport();
+        rescueReport.setAssignmentId("assign-01");
+        rescueReport.setRescuedPeopleCount(5);
+        rescueReport.setActualDistributedItems(List.of(
+                vn.rescue.core.domain.entities.MissionItem.builder()
+                        .itemId("item-01")
+                        .itemName("Mì tôm Hảo Hảo")
+                        .unit("Thùng")
+                        .quantity(3)
+                        .build()
+        ));
+
+        ResponseEntity<ApiResponse<vn.rescue.core.domain.entities.RescueReport>> response =
+                reportController.submitRescueReport(rescueReport);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData().getRescuedPeopleCount()).isEqualTo(5);
+        assertThat(response.getBody().getData().getActualDistributedItems()).hasSize(1);
     }
 }

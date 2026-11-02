@@ -25,6 +25,9 @@ public class SafetyReportController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<SafetyReport>> createReport(@RequestBody SafetyReport report) {
+        if (report == null || report.getCitizenPhone() == null || report.getCitizenPhone().trim().isEmpty()) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Số điện thoại người báo không được để trống");
+        }
         report.setReportedAt(LocalDateTime.now());
         SafetyReport saved = safetyReportRepository.save(report);
         
@@ -36,7 +39,7 @@ public class SafetyReportController {
             System.err.println("Error linking safety report to rescue request: " + e.getMessage());
         }
         
-        return ResponseEntity.ok(ApiResponse.success(saved, "Safety report created successfully"));
+        return ResponseEntity.ok(ApiResponse.success(saved, "Báo cáo an toàn đã được ghi nhận thành công"));
     }
 
     /**

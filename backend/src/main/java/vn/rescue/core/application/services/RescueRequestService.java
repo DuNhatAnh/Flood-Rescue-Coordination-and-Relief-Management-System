@@ -249,6 +249,80 @@ public class RescueRequestService {
         }
     }
 
+    public static final java.util.Set<String> VALID_STATUSES = java.util.Set.of(
+            "PENDING", "VERIFIED", "ASSIGNED", "IN_PROGRESS", "RESCUING",
+            "RETURNING", "REPORTED", "COMPLETED", "CANCELLED", "REJECTED"
+    );
+
+    public List<RescueRequest> getRequests(String status, String district) {
+        if (status != null && !status.isBlank()) {
+            String upperStatus = status.trim().toUpperCase();
+            if (!VALID_STATUSES.contains(upperStatus)) {
+                throw new vn.rescue.core.presentation.exceptions.BadRequestException(
+                        "Trạng thái không hợp lệ: " + status + ". Trạng thái hợp lệ gồm: " + VALID_STATUSES);
+            }
+        }
+
+        List<RescueRequest> requests = rescueRequestRepository.findAll();
+
+        if (status != null && !status.isBlank()) {
+            String targetStatus = status.trim();
+            requests = requests.stream()
+                    .filter(r -> r.getStatus() != null && r.getStatus().equalsIgnoreCase(targetStatus))
+                    .toList();
+        }
+
+        if (district != null && !district.isBlank()) {
+            String targetDistrict = district.trim().toLowerCase();
+            requests = requests.stream()
+                    .filter(r -> r.getAddressText() != null && r.getAddressText().toLowerCase().contains(targetDistrict))
+                    .toList();
+        }
+
+        return requests;
+    }
+
+    @Transactional
+    public RescueRequest cancelRequest(String id, String reason) {
+        RescueRequest request = getById(id);
+
+        if ("COMPLETED".equalsIgnoreCase(request.getStatus())) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException(
+                    "Không thể hủy yêu cầu cứu hộ đã ở trạng thái COMPLETED!");
+        }
+
+        if ("CANCELLED".equalsIgnoreCase(request.getStatus())) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException(
+                    "Yêu cầu cứu hộ này đã ở trạng thái CANCELLED trước đó!");
+        }
+
+        String cancelReason = (reason != null && !reason.isBlank())
+                ? reason.trim()
+                : "Người dân tự hủy yêu cầu khi nước đã rút";
+
+        request.setStatus("CANCELLED");
+        request.setNote(cancelReason);
+        RescueRequest savedRequest = rescueRequestRepository.save(request);
+
+        // Ghi log lịch sử thay đổi trạng thái
+        RequestStatusHistory history = new RequestStatusHistory();
+        history.setRequestId(savedRequest.getId());
+        history.setStatus("CANCELLED");
+        history.setNote(cancelReason);
+        history.setCreatedAt(LocalDateTime.now());
+        statusHistoryRepository.save(history);
+
+        // Kích hoạt thông báo hệ thống
+        systemManagementService.logAction(
+                "CITIZEN",
+                "HỦY YÊU CẦU CỨU HỘ",
+                "Yêu cầu #" + savedRequest.getCustomId() + " đã được người dân hủy. Lý do: " + cancelReason,
+                "RESCUE"
+        );
+
+        return savedRequest;
+    }
+
     public List<RescueRequest> getAll() {
         return rescueRequestRepository.findAll();
     }

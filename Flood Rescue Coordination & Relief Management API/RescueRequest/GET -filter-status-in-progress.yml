@@ -1,0 +1,34 @@
+info:
+  name: GET / (Filter Status IN_PROGRESS)
+  type: http
+  seq: 11
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/rescue-requests?status=IN_PROGRESS"
+  params:
+    - name: status
+      value: IN_PROGRESS
+      type: query
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Lọc danh sách theo trạng thái IN_PROGRESS thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(Array.isArray(body.data)).to.be.true;
+            body.data.forEach(item => {
+                expect(item.status).to.equal("IN_PROGRESS");
+            });
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
