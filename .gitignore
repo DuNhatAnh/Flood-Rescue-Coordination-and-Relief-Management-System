@@ -63,3 +63,8 @@ test-automation/output/
 backend/postman/
 backend/.postman/
 
+
+# Python / QA Testing
+__pycache__/
+*.py[cod]
+qa-testing/reports/*.xlsx

@@ -8,6 +8,7 @@ Thư mục này chứa các script Python chạy kiểm thử tự động theo 
 
 | File | Đọc dữ liệu từ | Xuất báo cáo ra | Subtask |
 |:---|:---|:---|:---|
+| `excel_helper.py` | *(Dùng chung)* | *(Thư viện tiện ích Excel & Styles chuẩn cho toàn nhóm)* | Toàn bộ suite |
 | `run_change_password.py` | `data/auth_change_password_data.csv` | `reports/REPORT_AUTH_CHANGE_PASSWORD.xlsx` | KCPM-88 |
 | `run_login.py` | `data/auth_login_data.csv` | `reports/REPORT_AUTH_LOGIN.xlsx` | KCPM-89 |
 | `run_rbac.py` | `data/auth_rbac_data.csv` | `reports/REPORT_AUTH_RBAC.xlsx` | KCPM-90 |
