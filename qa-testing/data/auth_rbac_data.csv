@@ -11,3 +11,4 @@ TC_RBAC_09,CITIZEN,VALID,/api/v1/admin/users,GET,FAIL,403,Không đủ quyền t
 TC_RBAC_10,NONE,NO_TOKEN,/api/v1/admin/users,GET,FAIL,401,Chưa xác thực
 TC_RBAC_11,ADMIN,EXPIRED,/api/v1/admin/users,POST,FAIL,401,Token đã hết hạn
 TC_RBAC_12,ADMIN,TAMPERED,/api/v1/admin/users,GET,FAIL,401,Token không hợp lệ
+
