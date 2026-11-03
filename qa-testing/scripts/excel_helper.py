@@ -178,3 +178,4 @@ def save_report(wb, report_path):
         fallback = report_path.replace('.xlsx', '_NEW.xlsx')
         wb.save(fallback)
         print(f'BAO CAO XUAT THANH CONG (ban moi vi file cu dang mo): {os.path.abspath(fallback)}')
+
