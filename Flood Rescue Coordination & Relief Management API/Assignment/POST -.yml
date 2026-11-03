@@ -1,4 +1,4 @@
-info:
+﻿info:
   name: POST /
   type: http
   seq: 1
@@ -13,11 +13,19 @@ http:
     type: json
     data: |-
       {
-        "requestId": "6ac8a496b3505b0db326b8a3",
-        "teamId": "6ac8a49ab3505b0db326b8c1",
-        "vehicleIds": ["6ac8a49bb3505b0db326b8c4"],
+        "requestId": "6ae9f0a87c11de07e162668a",
+        "teamId": "6ac3beab5219eb487c8bfc30",
+        "vehicleIds": ["6ac3beab5219eb487c8bfc33"],
         "assignedBy": "admin@rescue.vn",
-        "note": "Dieu dong cano ho tro khan cap"
+        "note": "Dieu dong ho tro khan cap",
+        "missionItems": [
+          {
+            "itemId": "6ac3beab5219eb487c8bfc1a",
+            "itemName": "Gao",
+            "quantity": 50,
+            "unit": "kg"
+          }
+        ]
       }
   auth: inherit
 

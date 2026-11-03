@@ -24,6 +24,8 @@ import vn.rescue.core.domain.repositories.ReliefItemRepository;
 import vn.rescue.core.domain.repositories.UserRepository;
 import vn.rescue.core.domain.repositories.DistributionRepository;
 import vn.rescue.core.domain.entities.Distribution;
+import vn.rescue.core.presentation.exceptions.BadRequestException;
+import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -201,13 +203,14 @@ public class RescueCoordinationService {
         request.setTeamId(teamId);
         rescueRequestRepository.save(request);
 
-            // Update team status
-            Optional<RescueTeam> teamOpt = rescueTeamRepository.findById(teamId);
-            if (teamOpt.isPresent()) {
-                RescueTeam team = teamOpt.get();
-                team.setStatus("BUSY");
-                rescueTeamRepository.save(team);
+            // Validate and update team status
+            RescueTeam team = rescueTeamRepository.findById(teamId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Đội cứu hộ " + teamId + " không tồn tại!"));
+            if (!"AVAILABLE".equalsIgnoreCase(team.getStatus())) {
+                throw new BadRequestException("Đội cứu hộ " + team.getTeamName() + " đang bận hoặc không ở trạng thái sẵn sàng (AVAILABLE) để phân công.");
             }
+            team.setStatus("BUSY");
+            rescueTeamRepository.save(team);
 
             // Validate and update multiple vehicles status
             if (vehicleIds != null && !vehicleIds.isEmpty()) {
@@ -336,6 +339,13 @@ public class RescueCoordinationService {
 
             String oldStatus = assignment.getStatus();
             String targetStatus = status;
+
+            // Chặn chuyển trạng thái nhảy cóc từ PENDING/ASSIGNED sang COMPLETED/REPORTED
+            if (("COMPLETED".equalsIgnoreCase(status) || "REPORTED".equalsIgnoreCase(status))
+                    && ("PENDING".equalsIgnoreCase(oldStatus) || "ASSIGNED".equalsIgnoreCase(oldStatus))) {
+                throw new BadRequestException(
+                        "Không thể chuyển trạng thái từ " + oldStatus + " trực tiếp sang " + status + ". Nhiệm vụ phải được bắt đầu thực hiện (IN_PROGRESS) trước!");
+            }
 
             // Nếu nhân viên báo hoàn thành -> Chuyển sang REPORTED (Chờ duyệt)
             // Nếu Admin/Điều phối báo hoàn thành -> Chuyển thẳng sang COMPLETED
@@ -574,6 +584,8 @@ public class RescueCoordinationService {
                     }
                 }
             }
+        } else {
+            throw new ResourceNotFoundException("Không tìm thấy nhiệm vụ với ID: " + id);
         }
     }
 
