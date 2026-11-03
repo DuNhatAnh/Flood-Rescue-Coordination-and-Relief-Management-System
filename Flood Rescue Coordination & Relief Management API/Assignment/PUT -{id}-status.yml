@@ -1,4 +1,4 @@
-info:
+﻿info:
   name: PUT /{id}/status
   type: http
   seq: 4
@@ -11,15 +11,15 @@ http:
       value: application/json
   params:
     - name: id
-      value: "6aca005835acdb55aae31192"
+      value: "6ae9f07ae2001d7b1d888742"
       type: path
       description: ID of id
   body:
     type: json
     data: |-
       {
-        "status": "IN_PROGRESS",
-        "userId": "6ac8a492b3505b0db326b89e"
+        "status": "REPORTED",
+        "userId": "6ac3beaa5219eb487c8bfc0c"
       }
   auth: inherit
 
