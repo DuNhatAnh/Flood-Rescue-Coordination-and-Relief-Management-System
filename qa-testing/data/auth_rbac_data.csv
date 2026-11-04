@@ -1,0 +1,14 @@
+testCaseId,userRole,tokenStatus,apiEndpoint,httpMethod,expectedStatus,expectedHttpCode,expectedMessage
+TC_RBAC_01,ADMIN,VALID,/api/v1/admin/users,GET,PASS,200,SUCCESS
+TC_RBAC_02,ADMIN,VALID,/api/v1/admin/users,POST,PASS,200,SUCCESS
+TC_RBAC_03,ADMIN,VALID,/api/v1/admin/users/{id},GET,PASS,200,SUCCESS
+TC_RBAC_04,ADMIN,VALID,/api/v1/admin/users/{id},PUT,PASS,200,SUCCESS
+TC_RBAC_05,ADMIN,VALID,/api/v1/admin/users/{id}/status,PUT,PASS,200,SUCCESS
+TC_RBAC_06,ADMIN,VALID,/api/v1/admin/users/{id}/role,PUT,PASS,200,SUCCESS
+TC_RBAC_07,COORDINATOR,VALID,/api/v1/admin/users,GET,FAIL,403,Không đủ quyền truy cập
+TC_RBAC_08,COORDINATOR,VALID,/api/v1/admin/users,POST,FAIL,403,Không đủ quyền truy cập
+TC_RBAC_09,CITIZEN,VALID,/api/v1/admin/users,GET,FAIL,403,Không đủ quyền truy cập
+TC_RBAC_10,NONE,NO_TOKEN,/api/v1/admin/users,GET,FAIL,401,Chưa xác thực
+TC_RBAC_11,ADMIN,EXPIRED,/api/v1/admin/users,POST,FAIL,401,Token đã hết hạn
+TC_RBAC_12,ADMIN,TAMPERED,/api/v1/admin/users,GET,FAIL,401,Token không hợp lệ
+

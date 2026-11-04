@@ -1,0 +1,12 @@
+testCaseId,email,password,expectedRole,expectedStatus,expectedHttpCode,expectedMessage
+TC_LOG_01,admin@rescue.vn,password123,ROLE_ADMIN,PASS,200,SUCCESS
+TC_LOG_02,staff@rescue.vn,password123,ROLE_RESCUE_STAFF,PASS,200,SUCCESS
+TC_LOG_03,citizen@rescue.vn,password123,ROLE_CITIZEN,PASS,200,SUCCESS
+TC_LOG_04,admin@rescue.vn,wrongPass999,NONE,FAIL,401,Thông tin đăng nhập không chính xác
+TC_LOG_05,notfound@rescue.vn,password123,NONE,FAIL,401,Tài khoản không tồn tại hoặc sai mật khẩu
+TC_LOG_06,adminrescue.vn,password123,NONE,FAIL,400,Email không đúng định dạng
+TC_LOG_07,,password123,NONE,FAIL,400,Email không được để trống
+TC_LOG_08,admin@rescue.vn,,NONE,FAIL,400,Mật khẩu không được để trống
+TC_LOG_09,NULL_VAL,NULL_VAL,NONE,FAIL,400,Dữ liệu đăng nhập không được để trống
+TC_LOG_10,locked_user@rescue.vn,password123,NONE,FAIL,403,Tài khoản của bạn đã bị khóa
+
