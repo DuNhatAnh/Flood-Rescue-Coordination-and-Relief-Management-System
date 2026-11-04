@@ -13,7 +13,7 @@ http:
     type: json
     data: |-
       {
-        "email": "admin@rescue.vn",
+        "email": "staff@rescue.vn",
         "password": "admin123"
       }
   auth: inherit
