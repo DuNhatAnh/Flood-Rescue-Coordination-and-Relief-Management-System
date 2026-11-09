@@ -1,0 +1,34 @@
+info:
+  name: GET / (Filter Status PENDING)
+  type: http
+  seq: 10
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/rescue-requests?status=PENDING"
+  params:
+    - name: status
+      value: PENDING
+      type: query
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Lọc danh sách theo trạng thái PENDING thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(Array.isArray(body.data)).to.be.true;
+            body.data.forEach(item => {
+                expect(item.status).to.equal("PENDING");
+            });
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

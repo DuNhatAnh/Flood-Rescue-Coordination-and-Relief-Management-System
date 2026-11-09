@@ -1,5 +1,5 @@
 info:
-  name: POST /
+  name: POST / (Người dân báo an toàn sau lũ - 200)
   type: http
   seq: 1
 
@@ -13,14 +13,12 @@ http:
     type: json
     data: |-
       {
-        "contactName": "Nguyễn Văn A",
-        "phoneNumber": "0987654321",
-        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
-        "latitude": 15.88,
-        "longitude": 108.05,
-        "peopleCount": 4,
-        "urgency": "HIGH",
-        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+        "citizenName": "Nguyễn Văn Dân",
+        "citizenPhone": "0905123456",
+        "addressText": "123 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "locationLat": 16.0678,
+        "locationLng": 108.2208,
+        "note": "Nước lũ đã rút hoàn toàn, gia đình 4 người đều an toàn"
       }
   auth: inherit
 
@@ -28,8 +26,12 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Người dân báo an toàn sau lũ thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.citizenPhone).to.equal("0905123456");
+            expect(body.data.note).to.include("Nước lũ đã rút");
         });
 
 settings:

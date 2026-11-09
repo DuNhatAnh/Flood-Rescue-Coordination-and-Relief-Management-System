@@ -25,6 +25,10 @@ request:
       value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdGFmZkByZXNjdWUudm4iLCJpYXQiOjE3OTM1MTY4NTUsImV4cCI6MTc5MzYwMzI1NX0.Y1mLt95AL4Kgef2wSobUB5eLJQZQC5Jh7PFLULUjI3c
     - name: createdVehicleId
       value: 6ad888e7a1c6872749caab2e
+    - name: rescueRequestId
+      value: "0001"
+    - name: completedRequestId
+      value: "0003"
 
 docs:
   content: Toàn bộ REST API của dự án Hệ thống điều phối cứu hộ và quản lý cứu trợ lũ lụt (Flood Rescue Coordination & Relief Management System) bao gồm 22 Controller, Authentication JWT, Quản lý yêu cầu cứu hộ, Điều phối đội cứu trợ, Quản lý kho và hàng hóa cứu trợ.

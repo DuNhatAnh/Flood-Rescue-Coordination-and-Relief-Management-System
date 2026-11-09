@@ -30,6 +30,12 @@ runtime:
       code: |-
         test("Phản hồi thành công (200, 201, 204)", function () {
             expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+            if (res.getBody() && res.getBody().data) {
+                const reqId = res.getBody().data.id || res.getBody().data.requestId;
+                if (reqId) {
+                    bru.setVar("rescueRequestId", reqId);
+                }
+            }
         });
 
 settings:

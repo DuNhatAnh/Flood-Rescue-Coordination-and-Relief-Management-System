@@ -1,0 +1,41 @@
+info:
+  name: POST / (Gửi thiếu số điện thoại - 400 Bad Request)
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/safety-reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn Dân",
+        "addressText": "123 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "locationLat": 16.0678,
+        "locationLng": 108.2208,
+        "note": "Nước đã rút, gia đình an toàn"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn gửi báo an toàn thiếu số điện thoại - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            expect(body.success).to.be.false;
+            expect(body.code).to.equal(400);
+            expect(body.message).to.include("Số điện thoại");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

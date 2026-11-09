@@ -27,6 +27,7 @@ public class RescueRequestController {
         RescueRequest savedRequest = rescueRequestService.createRequest(requestDto);
 
         Map<String, Object> data = Map.of(
+                "id", savedRequest.getId() != null ? savedRequest.getId() : savedRequest.getCustomId(),
                 "requestId", savedRequest.getCustomId(),
                 "status", savedRequest.getStatus());
 
@@ -45,8 +46,12 @@ public class RescueRequestController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<java.util.List<RescueRequest>>> getAllRequests() {
-        return ResponseEntity.ok(ApiResponse.success(rescueRequestService.getAll(), "All rescue requests retrieved"));
+    public ResponseEntity<ApiResponse<java.util.List<RescueRequest>>> getAllRequests(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String district) {
+        return ResponseEntity.ok(ApiResponse.success(
+                rescueRequestService.getRequests(status, district), 
+                "All rescue requests retrieved"));
     }
 
     @GetMapping("/{id}")
@@ -67,6 +72,15 @@ public class RescueRequestController {
                 "status", updatedRequest.getStatus());
                 
         return ResponseEntity.ok(ApiResponse.success(data, "Rescue request status updated successfully"));
+    }
+
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<RescueRequest>> cancelRequest(
+            @PathVariable("id") String id,
+            @RequestBody(required = false) vn.rescue.core.application.dto.CancelRescueRequestDto cancelDto) {
+        String reason = cancelDto != null ? cancelDto.getReason() : null;
+        RescueRequest cancelled = rescueRequestService.cancelRequest(id, reason);
+        return ResponseEntity.ok(ApiResponse.success(cancelled, "Yêu cầu cứu hộ đã được hủy thành công"));
     }
 
     @PostMapping("/{id}/confirm-safety")

@@ -1,0 +1,37 @@
+info:
+  name: PUT /{id}/cancel (Người dân tự hủy khi nước rút - 200)
+  type: http
+  seq: 14
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/rescue-requests/{{rescueRequestId}}/cancel"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "Nước đã rút, gia đình đã an toàn"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Người dân tự hủy yêu cầu cứu hộ thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.status).to.equal("CANCELLED");
+            expect(body.data.note).to.include("Nước đã rút");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

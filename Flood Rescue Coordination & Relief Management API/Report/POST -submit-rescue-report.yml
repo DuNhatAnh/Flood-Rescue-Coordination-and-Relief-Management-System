@@ -1,0 +1,61 @@
+info:
+  name: POST / (Nộp báo cáo cứu hộ tổng kết - 200)
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "assignmentId": "6ad65252e38bd958953c0001",
+        "rescuedPeopleCount": 5,
+        "actualCondition": "Nước ngập sâu 1.5m, dòng chảy xiết",
+        "detailedNote": "Đội cứu hộ đã đưa 5 người đến nơi an toàn, cấp phát đủ nhu yếu phẩm",
+        "actualDistributedItems": [
+          {
+            "itemId": "item-01",
+            "itemName": "Mì tôm Hảo Hảo",
+            "unit": "Thùng",
+            "quantity": 3
+          },
+          {
+            "itemId": "item-02",
+            "itemName": "Nước khoáng Lavie 500ml",
+            "unit": "Lốc",
+            "quantity": 2
+          },
+          {
+            "itemId": "item-03",
+            "itemName": "Áo phao cứu sinh",
+            "unit": "Cái",
+            "quantity": 5
+          }
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Nộp báo cáo tổng kết cứu hộ thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.rescuedPeopleCount).to.equal(5);
+            expect(Array.isArray(body.data.actualDistributedItems)).to.be.true;
+            expect(body.data.actualDistributedItems.length).to.equal(3);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

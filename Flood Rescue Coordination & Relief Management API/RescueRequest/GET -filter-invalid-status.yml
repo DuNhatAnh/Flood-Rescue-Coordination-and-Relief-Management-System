@@ -1,0 +1,32 @@
+info:
+  name: GET / (Filter Invalid Status - 400 Bad Request)
+  type: http
+  seq: 13
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/rescue-requests?status=INVALID_STATUS_TEST"
+  params:
+    - name: status
+      value: INVALID_STATUS_TEST
+      type: query
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn lọc với trạng thái không hợp lệ - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            expect(body.success).to.be.false;
+            expect(body.code).to.equal(400);
+            expect(body.message).to.include("Trạng thái không hợp lệ");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

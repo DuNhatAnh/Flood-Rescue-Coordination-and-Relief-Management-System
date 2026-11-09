@@ -1,0 +1,37 @@
+info:
+  name: PUT /{id}/cancel (Chặn hủy khi đã COMPLETED - 400 Bad Request)
+  type: http
+  seq: 15
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/rescue-requests/{{completedRequestId}}/cancel"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "Cố tình hủy nhiệm vụ đã ở trạng thái COMPLETED"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn hủy yêu cầu cứu hộ đã hoàn thành - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            expect(body.success).to.be.false;
+            expect(body.code).to.equal(400);
+            expect(body.message).to.include("COMPLETED");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -18,8 +18,26 @@ public class ReportController {
 
     private final ReportService reportService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.rescue.core.domain.repositories.RescueReportRepository rescueReportRepository;
+
     public ReportController(ReportService reportService) {
         this.reportService = reportService;
+    }
+
+    /**
+     * API Nộp báo cáo tổng kết cứu hộ (Gồm số người cứu được và số hàng đã phát)
+     */
+    @PostMapping
+    public ResponseEntity<ApiResponse<vn.rescue.core.domain.entities.RescueReport>> submitRescueReport(
+            @RequestBody vn.rescue.core.domain.entities.RescueReport report) {
+        if (report.getCreatedAt() == null) {
+            report.setCreatedAt(LocalDateTime.now());
+        }
+        vn.rescue.core.domain.entities.RescueReport saved = (rescueReportRepository != null)
+                ? rescueReportRepository.save(report)
+                : report;
+        return ResponseEntity.ok(ApiResponse.success(saved, "Báo cáo tổng kết cứu hộ đã được nộp thành công"));
     }
 
     /**
