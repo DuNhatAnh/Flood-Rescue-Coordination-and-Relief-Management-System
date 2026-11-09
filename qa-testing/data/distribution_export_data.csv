@@ -1,0 +1,15 @@
+testCaseId,ruleName,warehouseId,requestId,itemId,requestQty,availableStock,missionStatus,userRole,expectedStatus,expectedHttpCode,expectedException,expectedMessage
+TC_DST_01,R1_VALID,WH-01,REQ-01,ITEM-01,10,50,OPEN,ROLE_WAREHOUSE_MANAGER,PASS,200,NONE,Cấp phát xuất kho thành công
+TC_DST_02,R1_EXACT,WH-01,REQ-01,ITEM-01,10,10,OPEN,ROLE_ADMIN,PASS,200,NONE,Cấp phát xuất kho thành công
+TC_DST_03,R2_OUT_OF_STOCK,WH-01,REQ-01,ITEM-01,10,5,OPEN,ROLE_WAREHOUSE_MANAGER,FAIL,400,BadRequestException,Số lượng tồn kho không đủ cho mặt hàng
+TC_DST_04,R2_ZERO_STOCK,WH-01,REQ-01,ITEM-01,5,0,OPEN,ROLE_WAREHOUSE_MANAGER,FAIL,400,BadRequestException,Kho đã hết hàng hoặc tồn kho không đủ
+TC_DST_05,R3_MISSION_NOT_FOUND,WH-01,REQ-NOT-FOUND,ITEM-01,10,50,OPEN,ROLE_WAREHOUSE_MANAGER,FAIL,404,ResourceNotFoundException,Không tìm thấy nhiệm vụ cứu trợ với ID: REQ-NOT-FOUND
+TC_DST_06,R3_MISSION_CLOSED,WH-01,REQ-CLOSED,ITEM-01,10,50,CLOSED,ROLE_WAREHOUSE_MANAGER,FAIL,400,BadRequestException,Nhiệm vụ cứu trợ đã hoàn thành hoặc đóng
+TC_DST_07,R3_MISSION_CANCELLED,WH-01,REQ-CANCELLED,ITEM-01,10,50,CANCELLED,ROLE_WAREHOUSE_MANAGER,FAIL,400,BadRequestException,Nhiệm vụ cứu hộ đã bị hủy không thể xuất hàng
+TC_DST_08,R4_FORBIDDEN_ROLE,WH-01,REQ-01,ITEM-01,10,50,OPEN,ROLE_CITIZEN,FAIL,403,AccessDeniedException,Không đủ quyền truy cập (Yêu cầu quyền WAREHOUSE_MANAGER)
+TC_DST_09,R4_NO_AUTH,WH-01,REQ-01,ITEM-01,10,50,OPEN,NO_AUTH,FAIL,401,AuthenticationException,Chưa xác thực người dùng
+TC_DST_10,R5_WAREHOUSE_NOT_FOUND,WH-NOT-FOUND,REQ-01,ITEM-01,10,50,OPEN,ROLE_WAREHOUSE_MANAGER,FAIL,404,ResourceNotFoundException,Không tìm thấy kho hàng với ID: WH-NOT-FOUND
+TC_DST_11,R5_NULL_WAREHOUSE,NULL_VAL,REQ-01,ITEM-01,10,50,OPEN,ROLE_WAREHOUSE_MANAGER,FAIL,400,BadRequestException,Mã kho (warehouseId) không được để trống
+TC_DST_12,R6_NEGATIVE_QTY,WH-01,REQ-01,ITEM-01,-5,50,OPEN,ROLE_WAREHOUSE_MANAGER,FAIL,400,BadRequestException,Mặt hàng và số lượng phân phối không hợp lệ
+TC_DST_13,R6_EMPTY_ITEMS,WH-01,REQ-01,NULL_VAL,0,50,OPEN,ROLE_WAREHOUSE_MANAGER,FAIL,400,BadRequestException,Danh sách mặt hàng phân phối không được để trống
+

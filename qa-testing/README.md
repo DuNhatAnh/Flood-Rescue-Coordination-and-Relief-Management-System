@@ -1,8 +1,8 @@
 # 📁 qa-testing — Bộ Kiểm Thử Hộp Đen (Black-box Data-Driven Testing)
 
 > **Dự án:** Hệ thống Điều phối Cứu hộ Lũ lụt  
-> **Module:** Auth & RBAC — Epic 1 (KCPM-52)  
-> **Phụ trách:** Anh (Subtasks KCPM-88, KCPM-89, KCPM-90)  
+> **Module:** Auth & RBAC (Epic 1) · Kho bãi & Cứu trợ (Epic 5)  
+> **Phụ trách:** Anh (KCPM-88, 89, 90) · Danh (KCPM-98, 99)  
 > **Kỹ thuật áp dụng:** BVA · Phân vùng tương đương (EP) · Bảng quyết định (Decision Table)
 
 ---
@@ -38,6 +38,8 @@ plans/*.xlsx  →  data/*.csv  →  scripts/run_*.py  →  reports/*.xlsx
 | Đổi mật khẩu (KCPM-88) | `python qa-testing/scripts/run_change_password.py` | `reports/REPORT_AUTH_CHANGE_PASSWORD.xlsx` |
 | Đăng nhập (KCPM-89) | `python qa-testing/scripts/run_login.py` | `reports/REPORT_AUTH_LOGIN.xlsx` |
 | Phân quyền RBAC (KCPM-90) | `python qa-testing/scripts/run_rbac.py` | `reports/REPORT_AUTH_RBAC.xlsx` |
+| Nhập kho nhu yếu phẩm (KCPM-98) | `python qa-testing/scripts/run_inventory.py` | `reports/REPORT_INVENTORY_IMPORT.xlsx` |
+| Xuất kho cứu trợ & Chặn âm kho (KCPM-99) | `python qa-testing/scripts/run_distribution.py` | `reports/REPORT_DISTRIBUTION_EXPORT.xlsx` |
 
 ---
 

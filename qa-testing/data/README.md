@@ -11,7 +11,9 @@ Mỗi dòng trong CSV tương ứng với **1 ca kiểm thử (Test Case)** tron
 |:---|:---|:---:|:---|
 | `auth_change_password_data.csv` | Đổi mật khẩu | 14 | BVA (Min=6, Max=32) + 5 Tiêu chí |
 | `auth_login_data.csv` | Đăng nhập | 10 | EP + Decision Table (3 Roles) |
-| `auth_rbac_data.csv` | Phân quyền | _(sẽ bổ sung)_ | Decision Table (Role × API Matrix) |
+| `auth_rbac_data.csv` | Phân quyền | 12 | Decision Table (Role × API Matrix) |
+| `inventory_import_data.csv` | Nhập kho nhu yếu phẩm | 14 | BVA (Biên số lượng Min=1, Max=10000, Ngày tương lai) |
+| `distribution_export_data.csv` | Xuất kho cứu trợ & Chặn âm kho | 13 | Decision Table (6 Rules nghiệp vụ) |
 
 ---
 
