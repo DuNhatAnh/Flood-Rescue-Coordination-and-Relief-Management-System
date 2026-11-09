@@ -1,0 +1,46 @@
+info:
+  name: "BVA TC23 - POST / (Biên Note rỗng: 0 ký tự - 200 OK)"
+  type: http
+  seq: 26
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Phan Văn Y",
+        "citizenPhone": "0987654343",
+        "addressText": "Thị trấn Ái Nghĩa, Đại Lộc",
+        "locationLat": 16.0544,
+        "locationLng": 108.2022,
+        "numberOfPeople": 4,
+        "urgencyLevel": "MEDIUM",
+        "description": ""
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Cho phép để trống mô tả khẩn cấp (0 ký tự) -> HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            if (res.getBody() && res.getBody().data) {
+                const reqId = res.getBody().data.id || res.getBody().data.requestId;
+                if (reqId) {
+                    bru.setVar("rescueRequestId", reqId);
+                }
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

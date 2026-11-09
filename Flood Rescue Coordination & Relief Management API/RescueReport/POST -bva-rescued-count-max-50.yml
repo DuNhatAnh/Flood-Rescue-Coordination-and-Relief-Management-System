@@ -1,0 +1,53 @@
+info:
+  name: "TC_REPORT_03 - POST / (Biên Max: 50 người giải cứu thành công - 200 OK)"
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "assignmentId": "6ad65252e38bd958953c0001",
+        "rescuedPeopleCount": 50,
+        "actualCondition": "Điểm trường ngập nóc, nước chảy xiết",
+        "detailedNote": "Dùng cano sơ tán toàn bộ 50 người dân đến nơi tập kết an toàn",
+        "actualDistributedItems": [
+          {
+            "itemId": "item-01",
+            "itemName": "Mì tôm Hảo Hảo",
+            "unit": "Thùng",
+            "quantity": 25
+          },
+          {
+            "itemId": "item-02",
+            "itemName": "Nước khoáng Lavie 500ml",
+            "unit": "Lốc",
+            "quantity": 20
+          }
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Nộp báo cáo giải cứu số lượng tối đa 50 người thành công -> HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.rescuedPeopleCount).to.equal(50);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

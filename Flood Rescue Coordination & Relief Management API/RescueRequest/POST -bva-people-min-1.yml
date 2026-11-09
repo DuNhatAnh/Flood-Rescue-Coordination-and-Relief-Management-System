@@ -1,0 +1,46 @@
+info:
+  name: "BVA TC04 - POST / (Biên Min: 1 người - 200 OK)"
+  type: http
+  seq: 17
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Lê Văn D",
+        "citizenPhone": "0987654324",
+        "addressText": "Xã Đại Lộc, Quảng Nam",
+        "locationLat": 16.0544,
+        "locationLng": 108.2022,
+        "numberOfPeople": 1,
+        "urgencyLevel": "MEDIUM",
+        "description": "Tôi ở một mình cần trợ giúp"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Kiểm tra biên dưới hợp lệ (Min = 1 người) -> HTTP 200/201", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            if (res.getBody() && res.getBody().data) {
+                const reqId = res.getBody().data.id || res.getBody().data.requestId;
+                if (reqId) {
+                    bru.setVar("rescueRequestId", reqId);
+                }
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

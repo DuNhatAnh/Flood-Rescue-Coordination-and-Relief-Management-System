@@ -1,0 +1,46 @@
+info:
+  name: "BVA TC13 - POST / (Biên GPS cực Nam VN: Cà Mau - 200 OK)"
+  type: http
+  seq: 23
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn N",
+        "citizenPhone": "0987654333",
+        "addressText": "Mũi Cà Mau, Ngọc Hiển, Cà Mau",
+        "locationLat": 8.18,
+        "locationLng": 104.83,
+        "numberOfPeople": 4,
+        "urgencyLevel": "MEDIUM",
+        "description": "Mũi Cà Mau triều cường ngập đê"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Kiểm tra tọa độ biên giới cực Nam Việt Nam (Lat 8.18) -> HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            if (res.getBody() && res.getBody().data) {
+                const reqId = res.getBody().data.id || res.getBody().data.requestId;
+                if (reqId) {
+                    bru.setVar("rescueRequestId", reqId);
+                }
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

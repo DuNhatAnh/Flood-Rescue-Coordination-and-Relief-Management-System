@@ -1,0 +1,44 @@
+info:
+  name: "BVA TC18 - POST / (Biên lỗi ngoài VN phía Tây: Lng 101.50 - 400)"
+  type: http
+  seq: 25
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Somsak T",
+        "citizenPhone": "0987654338",
+        "addressText": "Vị trí ngoài biên giới phía Tây",
+        "locationLat": 16.0,
+        "locationLng": 101.5,
+        "numberOfPeople": 4,
+        "urgencyLevel": "LOW",
+        "description": "Vị trí ngoài lãnh thổ phía Tây"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn tọa độ nằm ngoài lãnh thổ Việt Nam phía Tây -> HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            if (body) {
+                expect(body.success).to.be.false;
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

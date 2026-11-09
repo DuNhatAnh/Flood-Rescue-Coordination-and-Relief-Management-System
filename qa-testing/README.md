@@ -38,6 +38,7 @@ plans/*.xlsx  →  data/*.csv  →  scripts/run_*.py  →  reports/*.xlsx
 | Đổi mật khẩu (KCPM-88) | `python qa-testing/scripts/run_change_password.py` | `reports/REPORT_AUTH_CHANGE_PASSWORD.xlsx` |
 | Đăng nhập (KCPM-89) | `python qa-testing/scripts/run_login.py` | `reports/REPORT_AUTH_LOGIN.xlsx` |
 | Phân quyền RBAC (KCPM-90) | `python qa-testing/scripts/run_rbac.py` | `reports/REPORT_AUTH_RBAC.xlsx` |
+| Yêu cầu cứu hộ BVA | `python qa-testing/scripts/run_rescue_request.py` | `reports/REPORT_CITIZEN_RESCUE_REQUEST.xlsx` |
 
 ---
 
