@@ -1,0 +1,46 @@
+info:
+  name: "BVA TC12 - POST / (Biên GPS cực Bắc VN: Lũng Cú - 200 OK)"
+  type: http
+  seq: 22
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Vàng A M",
+        "citizenPhone": "0987654332",
+        "addressText": "Lũng Cú, Đồng Văn, Hà Giang",
+        "locationLat": 23.39,
+        "locationLng": 105.32,
+        "numberOfPeople": 4,
+        "urgencyLevel": "HIGH",
+        "description": "Lũng Cú sạt lở lũ quét cô lập bản"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Kiểm tra tọa độ biên giới cực Bắc Việt Nam (Lat 23.39) -> HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            if (res.getBody() && res.getBody().data) {
+                const reqId = res.getBody().data.id || res.getBody().data.requestId;
+                if (reqId) {
+                    bru.setVar("rescueRequestId", reqId);
+                }
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

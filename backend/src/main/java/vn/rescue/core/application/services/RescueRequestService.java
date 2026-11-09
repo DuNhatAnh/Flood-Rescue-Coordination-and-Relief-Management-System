@@ -11,6 +11,8 @@ import vn.rescue.core.domain.entities.RescueRequest;
 import vn.rescue.core.domain.repositories.RequestStatusHistoryRepository;
 import vn.rescue.core.domain.repositories.RescueRequestRepository;
 import vn.rescue.core.domain.repositories.SafetyReportRepository;
+import vn.rescue.core.presentation.exceptions.BadRequestException;
+import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +34,12 @@ public class RescueRequestService {
      */
     @Transactional
     public RescueRequest createRequest(RescueRequestDto dto) {
+        if (dto.getLocationLat() != null && (dto.getLocationLat() < 8.18 || dto.getLocationLat() > 23.39)) {
+            throw new BadRequestException("Tọa độ vĩ độ nằm ngoài lãnh thổ Việt Nam (8.18 - 23.39)");
+        }
+        if (dto.getLocationLng() != null && (dto.getLocationLng() < 102.14 || dto.getLocationLng() > 109.46)) {
+            throw new BadRequestException("Tọa độ kinh độ nằm ngoài lãnh thổ Việt Nam (102.14 - 109.46)");
+        }
         RescueRequest request = new RescueRequest();
 
         // Tạo Custom ID (VD: RES-0001)
@@ -117,7 +125,7 @@ public class RescueRequestService {
 
         return rescueRequestRepository.findById(id)
                 .or(() -> rescueRequestRepository.findFirstByCustomId(id))
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu với ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu với ID: " + id));
     }
 
     public Map<String, Long> getStats() {

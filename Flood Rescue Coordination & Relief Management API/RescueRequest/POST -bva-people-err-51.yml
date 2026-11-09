@@ -1,0 +1,44 @@
+info:
+  name: "BVA TC09 - POST / (Biên lỗi Max+1: 51 người - 400 Bad Request)"
+  type: http
+  seq: 21
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Bùi Văn I",
+        "citizenPhone": "0987654329",
+        "addressText": "Khu công nghiệp Đại Lộc",
+        "locationLat": 16.0544,
+        "locationLng": 108.2022,
+        "numberOfPeople": 51,
+        "urgencyLevel": "CRITICAL",
+        "description": "Nhóm 51 công nhân nhà máy bị cô lập"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn lỗi vượt quá biên trên (51 người) -> HTTP 400 Bad Request", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            if (body) {
+                expect(body.success).to.be.false;
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

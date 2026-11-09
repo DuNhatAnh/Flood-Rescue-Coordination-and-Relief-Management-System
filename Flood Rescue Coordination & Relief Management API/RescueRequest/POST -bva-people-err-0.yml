@@ -1,0 +1,44 @@
+info:
+  name: "BVA TC03 - POST / (Biên lỗi Min-1: 0 người - 400 Bad Request)"
+  type: http
+  seq: 19
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Trần Thị C",
+        "citizenPhone": "0987654323",
+        "addressText": "Khu phố 3, Đại Lộc",
+        "locationLat": 16.0544,
+        "locationLng": 108.2022,
+        "numberOfPeople": 0,
+        "urgencyLevel": "NORMAL",
+        "description": "Gia đình đang bị cô lập"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn lỗi dưới biên dưới (0 người) -> HTTP 400 Bad Request", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            if (body) {
+                expect(body.success).to.be.false;
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

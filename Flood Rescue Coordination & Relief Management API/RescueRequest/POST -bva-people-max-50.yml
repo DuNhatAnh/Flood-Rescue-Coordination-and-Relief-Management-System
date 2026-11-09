@@ -1,0 +1,46 @@
+info:
+  name: "BVA TC08 - POST / (Biên Max: 50 người - 200 OK)"
+  type: http
+  seq: 18
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Vũ Thị H",
+        "citizenPhone": "0987654328",
+        "addressText": "Trường Tiểu học Đại Lộc",
+        "locationLat": 16.0544,
+        "locationLng": 108.2022,
+        "numberOfPeople": 50,
+        "urgencyLevel": "HIGH",
+        "description": "Điểm sơ tán dã chiến 50 người ngập lụt"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Kiểm tra biên trên hợp lệ (Max = 50 người) -> HTTP 200/201", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            if (res.getBody() && res.getBody().data) {
+                const reqId = res.getBody().data.id || res.getBody().data.requestId;
+                if (reqId) {
+                    bru.setVar("rescueRequestId", reqId);
+                }
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

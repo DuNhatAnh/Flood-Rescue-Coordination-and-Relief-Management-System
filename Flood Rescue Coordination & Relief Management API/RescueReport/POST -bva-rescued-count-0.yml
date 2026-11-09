@@ -1,0 +1,47 @@
+info:
+  name: "TC_REPORT_02 - POST / (Biên Min: 0 người được cứu - 200 OK)"
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "assignmentId": "6ad65252e38bd958953c0001",
+        "rescuedPeopleCount": 0,
+        "actualCondition": "Tiếp cận điểm ngập, không có nạn nhân bị kẹt, chỉ cấp phát nhu yếu phẩm",
+        "detailedNote": "Hộ dân đã tự di tản lên tầng cao, đã tiếp tế 2 thùng mì tôm",
+        "actualDistributedItems": [
+          {
+            "itemId": "item-01",
+            "itemName": "Mì tôm Hảo Hảo",
+            "unit": "Thùng",
+            "quantity": 2
+          }
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Cho phép nộp báo cáo với 0 người cần cứu hộ (chỉ tiếp tế) -> HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.rescuedPeopleCount).to.equal(0);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

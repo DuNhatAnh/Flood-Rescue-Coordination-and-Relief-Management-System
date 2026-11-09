@@ -2,10 +2,12 @@ package vn.rescue.core.application.dto;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -28,9 +30,13 @@ public class RescueRequestDto {
     private Double locationLng;
     
     private String addressText;
+
+    @Size(max = 1000, message = "Độ dài mô tả khẩn cấp vượt quá giới hạn tối đa 1000 ký tự")
     private String description;
+
     private String urgencyLevel;
     
     @Min(value = 1, message = "Số người gặp nạn phải lớn hơn 0")
+    @Max(value = 50, message = "Số người gặp nạn không được vượt quá 50 người")
     private Integer numberOfPeople;
 }

@@ -1,0 +1,44 @@
+info:
+  name: "BVA TC16 - POST / (Biên lỗi ngoài VN phía Bắc: Lat 24.50 - 400)"
+  type: http
+  seq: 24
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Lý Văn R",
+        "citizenPhone": "0987654336",
+        "addressText": "Vị trí ngoài biên giới phía Bắc",
+        "locationLat": 24.5,
+        "locationLng": 105.0,
+        "numberOfPeople": 4,
+        "urgencyLevel": "LOW",
+        "description": "Khu vực ngoài biên giới phía Bắc"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn tọa độ nằm ngoài lãnh thổ Việt Nam phía Bắc -> HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            if (body) {
+                expect(body.success).to.be.false;
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

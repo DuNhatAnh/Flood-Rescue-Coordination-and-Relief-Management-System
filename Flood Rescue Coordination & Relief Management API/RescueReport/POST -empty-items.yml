@@ -1,0 +1,40 @@
+info:
+  name: "TC_REPORT_04 - POST / (Báo cáo chỉ cứu người không cấp phát hàng - 200 OK)"
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "assignmentId": "6ad65252e38bd958953c0001",
+        "rescuedPeopleCount": 3,
+        "actualCondition": "Nước chảy xiết sạt lở nguy hiểm",
+        "detailedNote": "Ưu tiên đưa khẩn cấp 3 người đi bệnh viện, không mang hàng cứu trợ",
+        "actualDistributedItems": []
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Cho phép danh sách hàng phân phối rỗng khi chỉ thực hiện cứu người -> HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.rescuedPeopleCount).to.equal(3);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
