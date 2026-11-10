@@ -8,9 +8,11 @@ Thư mục này chứa các file Excel thiết kế kế hoạch kiểm thử th
 
 | File | Chức năng | Kỹ thuật | Subtask Jira |
 |:---|:---|:---|:---|
-| `PLAN_AUTH_CHANGE_PASSWORD_V2.xlsx` | Đổi mật khẩu | BVA (Biên dưới Min=6, Biên trên Max=32) + 5 Tiêu chí | KCPM-88 |
+| `PLAN_AUTH_CHANGE_PASSWORD.xlsx` | Đổi mật khẩu | BVA (Biên dưới Min=6, Biên trên Max=32) + 5 Tiêu chí | KCPM-88 |
 | `PLAN_AUTH_LOGIN.xlsx` | Đăng nhập | Phân vùng tương đương (EP) + Bảng quyết định (Decision Table) | KCPM-89 |
 | `PLAN_AUTH_RBAC.xlsx` | Phân quyền | Bảng quyết định (Decision Table) — Ma trận Role vs API | KCPM-90 |
+| `PLAN_INVENTORY_IMPORT.xlsx` | Nhập kho nhu yếu phẩm | BVA (Biên số lượng Min=1, Max=10000, Ngày tương lai) | KCPM-98 |
+| `PLAN_DISTRIBUTION_EXPORT.xlsx` | Xuất kho cứu trợ & Chặn âm kho | Bảng quyết định (Decision Table 6 Rules) | KCPM-99 |
 
 ---
 
