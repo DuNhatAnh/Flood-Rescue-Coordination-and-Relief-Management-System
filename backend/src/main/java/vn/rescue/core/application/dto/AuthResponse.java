@@ -14,6 +14,8 @@ import java.util.List;
 public class AuthResponse {
     private String id;
     private String token;
+    private String accessToken;
+    private String refreshToken;
     private String email;
     private String fullName;
     private String teamId;

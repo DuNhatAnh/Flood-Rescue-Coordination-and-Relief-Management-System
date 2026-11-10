@@ -12,12 +12,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vn.rescue.core.application.dto.AuthRequest;
 import vn.rescue.core.application.dto.AuthResponse;
+import vn.rescue.core.application.dto.RefreshTokenRequest;
 import vn.rescue.core.domain.entities.User;
 import vn.rescue.core.domain.repositories.UserRepository;
 import vn.rescue.core.infrastructure.security.JwtService;
 import vn.rescue.core.domain.entities.RescueTeam;
 import vn.rescue.core.domain.repositories.RescueTeamRepository;
-
+import vn.rescue.core.presentation.exceptions.UnauthorizedException;
 
 import java.security.Principal;
 import java.util.stream.Collectors;
@@ -45,6 +46,7 @@ public class AuthController {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
         String token = jwtService.generateToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
 
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
 
@@ -58,6 +60,69 @@ public class AuthController {
         return ResponseEntity.ok(AuthResponse.builder()
                 .id(user.getId())
                 .token(token)
+                .accessToken(token)
+                .refreshToken(refreshToken)
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .teamId(user.getTeamId())
+                .teamName(teamName)
+                .roles(userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList()))
+                .build());
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        if (request == null || request.getRefreshToken() == null || request.getRefreshToken().trim().isEmpty()) {
+            throw new UnauthorizedException("Refresh token không được để trống");
+        }
+
+        String refreshToken = request.getRefreshToken().trim();
+
+        if (!jwtService.isRefreshTokenValid(refreshToken)) {
+            throw new UnauthorizedException("Refresh token không hợp lệ hoặc đã hết hạn");
+        }
+
+        String userEmail;
+        try {
+            userEmail = jwtService.extractUsername(refreshToken);
+        } catch (Exception e) {
+            throw new UnauthorizedException("Không thể trích xuất thông tin từ refresh token");
+        }
+
+        if (userEmail == null || userEmail.trim().isEmpty()) {
+            throw new UnauthorizedException("Refresh token không hợp lệ");
+        }
+
+        UserDetails userDetails;
+        try {
+            userDetails = userDetailsService.loadUserByUsername(userEmail);
+        } catch (Exception e) {
+            throw new UnauthorizedException("Người dùng không tồn tại hoặc đã bị vô hiệu hóa");
+        }
+
+        if (!jwtService.isRefreshTokenValid(refreshToken, userDetails)) {
+            throw new UnauthorizedException("Refresh token không khớp với thông tin người dùng");
+        }
+
+        String newAccessToken = jwtService.generateToken(userDetails);
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy thông tin người dùng"));
+
+        String teamName = null;
+        if (user.getTeamId() != null) {
+            teamName = rescueTeamRepository.findById(user.getTeamId())
+                    .map(RescueTeam::getTeamName)
+                    .orElse(null);
+        }
+
+        return ResponseEntity.ok(AuthResponse.builder()
+                .id(user.getId())
+                .token(newAccessToken)
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .teamId(user.getTeamId())
@@ -77,4 +142,3 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(null, "Đổi mật khẩu thành công"));
     }
 }
-

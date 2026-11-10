@@ -156,6 +156,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(404, "Không tìm thấy đường dẫn (API Endpoint) tương ứng: " + ex.getResourcePath()));
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleUnauthorizedException(UnauthorizedException ex) {
+        log.warn("Unauthorized: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(401, ex.getMessage()));
+    }
+
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex) {
         log.warn("Access denied: {}", ex.getMessage());
@@ -167,7 +174,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleAuthenticationException(org.springframework.security.core.AuthenticationException ex) {
         log.warn("Authentication failed: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(401, "Sai tên đăng nhập hoặc mật khẩu"));
+                .body(ApiResponse.error(401, ex.getMessage() != null && !ex.getMessage().trim().isEmpty() ? ex.getMessage() : "Sai tên đăng nhập hoặc mật khẩu"));
     }
 
     @ExceptionHandler(Exception.class)
