@@ -1,0 +1,13 @@
+testCaseId,requestId,isVerified,numberOfPeople,hasVulnerable,floodDepthMeters,isIsolated,expectedUrgency,expectedDispatch,expectedHttpCode,expectedMessage
+TC_DISP_01,REQ-001,TRUE,8,TRUE,2.2,TRUE,CRITICAL,DISPATCH_IMMEDIATE,200,Kích hoạt lệnh xuất xe/cano cứu nạn khẩn cấp ngay lập tức
+TC_DISP_02,REQ-002,TRUE,6,TRUE,1.2,FALSE,HIGH,DISPATCH_PRIORITY,200,Xếp vào danh sách ưu tiên điều phối phương tiện đợt 1
+TC_DISP_03,REQ-003,TRUE,2,FALSE,2.0,TRUE,HIGH,DISPATCH_PRIORITY,200,Xếp vào danh sách ưu tiên điều phối phương tiện đợt 1
+TC_DISP_04,REQ-004,TRUE,3,FALSE,1.0,FALSE,MEDIUM,DISPATCH_NORMAL,200,Điều phối lực lượng cứu hộ theo lịch trình tiêu chuẩn
+TC_DISP_05,REQ-005,TRUE,1,FALSE,0.3,FALSE,LOW,STANDBY_SUPPORT,200,Chuyển sang diện theo dõi và tiếp tế nhu yếu phẩm tại chỗ
+TC_DISP_06,REQ-006,FALSE,8,TRUE,2.5,TRUE,NONE,HOLD_FOR_VERIFICATION,400,Yêu cầu xác minh đơn cứu nạn trước khi gán mức độ khẩn cấp
+TC_DISP_07,REQ-007,FALSE,2,FALSE,0.8,FALSE,NONE,HOLD_FOR_VERIFICATION,400,Yêu cầu xác minh đơn cứu nạn trước khi gán mức độ khẩn cấp
+TC_DISP_08,REQ-008,REJECTED,0,FALSE,0.0,FALSE,CANCELLED,CANCEL_REQUEST,200,Hủy đơn cứu nạn thành công do tin báo ảo hoặc không chính xác
+TC_DISP_09,REQ-NOT-FOUND,TRUE,4,FALSE,1.0,FALSE,NONE,NONE,404,Không tìm thấy yêu cầu cứu hộ với ID: REQ-NOT-FOUND
+TC_DISP_10,NULL_VAL,TRUE,4,FALSE,1.0,FALSE,NONE,NONE,400,Mã yêu cầu cứu hộ không được để trống
+TC_DISP_11,REQ-011,TRUE,-3,FALSE,1.0,FALSE,NONE,NONE,400,Số lượng người gặp nạn phải là số nguyên dương
+TC_DISP_12,REQ-012,TRUE,4,FALSE,-1.5,FALSE,NONE,NONE,400,Mực nước ngập không được là số âm
