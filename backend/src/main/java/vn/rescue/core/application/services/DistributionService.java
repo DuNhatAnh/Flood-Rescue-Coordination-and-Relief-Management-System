@@ -79,7 +79,9 @@ public class DistributionService {
         distribution.setType(request.getType() != null ? request.getType() : "EXPORT");
         distribution.setDestinationWarehouseId(request.getDestinationWarehouseId());
         
-        if ("TRANSFER".equals(distribution.getType())) {
+        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
+            distribution.setStatus(request.getStatus().toUpperCase());
+        } else if ("TRANSFER".equals(distribution.getType())) {
             distribution.setStatus("IN_TRANSIT");
         } else {
             distribution.setStatus("COMPLETED");
@@ -181,6 +183,71 @@ public class DistributionService {
         }
 
         distribution.setStatus("COMPLETED");
+        return distributionRepository.save(distribution);
+    }
+
+    /**
+     * KCPM-103: Hủy đợt phân phối hàng cứu trợ và tự động hoàn kho (Rollback Inventory)
+     * - Chỉ cho phép hủy khi trạng thái đơn chưa chuyển sang COMPLETED
+     * - Duyệt các item đã xuất, cộng ngược số lượng vào bảng Inventory tương ứng
+     * - Đổi trạng thái sang CANCELLED, lưu log thời gian cùng lý do hủy
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Distribution cancelDistribution(String distributionId, String reason, String userId) {
+        if (distributionId == null || distributionId.trim().isEmpty()) {
+            throw new BadRequestException("Mã đợt phân phối (id) không được để trống");
+        }
+
+        Distribution distribution = distributionRepository.findById(distributionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt phân phối với ID: " + distributionId));
+
+        // 2. Kiểm tra điều kiện: chỉ cho phép hủy khi trạng thái đơn chưa chuyển sang COMPLETED
+        if ("COMPLETED".equalsIgnoreCase(distribution.getStatus())) {
+            throw new BadRequestException("Không thể hủy đợt phân phối đã hoàn thành (COMPLETED)");
+        }
+
+        if ("CANCELLED".equalsIgnoreCase(distribution.getStatus())) {
+            throw new BadRequestException("Đợt phân phối này đã bị hủy trước đó");
+        }
+
+        // 3. Đặt trong @Transactional(rollbackFor = Exception.class):
+        // Duyệt các item đã xuất, cộng ngược số lượng vào bảng Inventory tương ứng (Rollback Inventory)
+        List<DistributionDetail> details = detailRepository.findAllByDistributionId(distribution.getId());
+        for (DistributionDetail detail : details) {
+            if (detail.getItemId() != null && detail.getQuantity() != null && detail.getQuantity() > 0) {
+                Inventory inventory = inventoryRepository.findByWarehouseIdAndItemId(
+                        distribution.getWarehouseId(), detail.getItemId()
+                ).orElse(null);
+
+                if (inventory != null) {
+                    int currentQty = inventory.getQuantity() != null ? inventory.getQuantity() : 0;
+                    inventory.setQuantity(currentQty + detail.getQuantity());
+                    inventoryRepository.save(inventory);
+                } else {
+                    Inventory newInventory = new Inventory();
+                    newInventory.setWarehouseId(distribution.getWarehouseId());
+                    newInventory.setItemId(detail.getItemId());
+                    newInventory.setQuantity(detail.getQuantity());
+                    newInventory.setMinThreshold(100);
+                    inventoryRepository.save(newInventory);
+                }
+            }
+        }
+
+        // Nếu phân phối gắn với nhiệm vụ (Assignment/requestId), cập nhật lại itemsExported = false
+        if (distribution.getRequestId() != null) {
+            assignmentRepository.findById(distribution.getRequestId()).ifPresent(assignment -> {
+                assignment.setItemsExported(false);
+                assignmentRepository.save(assignment);
+            });
+        }
+
+        // 4. Đổi trạng thái Distribution sang CANCELLED và lưu log thời gian cùng lý do hủy
+        distribution.setStatus("CANCELLED");
+        distribution.setCancelledAt(LocalDateTime.now());
+        distribution.setCancelledBy(userId);
+        distribution.setCancelReason(reason != null && !reason.trim().isEmpty() ? reason : "Hủy theo yêu cầu điều phối");
+
         return distributionRepository.save(distribution);
     }
 
