@@ -28,6 +28,12 @@ public class SafetyReportController {
         if (report == null || report.getCitizenPhone() == null || report.getCitizenPhone().trim().isEmpty()) {
             throw new vn.rescue.core.presentation.exceptions.BadRequestException("Số điện thoại người báo không được để trống");
         }
+        String phone = report.getCitizenPhone().trim();
+        java.util.regex.Pattern vnPhonePattern = java.util.regex.Pattern.compile("^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$");
+        if (!vnPhonePattern.matcher(phone).matches()) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Số điện thoại không hợp lệ (yêu cầu chuẩn 10 số di động Việt Nam)");
+        }
+        report.setCitizenPhone(phone);
         report.setReportedAt(LocalDateTime.now());
         SafetyReport saved = safetyReportRepository.save(report);
         
