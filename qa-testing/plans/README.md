@@ -11,6 +11,10 @@ Thư mục này chứa các file Excel thiết kế kế hoạch kiểm thử th
 | `PLAN_AUTH_CHANGE_PASSWORD_V2.xlsx` | Đổi mật khẩu | BVA (Biên dưới Min=6, Biên trên Max=32) + 5 Tiêu chí | KCPM-88 |
 | `PLAN_AUTH_LOGIN.xlsx` | Đăng nhập | Phân vùng tương đương (EP) + Bảng quyết định (Decision Table) | KCPM-89 |
 | `PLAN_AUTH_RBAC.xlsx` | Phân quyền | Bảng quyết định (Decision Table) — Ma trận Role vs API | KCPM-90 |
+| `PLAN_DANGER_POINT_RADAR.xlsx` | Quét radar điểm nguy hiểm | BVA (Bán kính Min=50m, Max=5000m, Mực nước) | KCPM-93 |
+| `PLAN_COORDINATION_DISPATCH.xlsx` | Điều phối đơn cứu nạn | Bảng quyết định (Decision Table) | KCPM-95 |
+| `PLAN_CITIZEN_SAFETY_REPORT.xlsx` | Báo an toàn & Theo dõi đơn | Phân vùng tương đương (EP) | KCPM-94 |
+| `PLAN_VEHICLES_MANAGEMENT.xlsx` | Đăng ký & Sức chứa Phương tiện | EP, BVA & Bảng quyết định (Decision Table R1-R8) | KCPM-96 |
 
 ---
 
