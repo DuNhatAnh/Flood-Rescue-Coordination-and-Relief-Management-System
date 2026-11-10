@@ -9,6 +9,7 @@ public class DistributionRequest {
     private String requestId;
     private String type; // EXPORT or TRANSFER
     private String destinationWarehouseId;
+    private String status; // PENDING, IN_TRANSIT, COMPLETED, CANCELLED
     private List<ItemQuantity> items;
 
     @Data
