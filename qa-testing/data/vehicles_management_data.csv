@@ -1,0 +1,27 @@
+testCaseId,method,vehicleId,vehicleType,licensePlate,capacity,technique,decisionRule,boundaryType,expectedStatus,expectedHttpCode,expectedException,expectedMessage
+TC_VEH_01,POST,AUTO_GEN,CANO,43A-001.01,-1,BVA,R4 (Sức chứa <=0),Min - 2 (Số âm),FAIL,400,BadRequestException,Sức chứa phương tiện phải lớn hơn hoặc bằng 1
+TC_VEH_02,POST,AUTO_GEN,CANO,43A-001.02,0,BVA,R4 (Sức chứa <=0),Min - 1 (Dưới biên dưới),FAIL,400,BadRequestException,Sức chứa phương tiện phải lớn hơn hoặc bằng 1
+TC_VEH_03,POST,AUTO_GEN,THUYEN,43A-001.03,1,BVA,R1 (Tạo chuẩn),Min (Tại biên dưới),PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_04,POST,AUTO_GEN,THUYEN,43A-001.04,2,BVA,R1 (Tạo chuẩn),Min + 1 (Trên biên dưới),PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_05,POST,AUTO_GEN,CANO,43A-001.05,6,EP/BVA,R1 (Tạo chuẩn),Nominal (Danh định chuẩn),PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_06,POST,AUTO_GEN,XE_LOI_NUOC,43A-001.06,19,BVA,R1 (Tạo chuẩn),Max - 1 (Dưới biên trên),PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_07,POST,AUTO_GEN,XE_LOI_NUOC,43A-001.07,20,BVA,R1 (Tạo chuẩn),Max (Tại biên trên),PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_08,POST,AUTO_GEN,XE_LOI_NUOC,43A-001.08,21,BVA,R3 (Quá tải >20/25),Max + 1 (Vượt trần),FAIL,400,BadRequestException,Sức chứa chở người không được vượt quá 20 người
+TC_VEH_09,POST,AUTO_GEN,XE_LOI_NUOC,43A-001.09,25,BVA,R3 (Quá tải >20/25),Ngoại lệ đề bài (25),FAIL,400,BadRequestException,Sức chứa chở người không được vượt quá 20 người
+TC_VEH_10,POST,AUTO_GEN,CANO,43A-001.10,NULL_VAL,Validation,R6 (Để trống),Rỗng sức chứa,FAIL,400,BadRequestException,Sức chứa phương tiện không được để trống
+TC_VEH_11,POST,AUTO_GEN,CANO,43A-001.11,SIX,Validation,R6 (Sai định dạng),Sai kiểu dữ liệu (chữ),FAIL,400,BadRequestException,Sức chứa phải là số nguyên
+TC_VEH_12,POST,AUTO_GEN,CANO,43A-002.01,8,EP,R1 (Tạo chuẩn),Loại xe hợp lệ (CANO),PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_13,POST,AUTO_GEN,THUYEN,43A-002.02,4,EP,R1 (Tạo chuẩn),Loại xe hợp lệ (THUYEN),PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_14,POST,AUTO_GEN,XE_LOI_NUOC,43A-002.03,15,EP,R1 (Tạo chuẩn),Loại xe hợp lệ (XE_LOI_NUOC),PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_15,POST,AUTO_GEN,XE_DAP,43A-002.04,1,EP,R2 (Sai loại xe),Loại xe không hợp lệ,FAIL,400,BadRequestException,"Loại phương tiện không hợp lệ, chỉ chấp nhận CANO, THUYEN, XE_LOI_NUOC"
+TC_VEH_16,POST,AUTO_GEN,TRUC_THANG,43A-002.05,6,EP,R2 (Sai loại xe),Loại xe không hợp lệ,FAIL,400,BadRequestException,"Loại phương tiện không hợp lệ, chỉ chấp nhận CANO, THUYEN, XE_LOI_NUOC"
+TC_VEH_17,POST,AUTO_GEN,NULL_VAL,43A-002.06,6,Validation,R6 (Để trống),Trống loại xe,FAIL,400,BadRequestException,Loại phương tiện không được để trống
+TC_VEH_18,POST,AUTO_GEN,CANO,43A-123.45,6,Nghiệp vụ,R1 (Tạo chuẩn),Biển số mới hợp lệ,PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_19,POST,AUTO_GEN,CANO,43A-999.99,6,Nghiệp vụ,R5 (Trùng biển),Trùng biển số xe,FAIL,400,BadRequestException,Biển số xe đã tồn tại trong hệ thống: 43A-999.99
+TC_VEH_20,POST,AUTO_GEN,CANO,NULL_VAL,6,Validation,R6 (Để trống),Biển số xe để trống,FAIL,400,BadRequestException,Biển số xe không được để trống
+TC_VEH_21,PUT,VEH-001,CANO,43A-123.45,10,Nghiệp vụ,R7 (PUT Chuẩn),Cập nhật xe ID tồn tại,PASS,200,NONE,Cập nhật phương tiện thành công
+TC_VEH_22,PUT,VEH-NOT-FOUND,CANO,43A-888.88,6,Nghiệp vụ,R8 (PUT ID Lạ),Cập nhật ID không tồn tại,FAIL,404,ResourceNotFoundException,Không tìm thấy phương tiện ID: VEH-NOT-FOUND
+TC_VEH_23,PUT,VEH-001,CANO,43A-123.45,25,BVA,R3 (Quá tải >20/25),PUT vượt quá tải (25),FAIL,400,BadRequestException,Sức chứa chở người không được vượt quá 20 người
+TC_VEH_24,PUT,VEH-001,CANO,43A-999.99,6,Nghiệp vụ,R5 (Trùng biển),PUT trùng biển số xe khác,FAIL,400,BadRequestException,Biển số xe đã tồn tại trong hệ thống: 43A-999.99
+TC_VEH_25,POST,AUTO_GEN,XE_LOI_NUOC,43A-555.01,20,Robustness,R1 (Tạo chuẩn),Đa biên Max + Hợp lệ,PASS,201,NONE,Tạo phương tiện thành công
+TC_VEH_26,POST,AUTO_GEN,THUYEN,43A-555.02,1,Robustness,R1 (Tạo chuẩn),Đa biên Min + Hợp lệ,PASS,201,NONE,Tạo phương tiện thành công
