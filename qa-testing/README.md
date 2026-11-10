@@ -1,7 +1,7 @@
 # 📁 qa-testing — Bộ Kiểm Thử Hộp Đen (Black-box Data-Driven Testing)
 
 > **Dự án:** Hệ thống Điều phối Cứu hộ Lũ lụt  
-> **Module:** Auth, Rescue & Safety Management  
+> **Module:** Auth & RBAC · Tiếp nhận SOS & Cứu trợ · Kho bãi & Hàng cứu trợ  
 > **Kỹ thuật áp dụng:** BVA · Phân vùng tương đương (EP) · Bảng quyết định (Decision Table)
 
 ---
@@ -37,12 +37,17 @@ plans/*.xlsx  →  data/*.csv  →  scripts/run_*.py  →  reports/*.xlsx
 | Đổi mật khẩu (KCPM-88) | `python qa-testing/scripts/run_change_password.py` | `reports/REPORT_AUTH_CHANGE_PASSWORD.xlsx` |
 | Đăng nhập (KCPM-89) | `python qa-testing/scripts/run_login.py` | `reports/REPORT_AUTH_LOGIN.xlsx` |
 | Phân quyền RBAC (KCPM-90) | `python qa-testing/scripts/run_rbac.py` | `reports/REPORT_AUTH_RBAC.xlsx` |
-| Yêu cầu cứu hộ (BVA) | `python qa-testing/scripts/run_rescue_request.py` | `reports/REPORT_CITIZEN_RESCUE_REQUEST.xlsx` |
-| Quét radar điểm nguy hiểm (KCPM-93) | `python qa-testing/scripts/run_danger_point.py` | `reports/REPORT_DANGER_POINT_RADAR.xlsx` |
-| Báo an toàn & Theo dõi đơn (EP) | `python qa-testing/scripts/run_safety_report.py` | `reports/REPORT_CITIZEN_SAFETY_REPORT.xlsx` |
-| Điều phối đơn cứu nạn (KCPM-95) | `python qa-testing/scripts/run_coordination_dispatch.py` | `reports/REPORT_COORDINATION_DISPATCH.xlsx` |
+| Đổi mật khẩu (KCPM-88) | `python qa-testing/scripts/run_change_password.py` | `reports/REPORT_AUTH_CHANGE_PASSWORD.xlsx` |
+| Đăng nhập (KCPM-89) | `python qa-testing/scripts/run_login.py` | `reports/REPORT_AUTH_LOGIN.xlsx` |
+| Phân quyền RBAC (KCPM-90) | `python qa-testing/scripts/run_rbac.py` | `reports/REPORT_AUTH_RBAC.xlsx` |
+| Yêu cầu cứu hộ (BVA - KCPM-91) | `python qa-testing/scripts/run_rescue_request.py` | `reports/REPORT_CITIZEN_RESCUE_REQUEST.xlsx` |
+| Quét radar điểm nguy hiểm (BVA - KCPM-93) | `python qa-testing/scripts/run_danger_point.py` | `reports/REPORT_DANGER_POINT_RADAR.xlsx` |
+| Báo an toàn & Theo dõi đơn (EP - KCPM-94) | `python qa-testing/scripts/run_safety_report.py` | `reports/REPORT_CITIZEN_SAFETY_REPORT.xlsx` |
+| Điều phối đơn cứu nạn (Decision Table - KCPM-95) | `python qa-testing/scripts/run_coordination_dispatch.py` | `reports/REPORT_COORDINATION_DISPATCH.xlsx` |
 | Quản lý Phương tiện EP, BVA & Decision Table (KCPM-96) | `python qa-testing/scripts/run_vehicles.py` | `reports/REPORT_VEHICLES_MANAGEMENT.xlsx` |
-| Máy trạng thái Xe & Đội cứu hộ (KCPM-97) | `python qa-testing/scripts/run_teams.py` | `reports/REPORT_TEAMS_AVAILABILITY.xlsx` |
+| Máy trạng thái Xe & Đội cứu hộ (STM - KCPM-97) | `python qa-testing/scripts/run_teams.py` | `reports/REPORT_TEAMS_AVAILABILITY.xlsx` |
+| Nhập kho nhu yếu phẩm (BVA - KCPM-98) | `python qa-testing/scripts/run_inventory.py` | `reports/REPORT_INVENTORY_IMPORT.xlsx` |
+| Xuất kho cứu trợ & Chặn âm kho (Decision Table - KCPM-99) | `python qa-testing/scripts/run_distribution.py` | `reports/REPORT_DISTRIBUTION_EXPORT.xlsx` |
 
 ---
 
@@ -50,10 +55,10 @@ plans/*.xlsx  →  data/*.csv  →  scripts/run_*.py  →  reports/*.xlsx
 
 | Loại file | Quy tắc đặt tên | Ví dụ |
 |:---|:---|:---|
-| Plan Excel | `PLAN_<MODULE>_<FEATURE>.xlsx` | `PLAN_CITIZEN_SAFETY_REPORT.xlsx` |
-| Dữ liệu CSV | `<module>_<feature>_data.csv` | `citizen_safety_report_data.csv` |
-| Script Runner | `run_<feature>.py` | `run_safety_report.py` |
-| Báo cáo kết quả | `REPORT_<MODULE>_<FEATURE>.xlsx` | `REPORT_CITIZEN_SAFETY_REPORT.xlsx` |
+| Plan Excel | `PLAN_<MODULE>_<FEATURE>.xlsx` | `PLAN_DISTRIBUTION_EXPORT.xlsx` |
+| Dữ liệu CSV | `<module>_<feature>_data.csv` | `distribution_export_data.csv` |
+| Script Runner | `run_<feature>.py` | `run_distribution.py` |
+| Báo cáo kết quả | `REPORT_<MODULE>_<FEATURE>.xlsx` | `REPORT_DISTRIBUTION_EXPORT.xlsx` |
 
 ---
 
