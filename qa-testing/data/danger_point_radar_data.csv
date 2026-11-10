@@ -1,0 +1,21 @@
+testCaseId,pointName,latitude,longitude,radiusInMeters,depthInCm,expectedStatus,expectedHttpCode,expectedException,expectedMessage
+TC_RAD_01,Điểm ngập Cầu Rồng,16.061,108.223,49,100,FAIL,400,BadRequestException,Bán kính quét radar tối thiểu là 50m
+TC_RAD_02,Điểm ngập Cầu Rồng,16.061,108.223,50,100,PASS,200,NONE,SUCCESS
+TC_RAD_03,Điểm ngập Cầu Rồng,16.061,108.223,51,100,PASS,200,NONE,SUCCESS
+TC_RAD_04,Điểm ngập Cầu Rồng,16.061,108.223,500,100,PASS,200,NONE,SUCCESS
+TC_RAD_05,Điểm ngập Cầu Rồng,16.061,108.223,4999,100,PASS,200,NONE,SUCCESS
+TC_RAD_06,Điểm ngập Cầu Rồng,16.061,108.223,5000,100,PASS,200,NONE,SUCCESS
+TC_RAD_07,Điểm ngập Cầu Rồng,16.061,108.223,5001,100,FAIL,400,BadRequestException,Bán kính quét radar vượt quá tối đa 5000m
+TC_RAD_08,Điểm ngập Cầu Rồng,16.061,108.223,0,100,FAIL,400,BadRequestException,Bán kính quét radar phải lớn hơn 0
+TC_RAD_09,Điểm ngập Cầu Rồng,16.061,108.223,-10,100,FAIL,400,BadRequestException,Bán kính quét radar phải lớn hơn 0
+TC_RAD_10,Điểm ngập Cầu Rồng,16.061,108.223,12000,100,FAIL,400,BadRequestException,Bán kính quét vượt quá ngưỡng tuyệt đối 10000m
+TC_RAD_11,Khu vực Hòa Vang,16.02,108.15,500,9,FAIL,400,BadRequestException,Mực nước nguy hiểm tối thiểu từ 10cm
+TC_RAD_12,Khu vực Hòa Vang,16.02,108.15,500,10,PASS,200,NONE,SUCCESS
+TC_RAD_13,Khu vực Hòa Vang,16.02,108.15,500,11,PASS,200,NONE,SUCCESS
+TC_RAD_14,Khu vực Hòa Vang,16.02,108.15,500,499,PASS,200,NONE,SUCCESS
+TC_RAD_15,Khu vực Hòa Vang,16.02,108.15,500,500,PASS,200,NONE,SUCCESS
+TC_RAD_16,Khu vực Hòa Vang,16.02,108.15,500,501,FAIL,400,BadRequestException,Mực nước nguy hiểm vượt quá mức cho phép 500cm
+TC_RAD_17,Khu vực Hòa Vang,16.02,108.15,500,-5,FAIL,400,BadRequestException,Mực nước nguy hiểm không được là số âm
+TC_RAD_18,Điểm ngập Cầu Rồng,16.061,108.223,NULL_VAL,100,FAIL,400,BadRequestException,Bán kính quét radar không được để trống
+TC_RAD_19,Điểm ngập Cầu Rồng,16.061,108.223,500,NULL_VAL,FAIL,400,BadRequestException,Mực nước nguy hiểm không được để trống
+TC_RAD_20,NULL_VAL,16.061,108.223,500,100,FAIL,400,BadRequestException,Tên điểm nguy hiểm không được để trống
