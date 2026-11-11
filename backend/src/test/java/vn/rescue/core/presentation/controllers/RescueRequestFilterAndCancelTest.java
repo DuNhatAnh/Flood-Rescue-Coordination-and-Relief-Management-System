@@ -267,4 +267,35 @@ class RescueRequestFilterAndCancelTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Yêu cầu cứu hộ này đã ở trạng thái CANCELLED trước đó!");
     }
+
+    // =========================================================================
+    // 3. KIỂM THỬ API TRA CỨU ĐƠN CỨU HỘ & XÁC NHẬN AN TOÀN (KCPM-106 / EPIC-02)
+    // =========================================================================
+
+    @Test
+    @DisplayName("GET /api/v1/rescue-requests/track/{id}: Tra cứu ID không tồn tại -> Phải ném ResourceNotFoundException (HTTP 404)")
+    void testTrackRequest_WhenNotFound_ShouldThrowResourceNotFoundException() {
+        assertThatThrownBy(() -> rescueRequestController.trackRequest("NON_EXISTENT_ID"))
+                .isInstanceOf(vn.rescue.core.presentation.exceptions.ResourceNotFoundException.class)
+                .hasMessageContaining("Không tìm thấy yêu cầu với ID: NON_EXISTENT_ID");
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/rescue-requests/track/{id}: Tra cứu ID hợp lệ -> Trả về HTTP 200 OK")
+    void testTrackRequest_WhenValidId_ShouldReturnOk() {
+        ResponseEntity<ApiResponse<RescueRequest>> response = rescueRequestController.trackRequest("req-01");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData().getId()).isEqualTo("req-01");
+    }
+
+    @Test
+    @DisplayName("confirmSafety: Khi yêu cầu đang PENDING -> Ném BadRequestException (HTTP 400 thay vì 500)")
+    void testConfirmSafety_WhenPending_ShouldThrowBadRequestException() {
+        assertThatThrownBy(() -> rescueRequestService.confirmSafety("req-01"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Chỉ có thể xác nhận an toàn cho các yêu cầu đã báo cáo hoàn thành cứu hộ!");
+    }
 }

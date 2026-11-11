@@ -11,11 +11,16 @@ import vn.rescue.core.presentation.common.DateValidationUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/safety-reports")
 public class SafetyReportController {
+
+    private static final Pattern VN_PHONE_PATTERN = Pattern.compile(
+            "^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$"
+    );
 
     @Autowired
     private SafetyReportRepository safetyReportRepository;
@@ -29,8 +34,7 @@ public class SafetyReportController {
             throw new vn.rescue.core.presentation.exceptions.BadRequestException("Số điện thoại người báo không được để trống");
         }
         String phone = report.getCitizenPhone().trim();
-        java.util.regex.Pattern vnPhonePattern = java.util.regex.Pattern.compile("^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$");
-        if (!vnPhonePattern.matcher(phone).matches()) {
+        if (!VN_PHONE_PATTERN.matcher(phone).matches()) {
             throw new vn.rescue.core.presentation.exceptions.BadRequestException("Số điện thoại không hợp lệ (yêu cầu chuẩn 10 số di động Việt Nam)");
         }
         report.setCitizenPhone(phone);
