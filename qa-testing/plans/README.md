@@ -15,6 +15,7 @@ Thư mục này chứa các file Excel thiết kế kế hoạch kiểm thử th
 | `PLAN_COORDINATION_DISPATCH.xlsx` | Điều phối đơn cứu nạn | Bảng quyết định (Decision Table) | KCPM-95 |
 | `PLAN_CITIZEN_SAFETY_REPORT.xlsx` | Báo an toàn & Theo dõi đơn | Phân vùng tương đương (EP) | KCPM-94 |
 | `PLAN_VEHICLES_MANAGEMENT.xlsx` | Đăng ký & Sức chứa Phương tiện | EP, BVA & Bảng quyết định (Decision Table R1-R8) | KCPM-96 |
+| `PLAN_TEAMS_AVAILABILITY.xlsx` | Trạng thái Xe & Đội cứu hộ | Máy trạng thái & Bảng quyết định (STM & Decision Table R1-R8) | KCPM-97 |
 
 ---
 

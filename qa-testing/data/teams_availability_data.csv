@@ -1,0 +1,25 @@
+testCaseId,targetType,entityId,currentState,eventAction,expectedNextState,technique,decisionRule,transitionType,expectedStatus,expectedHttpCode,expectedException,expectedMessage
+TC_STM_01,VEHICLE,VEH-001,AVAILABLE,DISPATCH,BUSY,State Transition,R1 (Điều phối chuẩn),Valid Transition (0-switch),PASS,200,NONE,"Điều phối phương tiện thành công, chuyển sang BUSY"
+TC_STM_02,VEHICLE,VEH-001,BUSY,COMPLETE,AVAILABLE,State Transition,R2 (Hoàn thành nhiệm vụ),Valid Transition (0-switch),PASS,200,NONE,"Hoàn thành nhiệm vụ cứu hộ, phương tiện về AVAILABLE"
+TC_STM_03,VEHICLE,VEH-001,BUSY,BREAKDOWN,MAINTENANCE,State Transition,R2 (Sự cố hư hỏng),Valid Transition (Sự cố),PASS,200,NONE,"Báo hỏng phương tiện giữa dòng lũ, chuyển sang MAINTENANCE"
+TC_STM_04,VEHICLE,VEH-001,MAINTENANCE,REPAIRED,AVAILABLE,State Transition,R2 (Sửa chữa xong),Valid Transition (Phục hồi),PASS,200,NONE,"Nghiệm thu sửa chữa hoàn tất, phương tiện về AVAILABLE"
+TC_STM_05,VEHICLE,VEH-001,AVAILABLE,MAINTAIN,MAINTENANCE,State Transition,R2 (Đưa đi bảo dưỡng),Valid Transition (Bảo dưỡng),PASS,200,NONE,"Đưa phương tiện đi bảo dưỡng định kỳ, chuyển MAINTENANCE"
+TC_STM_06,TEAM,TEAM-001,AVAILABLE,DISPATCH,BUSY,State Transition,R1 (Điều phối chuẩn),Valid Transition (Đội cứu hộ),PASS,200,NONE,"Điều phối đội cứu hộ thành công, chuyển sang BUSY"
+TC_STM_07,TEAM,TEAM-001,BUSY,COMPLETE,AVAILABLE,State Transition,R2 (Hoàn thành nhiệm vụ),Valid Transition (Đội cứu hộ),PASS,200,NONE,"Đội cứu hộ hoàn thành nhiệm vụ, giải phóng về AVAILABLE"
+TC_STM_08,TEAM,TEAM-001,MAINTENANCE,REPAIRED,AVAILABLE,State Transition,R2 (Đội phục hồi),Valid Transition (Đội phục hồi),PASS,200,NONE,"Đội cứu hộ phục hồi thể lực & quân tư trang, về AVAILABLE"
+TC_STM_09,VEHICLE,VEH-002,BUSY,DISPATCH,NONE,State Transition,R3 (Chặn xe bận),Invalid Invariant (Chặn xe bận),FAIL,400,BadRequestException,Phương tiện VEH-002 đang bận hoặc không ở trạng thái sẵn sàng (AVAILABLE) để điều phối
+TC_STM_10,TEAM,TEAM-002,BUSY,DISPATCH,NONE,State Transition,R4 (Chặn đội bận),Invalid Invariant (Chặn đội bận),FAIL,400,BadRequestException,"Đội cứu hộ TEAM-002 đang bận thực hiện nhiệm vụ, không thể gán đơn mới"
+TC_STM_11,VEHICLE,VEH-003,MAINTENANCE,DISPATCH,NONE,State Transition,R5 (Chặn xe bảo trì),Invalid Invariant (Chặn xe bảo trì),FAIL,400,BadRequestException,"Phương tiện VEH-003 đang bảo dưỡng/hỏng hóc, không thể điều phối cứu nạn"
+TC_STM_12,TEAM,TEAM-003,MAINTENANCE,DISPATCH,NONE,State Transition,R6 (Chặn đội bảo trì),Invalid Invariant (Chặn đội bảo trì),FAIL,400,BadRequestException,"Đội cứu hộ TEAM-003 đang tạm ngưng hoạt động, không thể điều phối"
+TC_STM_13,VEHICLE,VEH-001,AVAILABLE,COMPLETE,NONE,State Transition,R2 (Sai ngữ cảnh),Invalid Event (Sai ngữ cảnh),FAIL,400,BadRequestException,"Phương tiện đang sẵn sàng, không có nhiệm vụ đang thực hiện để hoàn tất"
+TC_STM_14,VEHICLE,VEH-003,MAINTENANCE,COMPLETE,NONE,State Transition,R2 (Sai ngữ cảnh),Invalid Event (Sai ngữ cảnh),FAIL,400,BadRequestException,"Phương tiện đang bảo trì, không thể hoàn thành nhiệm vụ cứu nạn"
+TC_STM_15,VEHICLE,VEH-001,AVAILABLE,GET_AVAILABLE,AVAILABLE,State Query,R7 (Lọc danh sách sẵn sàng),Query Included (Sẵn sàng),PASS,200,NONE,Phương tiện AVAILABLE xuất hiện trong danh sách sẵn sàng
+TC_STM_16,VEHICLE,VEH-002,BUSY,GET_AVAILABLE,FILTERED_OUT,State Query,R7 (Lọc danh sách sẵn sàng),Query Excluded (Lọc bỏ xe bận),PASS,200,NONE,Phương tiện BUSY bị lọc bỏ khỏi danh sách sẵn sàng điều phối
+TC_STM_17,VEHICLE,VEH-003,MAINTENANCE,GET_AVAILABLE,FILTERED_OUT,State Query,R7 (Lọc danh sách sẵn sàng),Query Excluded (Lọc bỏ xe bảo trì),PASS,200,NONE,Phương tiện MAINTENANCE bị lọc bỏ khỏi danh sách sẵn sàng điều phối
+TC_STM_18,TEAM,TEAM-001,AVAILABLE,GET_AVAILABLE,AVAILABLE,State Query,R7 (Lọc danh sách sẵn sàng),Query Included (Sẵn sàng),PASS,200,NONE,Đội cứu hộ AVAILABLE xuất hiện trong danh sách sẵn sàng
+TC_STM_19,TEAM,TEAM-002,BUSY,GET_AVAILABLE,FILTERED_OUT,State Query,R7 (Lọc danh sách sẵn sàng),Query Excluded (Lọc bỏ đội bận),PASS,200,NONE,Đội cứu hộ BUSY bị lọc bỏ khỏi danh sách sẵn sàng điều phối
+TC_STM_20,TEAM,TEAM-003,MAINTENANCE,GET_AVAILABLE,FILTERED_OUT,State Query,R7 (Lọc danh sách sẵn sàng),Query Excluded (Lọc bỏ đội bảo trì),PASS,200,NONE,Đội cứu hộ MAINTENANCE bị lọc bỏ khỏi danh sách sẵn sàng điều phối
+TC_STM_21,VEHICLE,VEH-001,AVAILABLE,PUT_STATUS,MAINTENANCE,API Validation,R1 (Cập nhật chuẩn),Valid PUT Update,PASS,200,NONE,Cập nhật trạng thái phương tiện thành công: MAINTENANCE
+TC_STM_22,VEHICLE,VEH-001,AVAILABLE,PUT_STATUS,FLYING_BOAT,API Validation,R8 (Cập nhật lỗi),Invalid Status Enum,FAIL,400,BadRequestException,"Trạng thái phương tiện không hợp lệ, chỉ chấp nhận AVAILABLE, BUSY, MAINTENANCE"
+TC_STM_23,VEHICLE,VEH-NOT-FOUND,AVAILABLE,PUT_STATUS,MAINTENANCE,API Validation,R8 (Cập nhật lỗi),Resource Not Found,FAIL,404,ResourceNotFoundException,Không tìm thấy phương tiện ID: VEH-NOT-FOUND
+TC_STM_24,VEHICLE,VEH-001,AVAILABLE,LIFECYCLE_ROUNDTRIP,AVAILABLE,State Transition,R1 (Vòng đời hoàn chỉnh),Round-Trip 1-Switch (AV->BUSY->MAINT->AV),PASS,200,NONE,Hoàn tất chu trình khép kín: AVAILABLE -> BUSY -> MAINTENANCE -> AVAILABLE
