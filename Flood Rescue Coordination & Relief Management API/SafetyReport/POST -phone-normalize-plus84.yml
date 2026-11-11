@@ -1,0 +1,40 @@
+info:
+  name: POST / (KCPM-106 - SĐT +84 và khoảng trắng - 200 Chuẩn hóa)
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/safety-reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn Dân",
+        "citizenPhone": "+84 905 123 456",
+        "addressText": "123 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "note": "Nước lũ đã rút, báo an toàn với SĐT +84"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Tự động chuẩn hóa SĐT +84 về 0 - HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.citizenPhone).to.equal("0905123456");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+

@@ -5,7 +5,17 @@ info:
 
 http:
   method: PUT
-  url: "{{baseUrl}}/api/v1/admin/system/config"
+  url: "{{baseUrl}}/api/v1/admin/system/config?key=ALERT&value=ON&adminId=admin-01"
+  params:
+    - name: key
+      value: ALERT
+      type: query
+    - name: value
+      value: ON
+      type: query
+    - name: adminId
+      value: admin-01
+      type: query
   auth: inherit
 
 runtime:

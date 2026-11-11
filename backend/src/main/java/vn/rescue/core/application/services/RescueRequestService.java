@@ -156,7 +156,7 @@ public class RescueRequestService {
         
         // Cho phép xác nhận an toàn khi đã xong cứu hộ (REPORTED) hoặc đã hoàn thành (COMPLETED)
         if (!"COMPLETED".equalsIgnoreCase(request.getStatus()) && !"REPORTED".equalsIgnoreCase(request.getStatus())) {
-            throw new RuntimeException("Chỉ có thể xác nhận an toàn cho các yêu cầu đã báo cáo hoàn thành cứu hộ!");
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Chỉ có thể xác nhận an toàn cho các yêu cầu đã báo cáo hoàn thành cứu hộ!");
         }
 
         request.setCitizenVerified(true);

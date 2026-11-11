@@ -8,13 +8,18 @@ http:
   url: "{{baseUrl}}/api/v1/admin/users/:id"
   params:
     - name: id
-      value: "1"
+      value: "{{adminUserId}}"
       type: path
       description: ID of id
   auth: inherit
 
 runtime:
   scripts:
+    - type: before-request
+      code: |-
+        if (!bru.getEnvVar("adminUserId")) {
+            bru.setEnvVar("adminUserId", "6ac5fed4346e4a02fdcf9639");
+        }
     - type: after-response
       code: |-
         test("Phản hồi thành công (200, 201, 204)", function () {

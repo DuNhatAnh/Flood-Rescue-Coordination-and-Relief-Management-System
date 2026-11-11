@@ -13,24 +13,28 @@ http:
     type: json
     data: |-
       {
-        "contactName": "Nguyễn Văn A",
-        "phoneNumber": "0987654321",
-        "address": "Số 123 Đường Lũ Lụt, Xã Đại Lộc",
-        "latitude": 15.88,
-        "longitude": 108.05,
-        "peopleCount": 4,
-        "urgency": "HIGH",
-        "note": "Cần cano cứu trợ khẩn cấp, nước dâng ngập mái"
+        "fullName": "Nhân viên Admin Test",
+        "email": "{{adminTestEmail}}",
+        "phone": "0987654321",
+        "roleId": "ADMIN",
+        "status": "ACTIVE"
       }
   auth: inherit
 
 runtime:
   scripts:
+    - type: before-request
+      code: |-
+        var randomNum = Math.floor(Math.random() * 100000);
+        bru.setVar("adminTestEmail", "admin_auto_" + Date.now() + "_" + randomNum + "@rescue.vn");
     - type: after-response
       code: |-
         test("Phản hồi thành công (200, 201, 204)", function () {
             expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
         });
+        if (res.getBody().data && res.getBody().data.id) {
+            bru.setEnvVar("adminUserId", res.getBody().data.id);
+        }
 
 settings:
   encodeUrl: true

@@ -3,6 +3,8 @@ variables:
   - name: baseUrl
     value: http://localhost:8080
   - name: bearerToken
-    value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdGFmZkByZXNjdWUudm4iLCJpYXQiOjE3OTM1MTY4NTUsImV4cCI6MTc5MzYwMzI1NX0.Y1mLt95AL4Kgef2wSobUB5eLJQZQC5Jh7PFLULUjI3c
+    value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNjdWUudm4iLCJpYXQiOjE3OTQ0MTc1OTksImV4cCI6MTc5NDUwMzk5OX0.yfQaYLcoz2Mz9fR6p_0DC5oJzAqXKLaVcU0P8OzmLME
   - name: dangerPointId
     value: 6ad88981a1c6872749caab33
+  - name: adminUserId
+    value: 6af4a3c3f7b5ec79f46b6098

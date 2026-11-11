@@ -249,6 +249,89 @@ class ReportAndSafetyReportValidationTest {
     }
 
     @Test
+    @DisplayName("SafetyReport (KCPM-106): SĐT chứa ký tự chữ -> Ném BadRequestException (HTTP 400)")
+    void safetyReport_phoneContainsLetters_shouldThrowBadRequestException() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setCitizenPhone("0905abc123");
+        report.setAddressText("123 Lê Duẩn, Đà Nẵng");
+
+        assertThatThrownBy(() -> safetyReportController.createReport(report))
+                .isInstanceOf(vn.rescue.core.presentation.exceptions.BadRequestException.class)
+                .hasMessageContaining("Số điện thoại không hợp lệ");
+    }
+
+    @Test
+    @DisplayName("SafetyReport (KCPM-106): SĐT thiếu số (9 chữ số) -> Ném BadRequestException (HTTP 400)")
+    void safetyReport_phoneTooShort_shouldThrowBadRequestException() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setCitizenPhone("090512345"); // 9 số
+        report.setAddressText("123 Lê Duẩn, Đà Nẵng");
+
+        assertThatThrownBy(() -> safetyReportController.createReport(report))
+                .isInstanceOf(vn.rescue.core.presentation.exceptions.BadRequestException.class)
+                .hasMessageContaining("Số điện thoại không hợp lệ");
+    }
+
+    @Test
+    @DisplayName("SafetyReport (KCPM-106): SĐT thừa số (11 chữ số không phải +84) -> Ném BadRequestException (HTTP 400)")
+    void safetyReport_phoneTooLong_shouldThrowBadRequestException() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setCitizenPhone("09051234567"); // 11 số
+        report.setAddressText("123 Lê Duẩn, Đà Nẵng");
+
+        assertThatThrownBy(() -> safetyReportController.createReport(report))
+                .isInstanceOf(vn.rescue.core.presentation.exceptions.BadRequestException.class)
+                .hasMessageContaining("Số điện thoại không hợp lệ");
+    }
+
+    @Test
+    @DisplayName("SafetyReport (KCPM-106): SĐT đầu số không thuộc nhà mạng VN -> Ném BadRequestException (HTTP 400)")
+    void safetyReport_phoneInvalidPrefix_shouldThrowBadRequestException() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setCitizenPhone("0123456789"); // Đầu 01 không còn hiệu lực
+        report.setAddressText("123 Lê Duẩn, Đà Nẵng");
+
+        assertThatThrownBy(() -> safetyReportController.createReport(report))
+                .isInstanceOf(vn.rescue.core.presentation.exceptions.BadRequestException.class)
+                .hasMessageContaining("Số điện thoại không hợp lệ");
+    }
+
+    @Test
+    @DisplayName("SafetyReport (KCPM-106): SĐT định dạng quốc tế +84 hợp lệ -> HTTP 200 OK")
+    void safetyReport_phoneInternationalFormat_shouldReturnOk() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setCitizenPhone("+84905123456");
+        report.setAddressText("123 Lê Duẩn, Đà Nẵng");
+
+        ResponseEntity<ApiResponse<SafetyReport>> response = safetyReportController.createReport(report);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData().getCitizenPhone()).isEqualTo("0905123456");
+    }
+
+    @Test
+    @DisplayName("SafetyReport (KCPM-106): SĐT có dấu cách hoặc dấu chấm -> Tự động chuẩn hóa về 10 chữ số")
+    void safetyReport_phoneWithSpacesAndDots_shouldNormalize() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setCitizenPhone("0905.123.456");
+        report.setAddressText("123 Lê Duẩn, Đà Nẵng");
+
+        ResponseEntity<ApiResponse<SafetyReport>> response = safetyReportController.createReport(report);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getData().getCitizenPhone()).isEqualTo("0905123456");
+    }
+
+    @Test
     @DisplayName("Report: Đội cứu hộ nộp báo cáo tổng kết (số người cứu được và số hàng đã phát) -> HTTP 200 OK")
     void report_submitRescueReport_shouldReturnOk() {
         vn.rescue.core.domain.entities.RescueReport rescueReport = new vn.rescue.core.domain.entities.RescueReport();

@@ -1,0 +1,40 @@
+info:
+  name: POST / (KCPM-106 - SĐT thiếu số 9 chữ số - 400 Bad Request)
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/safety-reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn Dân",
+        "citizenPhone": "090512345",
+        "addressText": "123 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "note": "Kiểm thử BVA thiếu số"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn SĐT thiếu số (9 số) - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            expect(body.success).to.be.false;
+            expect(body.message).to.include("Số điện thoại không hợp lệ");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
