@@ -1,0 +1,40 @@
+info:
+  name: POST / (KCPM-106 - SĐT chứa chữ cái - 400 Bad Request)
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/safety-reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn Dân",
+        "citizenPhone": "0905abc123",
+        "addressText": "123 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "note": "Kiểm thử SĐT chứa chữ cái"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn SĐT chứa chữ cái - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            expect(body.success).to.be.false;
+            expect(body.message).to.include("Số điện thoại không hợp lệ");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+

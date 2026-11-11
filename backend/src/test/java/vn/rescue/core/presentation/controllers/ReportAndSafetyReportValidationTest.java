@@ -313,6 +313,22 @@ class ReportAndSafetyReportValidationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData().getCitizenPhone()).isEqualTo("0905123456");
+    }
+
+    @Test
+    @DisplayName("SafetyReport (KCPM-106): SĐT có dấu cách hoặc dấu chấm -> Tự động chuẩn hóa về 10 chữ số")
+    void safetyReport_phoneWithSpacesAndDots_shouldNormalize() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn Dân");
+        report.setCitizenPhone("0905.123.456");
+        report.setAddressText("123 Lê Duẩn, Đà Nẵng");
+
+        ResponseEntity<ApiResponse<SafetyReport>> response = safetyReportController.createReport(report);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getData().getCitizenPhone()).isEqualTo("0905123456");
     }
 
     @Test

@@ -35,9 +35,16 @@ public class SafetyReportController {
         }
         String phone = report.getCitizenPhone().trim();
         if (!VN_PHONE_PATTERN.matcher(phone).matches()) {
-            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Số điện thoại không hợp lệ (yêu cầu chuẩn 10 số di động Việt Nam)");
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException(
+                    "Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (bắt đầu bằng 0 hoặc +84)!"
+            );
         }
-        report.setCitizenPhone(phone);
+        // Chuẩn hóa số điện thoại: bỏ khoảng trắng, dấu chấm và quy đổi đầu +84 về 0
+        String cleanPhone = phone.replaceAll("[\\s.]", "");
+        if (cleanPhone.startsWith("+84")) {
+            cleanPhone = "0" + cleanPhone.substring(3);
+        }
+        report.setCitizenPhone(cleanPhone);
         report.setReportedAt(LocalDateTime.now());
         SafetyReport saved = safetyReportRepository.save(report);
         
