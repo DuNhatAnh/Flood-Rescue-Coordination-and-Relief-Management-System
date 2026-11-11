@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import vn.rescue.core.application.dto.DistributionRequest;
 import vn.rescue.core.domain.entities.Distribution;
+import vn.rescue.core.domain.entities.DistributionDetail;
 import vn.rescue.core.domain.entities.Inventory;
 import vn.rescue.core.domain.repositories.*;
 import vn.rescue.core.presentation.exceptions.BadRequestException;
@@ -21,7 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("KCPM-28 [BUG-DIST-01]: Unit Test cho Phân phối & Xuất kho (DistributionService)")
+@DisplayName("KCPM-28 & KCPM-103: Unit Test cho Phân phối, Xuất kho và Hủy hoàn kho (DistributionService)")
 class DistributionServiceTest {
 
     @Mock
@@ -161,5 +162,102 @@ class DistributionServiceTest {
         assertEquals("COMPLETED", result.getStatus());
         assertEquals(warehouseId, result.getWarehouseId());
         verify(distributionRepository, times(1)).save(any(Distribution.class));
+    }
+
+    // ============================================================
+    // KCPM-103: UNIT TESTS CHO HỦY ĐỢT PHÂN PHỐI VÀ HOÀN KHO (ROLLBACK)
+    // ============================================================
+
+    @Test
+    @DisplayName("KCPM-103: Hủy đợt phân phối hợp lệ (chưa COMPLETED) -> Hoàn kho 100% và trạng thái CANCELLED")
+    void testCancelDistribution_Success_ShouldRollbackInventoryAndSetStatusCancelled() {
+        String distId = "DIST-TRANSIT-01";
+        String warehouseId = "WH-01";
+        String itemId = "ITEM-MI-TOM";
+
+        Distribution mockDist = new Distribution();
+        mockDist.setId(distId);
+        mockDist.setWarehouseId(warehouseId);
+        mockDist.setType("TRANSFER");
+        mockDist.setStatus("IN_TRANSIT"); // Chưa COMPLETED
+
+        DistributionDetail detail = new DistributionDetail();
+        detail.setDistributionId(distId);
+        detail.setItemId(itemId);
+        detail.setQuantity(30); // 30 thùng mì đã xuất
+
+        Inventory inventory = new Inventory();
+        inventory.setWarehouseId(warehouseId);
+        inventory.setItemId(itemId);
+        inventory.setQuantity(70); // Tồn kho hiện tại sau khi xuất
+
+        when(distributionRepository.findById(distId)).thenReturn(Optional.of(mockDist));
+        when(detailRepository.findAllByDistributionId(distId)).thenReturn(List.of(detail));
+        when(inventoryRepository.findByWarehouseIdAndItemId(warehouseId, itemId)).thenReturn(Optional.of(inventory));
+        when(distributionRepository.save(any(Distribution.class))).thenAnswer(i -> i.getArgument(0));
+
+        Distribution cancelled = distributionService.cancelDistribution(distId, "Nước rút, đổi phương án cứu hộ", "admin-01");
+
+        assertNotNull(cancelled);
+        assertEquals("CANCELLED", cancelled.getStatus(), "Trạng thái phải chuyển sang CANCELLED");
+        assertNotNull(cancelled.getCancelledAt(), "Thời gian hủy phải được ghi nhận");
+        assertEquals("Nước rút, đổi phương án cứu hộ", cancelled.getCancelReason());
+        assertEquals("admin-01", cancelled.getCancelledBy());
+
+        // Kiểm tra cơ chế tự động hoàn kho (Rollback Inventory: 70 + 30 = 100)
+        assertEquals(100, inventory.getQuantity(), "Tồn kho phải được hoàn trả 100% nguyên vẹn");
+        verify(inventoryRepository, times(1)).save(inventory);
+        verify(distributionRepository, times(1)).save(mockDist);
+    }
+
+    @Test
+    @DisplayName("KCPM-103: Chặn hủy đợt phân phối khi trạng thái đã là COMPLETED -> Ném 400 BadRequestException")
+    void testCancelDistribution_WhenStatusIsCompleted_ShouldThrowBadRequestException() {
+        String distId = "DIST-COMPLETED-01";
+        Distribution mockDist = new Distribution();
+        mockDist.setId(distId);
+        mockDist.setStatus("COMPLETED"); // Đã hoàn thành
+
+        when(distributionRepository.findById(distId)).thenReturn(Optional.of(mockDist));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            distributionService.cancelDistribution(distId, "Lý do hủy", "admin-01");
+        });
+
+        assertTrue(ex.getMessage().contains("Không thể hủy đợt phân phối đã hoàn thành (COMPLETED)"));
+        verify(detailRepository, never()).findAllByDistributionId(any());
+        verify(inventoryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("KCPM-103: Chặn hủy đợt phân phối khi đơn đã bị CANCELLED trước đó -> Ném 400 BadRequestException")
+    void testCancelDistribution_WhenStatusAlreadyCancelled_ShouldThrowBadRequestException() {
+        String distId = "DIST-CANCELLED-01";
+        Distribution mockDist = new Distribution();
+        mockDist.setId(distId);
+        mockDist.setStatus("CANCELLED"); // Đã hủy rồi
+
+        when(distributionRepository.findById(distId)).thenReturn(Optional.of(mockDist));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            distributionService.cancelDistribution(distId, "Hủy lần 2", "admin-01");
+        });
+
+        assertTrue(ex.getMessage().contains("Đợt phân phối này đã bị hủy trước đó"));
+        verify(inventoryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("KCPM-103: Hủy đợt phân phối với ID không tồn tại -> Ném 404 ResourceNotFoundException")
+    void testCancelDistribution_WhenNotFound_ShouldThrowResourceNotFoundException() {
+        String nonExistId = "DIST-NOT-FOUND";
+        when(distributionRepository.findById(nonExistId)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> {
+            distributionService.cancelDistribution(nonExistId, "Lý do", "admin-01");
+        });
+
+        assertTrue(ex.getMessage().contains("Không tìm thấy đợt phân phối với ID: " + nonExistId));
+        verify(distributionRepository, never()).save(any());
     }
 }

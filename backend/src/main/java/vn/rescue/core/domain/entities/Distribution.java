@@ -30,4 +30,13 @@ public class Distribution {
     private String destinationWarehouseId;
 
     private String status = "COMPLETED"; // IN_TRANSIT, COMPLETED, CANCELLED
+
+    @Field("cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    @Field("cancelled_by")
+    private String cancelledBy;
+
+    @Field("cancel_reason")
+    private String cancelReason;
 }
