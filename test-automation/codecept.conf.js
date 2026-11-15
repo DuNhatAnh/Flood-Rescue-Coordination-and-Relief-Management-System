@@ -1,7 +1,7 @@
 const { setHeadlessWhen, setCommonPlugins } = require('@codeceptjs/configure');
 
 exports.config = {
-  tests: './*_test.js',
+  tests: './epic-*/*_test.js',
   output: './output',
   helpers: {
     REST: {
@@ -18,9 +18,19 @@ exports.config = {
     reporterOptions: {
       reportDir: './output',
       reportFilename: 'codeceptjs-report',
+      reportTitle: '[KCPM] BÁO CÁO KIỂM THỬ TỰ ĐỘNG HÓA E2E API - HỆ THỐNG CỨU HỘ LŨ LỤT',
+      reportPageTitle: 'KCPM - Báo Cáo Kiểm Thử Tự Động Hóa E2E API',
+      charts: true,
+      enableCharts: true,
+      code: true,
+      enableCode: true,
       overwrite: true,
       html: true,
-      json: true
+      json: true,
+      showPassed: true,
+      showFailed: true,
+      showPending: true,
+      showSkipped: false
     }
   },
   name: 'flood-rescue-api-tests',
