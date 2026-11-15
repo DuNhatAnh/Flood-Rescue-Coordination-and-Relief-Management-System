@@ -6,9 +6,13 @@
   "scripts": {
     "test:api": "npx codeceptjs run --steps",
     "test:report": "npx codeceptjs run --steps --reporter mochawesome",
-    "test:team-vehicles": "npx codeceptjs run team_vehicles_test.js --steps",
-    "test:assignments": "npx codeceptjs run assignment_dispatch_test.js --steps",
-    "test:kcpm8": "npx codeceptjs run upload_notification_report_test.js --steps"
+    "test:epic01": "npx codeceptjs run epic-01-auth/auth_admin_test.js --steps",
+    "test:epic02": "npx codeceptjs run epic-02-citizen/citizen_portal_test.js --steps",
+    "test:epic03": "npx codeceptjs run epic-03-coordination/assignment_dispatch_test.js --steps",
+    "test:epic04": "npx codeceptjs run epic-04-vehicles/team_vehicles_test.js --steps",
+    "test:epic05": "npx codeceptjs run epic-05-warehouse/warehouse_distribution_test.js --steps",
+    "test:epic06": "npx codeceptjs run epic-06-reports/upload_notification_report_test.js --steps",
+    "report:generate": "npx marge output/codeceptjs-report.json -o output -f codeceptjs-report -t \"[KCPM] BÁO CÁO KIỂM THỬ TỰ ĐỘNG HÓA E2E API - CỨU HỘ LŨ LỤT\" -p \"KCPM - E2E API Automation Test Report\" --charts --inline"
   },
   "devDependencies": {
     "codeceptjs": "^3.6.5",
