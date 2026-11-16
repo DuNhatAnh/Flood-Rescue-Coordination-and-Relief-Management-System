@@ -1,0 +1,38 @@
+info:
+  name: POST /login (KCPM-100 - Tài khoản INACTIVE bị chặn cấp Token - 403 Forbidden)
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/login"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "inactive_test@rescue.vn",
+        "password": "password123"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn đăng nhập tài khoản INACTIVE - HTTP 403 Forbidden", function () {
+            expect(res.getStatus()).to.equal(403);
+            const body = res.getBody();
+            expect(body.success).to.be.false;
+            expect(body.message).to.include("vô hiệu hóa");
+            expect(body.token).to.be.undefined;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

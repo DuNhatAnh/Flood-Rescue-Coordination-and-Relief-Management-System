@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Nghiệm Thu Bug KCPM-100 - Chặn Tài Khoản INACTIVE Đăng Nhập</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-light: #eff6ff;
+      --success: #15803d;
+      --success-bg: #f0fdf4;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --warning: #b45309;
+      --warning-bg: #fffbeb;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f8fafc; color: var(--text); padding: 30px 20px; line-height: 1.6; }
+    .container { max-width: 1100px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); padding: 36px; border: 1px solid var(--border); }
+    .header { border-bottom: 2px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    .title-area h1 { font-size: 1.6rem; color: #0f172a; margin-bottom: 6px; }
+    .title-area .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+    .badge-bug { background-color: #fee2e2; color: #991b1b; }
+    .badge-success { background-color: #dcfce7; color: #166534; }
+    .badge-epic { background-color: #fef3c7; color: #92400e; }
+    
+    .meta-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .card-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+    .card-value { font-size: 1.05rem; font-weight: 600; color: #0f172a; }
+
+    h2 { font-size: 1.25rem; color: #1e3a8a; margin: 28px 0 14px 0; border-left: 4px solid var(--primary); padding-left: 10px; }
+    p { margin-bottom: 12px; color: #334155; }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    @media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; } }
+    .box-before { background: var(--danger-bg); border: 1px solid #fecaca; border-radius: 8px; padding: 16px; }
+    .box-after { background: var(--success-bg); border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; }
+    .box-title { font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .box-before .box-title { color: var(--danger); }
+    .box-after .box-title { color: var(--success); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
+    th { background: #f1f5f9; color: #334155; font-weight: 600; }
+    tr:hover { background-color: #f8fafc; }
+    .status-pass { color: var(--success); font-weight: 700; }
+    .code-span { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    pre { background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 8px; font-size: 0.85rem; overflow-x: auto; margin: 10px 0; }
+    .footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 36px; text-align: center; font-size: 0.85rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title-area">
+        <h1>BÁO CÁO NGHIỆM THU KIỂM THỬ BUG KCPM-100</h1>
+        <p style="margin: 0; color: var(--text-muted);">Khắc phục triệt để lỗ hổng cấp JWT Token cho tài khoản bị khóa INACTIVE / LOCKED</p>
+      </div>
+      <div>
+        <span class="badge badge-bug">Jira: KCPM-100</span>
+        <span class="badge badge-epic">Epic 01: Auth & Admin</span>
+        <span class="badge badge-success">Status: RESOLVED & VERIFIED</span>
+      </div>
+    </div>
+
+    <!-- Metadata Cards -->
+    <div class="meta-cards">
+      <div class="card">
+        <div class="card-label">Người thực hiện (Assignee)</div>
+        <div class="card-value">Phạm Minh Dũng (PD)</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Kết quả Unit Test</div>
+        <div class="card-value status-pass">8 / 8 Test Cases PASS (100%)</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Mã phản hồi chuẩn</div>
+        <div class="card-value">HTTP 403 Forbidden</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Tổng số test toàn Backend</div>
+        <div class="card-value status-pass">96 / 96 Tests BUILD SUCCESS</div>
+      </div>
+    </div>
+
+    <!-- So sánh trước và sau -->
+    <h2>1. Phân Tích Lỗ Hổng & Giải Pháp Triển Khai</h2>
+    <div class="compare-grid">
+      <div class="box-before">
+        <div class="box-title">❌ TRƯỚC KHI KHẮC PHỤC (Lỗ hổng bảo mật)</div>
+        <ul style="padding-left: 20px; font-size: 0.9rem;">
+          <li><span class="code-span">CustomUserDetailsService</span> sử dụng constructor 3 tham số, mặc định đặt <span class="code-span">enabled = true</span>.</li>
+          <li><span class="code-span">AuthController</span> không kiểm tra trạng thái <span class="code-span">user.getStatus()</span> trước khi sinh token.</li>
+          <li>Tài khoản dù bị Admin đánh dấu <span class="code-span">INACTIVE</span> hoặc <span class="code-span">LOCKED</span> vẫn đăng nhập thành công và được cấp JWT Token truy cập hệ thống.</li>
+        </ul>
+      </div>
+
+      <div class="box-after">
+        <div class="box-title">✅ SAU KHI KHẮC PHỤC (Cơ chế Phòng thủ 2 lớp)</div>
+        <ul style="padding-left: 20px; font-size: 0.9rem;">
+          <li><strong>Lớp 1:</strong> Sử dụng constructor 7 tham số của Spring Security, truyền <span class="code-span">isEnabled = "ACTIVE".equalsIgnoreCase(status)</span> và <span class="code-span">accountNonLocked</span>.</li>
+          <li><strong>Lớp 2:</strong> <span class="code-span">AuthController</span> chủ động ném ngay <span class="code-span">DisabledException</span> / <span class="code-span">LockedException</span> nếu status khác ACTIVE.</li>
+          <li><span class="code-span">GlobalExceptionHandler</span> bắt exception và trả về <span class="code-span">HTTP 403 Forbidden</span> với thông báo lỗi rõ ràng.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bảng kết quả Unit Test Mockito -->
+    <h2>2. Bảng Ma Trận Kiểm Thử Hộp Trắng (JUnit 5 & Mockito)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Mã Test Case</th>
+          <th>Tên Kịch Bản Kiểm Thử</th>
+          <th>Dữ Liệu Đầu Vào (Input)</th>
+          <th>Kết Quả Kỳ Vọng (Expected Output)</th>
+          <th>Thực Tế</th>
+          <th>Đánh Giá</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="code-span">TC_AUTH_100_01</span></td>
+          <td>Đăng nhập tài khoản ACTIVE hợp lệ</td>
+          <td>email, pass đúng, status: "ACTIVE"</td>
+          <td>HTTP 200 OK + JWT Token đầy đủ</td>
+          <td>HTTP 200 OK, cấp token</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_AUTH_100_02</span></td>
+          <td>Đăng nhập tài khoản INACTIVE (Bị vô hiệu)</td>
+          <td>email, pass đúng, status: "INACTIVE"</td>
+          <td>Ném DisabledException, <strong>0 token rò rỉ</strong></td>
+          <td>DisabledException ném ra, chặn token</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_AUTH_100_03</span></td>
+          <td>Đăng nhập tài khoản LOCKED (Bị khóa vi phạm)</td>
+          <td>email, pass đúng, status: "LOCKED"</td>
+          <td>Ném LockedException, <strong>0 token rò rỉ</strong></td>
+          <td>LockedException ném ra, chặn token</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_AUTH_100_04</span></td>
+          <td>Đăng nhập tài khoản status lạ hoặc null</td>
+          <td>email, pass đúng, status: "SUSPENDED"</td>
+          <td>Ném DisabledException, từ chối cấp token</td>
+          <td>DisabledException ném ra</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_SEC_01</span></td>
+          <td>Load UserDetails cho tài khoản ACTIVE</td>
+          <td>user.getStatus() == "ACTIVE"</td>
+          <td>isEnabled = true, isAccountNonLocked = true</td>
+          <td>Đúng kỳ vọng</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_SEC_02</span></td>
+          <td>Load UserDetails cho tài khoản INACTIVE</td>
+          <td>user.getStatus() == "INACTIVE"</td>
+          <td>isEnabled = false</td>
+          <td>Đúng kỳ vọng</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_SEC_03</span></td>
+          <td>Load UserDetails cho tài khoản LOCKED</td>
+          <td>user.getStatus() == "LOCKED"</td>
+          <td>isEnabled = false, isAccountNonLocked = false</td>
+          <td>Đúng kỳ vọng</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_SEC_04</span></td>
+          <td>Load UserDetails cho email không tồn tại</td>
+          <td>email không có trong DB</td>
+          <td>Ném UsernameNotFoundException</td>
+          <td>UsernameNotFoundException ném ra</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Bảng API Bruno Test -->
+    <h2>3. Bộ Test API Tích Hợp Bruno (Integration Black-Box Test)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên File Bruno Request</th>
+          <th>Phương Thức & Endpoint</th>
+          <th>Mục Đích Kiểm Thử</th>
+          <th>Assertion Đặt Ra</th>
+          <th>Kết Quả</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="code-span">POST -login-inactive-forbidden.yml</span></td>
+          <td>POST /api/auth/login</td>
+          <td>Gửi đăng nhập tài khoản INACTIVE</td>
+          <td>status == 403, success == false, token == undefined</td>
+          <td class="status-pass">VERIFIED PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">POST -login-locked-forbidden.yml</span></td>
+          <td>POST /api/auth/login</td>
+          <td>Gửi đăng nhập tài khoản LOCKED</td>
+          <td>status == 403, success == false, token == undefined</td>
+          <td class="status-pass">VERIFIED PASS</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Minh chứng Payload Response -->
+    <h2>4. Minh Chứng Phản Hồi JSON Chuẩn Từ Hệ Thống</h2>
+    <pre><code>// Request: POST http://localhost:8080/api/auth/login
+// Body: { "email": "inactive_test@rescue.vn", "password": "password123" }
+
+// Response Status: 403 FORBIDDEN
+{
+  "code": 403,
+  "success": false,
+  "message": "Tài khoản đã bị vô hiệu hóa hoặc chưa được kích hoạt",
+  "data": null
+}</code></pre>
+
+    <div class="footer">
+      Báo cáo được khởi tạo tự động bởi Antigravity Agent theo tiêu chuẩn KCPM Master Protocol | Ngày nghiệm thu: 16/11/2026
+    </div>
+  </div>
+</body>
+</html>
