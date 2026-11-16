@@ -3,6 +3,8 @@ package vn.rescue.core.presentation.controllers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -43,10 +45,16 @@ public class AuthController {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        if (user.getStatus() != null && !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            if ("LOCKED".equalsIgnoreCase(user.getStatus())) {
+                throw new LockedException("Tài khoản đã bị khóa do vi phạm chính sách");
+            }
+            throw new DisabledException("Tài khoản đã bị vô hiệu hóa hoặc chưa được kích hoạt");
+        }
+
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
         String token = jwtService.generateToken(userDetails);
-
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
 
         String teamName = null;
         if (user.getTeamId() != null) {

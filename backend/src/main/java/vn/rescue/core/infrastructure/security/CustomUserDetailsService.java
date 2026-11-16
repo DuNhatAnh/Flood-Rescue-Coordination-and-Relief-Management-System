@@ -49,9 +49,16 @@ public class CustomUserDetailsService implements UserDetailsService {
                     }
                     
                     log.info("Total authorities for user {}: {}", username, authorities.size());
+                    boolean isEnabled = user.getStatus() != null && "ACTIVE".equalsIgnoreCase(user.getStatus());
+                    boolean accountNonLocked = !"LOCKED".equalsIgnoreCase(user.getStatus());
+
                     return new User(
                             user.getEmail(),
                             user.getPassword(),
+                            isEnabled,
+                            true,
+                            true,
+                            accountNonLocked,
                             authorities
                     );
                 })
