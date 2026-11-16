@@ -96,4 +96,78 @@ class RescueRequestValidationTest {
         assertFalse(violations.isEmpty(), "SĐT 012345 phải bị vi phạm validation");
         assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("citizenPhone")));
     }
+
+    @Test
+    @DisplayName("BVA: Số người (numberOfPeople) = -1 -> Bị chặn với ConstraintViolation")
+    void testInvalidNumberOfPeople_NegativeOne_ShouldFail() {
+        RescueRequestDto dto = createValidDto();
+        dto.setNumberOfPeople(-1);
+
+        Set<ConstraintViolation<RescueRequestDto>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty(), "Số người -1 phải bị vi phạm validation");
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("numberOfPeople")));
+    }
+
+    @Test
+    @DisplayName("BVA: Số người (numberOfPeople) = 0 -> Bị chặn với ConstraintViolation")
+    void testInvalidNumberOfPeople_Zero_ShouldFail() {
+        RescueRequestDto dto = createValidDto();
+        dto.setNumberOfPeople(0);
+
+        Set<ConstraintViolation<RescueRequestDto>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty(), "Số người 0 phải bị vi phạm validation");
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("numberOfPeople")));
+    }
+
+    @Test
+    @DisplayName("BVA: Số người (numberOfPeople) = 1 (biên dưới hợp lệ) -> Hợp lệ không có lỗi")
+    void testValidNumberOfPeople_LowerBoundaryOne_ShouldPass() {
+        RescueRequestDto dto = createValidDto();
+        dto.setNumberOfPeople(1);
+
+        Set<ConstraintViolation<RescueRequestDto>> violations = validator.validate(dto);
+        assertTrue(violations.isEmpty(), "Số người 1 là biên dưới hợp lệ, không được có lỗi validation");
+    }
+
+    @Test
+    @DisplayName("BVA: Số người (numberOfPeople) = 50 (biên trên hợp lệ) -> Hợp lệ không có lỗi")
+    void testValidNumberOfPeople_UpperBoundaryFifty_ShouldPass() {
+        RescueRequestDto dto = createValidDto();
+        dto.setNumberOfPeople(50);
+
+        Set<ConstraintViolation<RescueRequestDto>> violations = validator.validate(dto);
+        assertTrue(violations.isEmpty(), "Số người 50 là biên trên hợp lệ, không được có lỗi validation");
+    }
+
+    @Test
+    @DisplayName("BVA: Số người (numberOfPeople) = 51 (vượt biên trên) -> Bị chặn với lỗi vi phạm")
+    void testInvalidNumberOfPeople_FiftyOne_ShouldFail() {
+        RescueRequestDto dto = createValidDto();
+        dto.setNumberOfPeople(51);
+
+        Set<ConstraintViolation<RescueRequestDto>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty(), "Số người 51 vượt biên trên phải bị vi phạm validation");
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("numberOfPeople")));
+    }
+
+    @Test
+    @DisplayName("BVA: Độ dài ghi chú/mô tả (description) = 1000 ký tự (biên trên hợp lệ) -> Hợp lệ không có lỗi")
+    void testValidDescription_Length1000_ShouldPass() {
+        RescueRequestDto dto = createValidDto();
+        dto.setDescription("A".repeat(1000));
+
+        Set<ConstraintViolation<RescueRequestDto>> violations = validator.validate(dto);
+        assertTrue(violations.isEmpty(), "Ghi chú 1000 ký tự là biên trên hợp lệ, không được có lỗi validation");
+    }
+
+    @Test
+    @DisplayName("BVA: Độ dài ghi chú/mô tả (description) = 1001 ký tự (vượt biên trên) -> Bị chặn với lỗi vi phạm")
+    void testInvalidDescription_Length1001_ShouldFail() {
+        RescueRequestDto dto = createValidDto();
+        dto.setDescription("A".repeat(1001));
+
+        Set<ConstraintViolation<RescueRequestDto>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty(), "Ghi chú 1001 ký tự vượt quá biên trên phải bị vi phạm validation");
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("description")));
+    }
 }
