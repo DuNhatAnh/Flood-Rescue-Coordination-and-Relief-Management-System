@@ -6,6 +6,7 @@
   "scripts": {
     "test:api": "npx codeceptjs run --steps",
     "test:report": "npx codeceptjs run --steps --reporter mochawesome",
+    "test:citizen": "npx codeceptjs run citizen_portal_test.js --steps",
     "test:epic01": "npx codeceptjs run epic-01-auth/auth_admin_test.js --steps",
     "test:epic02": "npx codeceptjs run epic-02-citizen/citizen_portal_test.js --steps",
     "test:epic03": "npx codeceptjs run epic-03-coordination/assignment_dispatch_test.js --steps",
