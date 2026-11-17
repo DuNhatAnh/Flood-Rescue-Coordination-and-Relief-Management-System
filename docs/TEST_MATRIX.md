@@ -63,12 +63,12 @@
 
 | STT | Chức năng nghiệp vụ | Endpoint API | White-box (JUnit 5) | Bruno API | QA Data-Driven | CodeceptJS (E2E) | Trạng thái |
 |:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| 5.1 | Quản lý danh mục Kho hàng & Giải thể kho (Bắt 404) | `/api/v1/warehouses/*` | ✅ `WarehouseServiceTest` (5 TCs) | ✅ 6 requests CRUD | ❌ Chưa có test riêng | ❌ Chưa tích hợp | **Đạt** |
-| 5.2 | Danh mục nhu yếu phẩm cứu trợ (Validate bắt buộc tên/đơn vị) | `/api/v1/relief-items/*` | ✅ `ReliefItemServiceTest` (4 TCs) | ✅ 4 requests CRUD | ❌ Chưa có test riêng | ❌ Chưa tích hợp | **Đạt** |
+| 5.1 | Quản lý danh mục Kho hàng & Giải thể kho (Bắt 404) | `/api/v1/warehouses/*` | ✅ `WarehouseServiceTest` (5 TCs) | ✅ 6 requests CRUD | ❌ Chưa có test riêng | ✅ `warehouse_distribution_test.js` | **Đạt** |
+| 5.2 | Danh mục nhu yếu phẩm cứu trợ (Validate bắt buộc tên/đơn vị) | `/api/v1/relief-items/*` | ✅ `ReliefItemServiceTest` (4 TCs) | ✅ 4 requests CRUD | ❌ Chưa có test riêng | ✅ `warehouse_distribution_test.js` | **Đạt** |
 | 5.3 | Nhập kho nhu yếu phẩm (BVA số lượng 1..10000, chặn ngày âm) | `POST /api/v1/inventory/import` | ✅ `InventoryServiceTest` (12 TCs) | ✅ `POST -import.yml` | ✅ `inventory_import_data.csv` (14 TCs) | ✅ `warehouse_distribution_test.js` | **Đạt** |
 | 5.4 | Tra cứu thẻ kho & Cảnh báo tồn kho cạn kiệt (Low stock) | `/api/v1/inventory/warehouse/*` | ✅ `InventoryServiceTest` | ✅ 2 requests stock/low-stock | ❌ Chưa có test riêng | ✅ `warehouse_distribution_test.js` | **Đạt** |
-| 5.5 | Xuất kho cứu trợ theo nhiệm vụ (Decision Table chặn âm kho) | `POST /api/v1/distributions` | ✅ `DistributionServiceTest` (8 TCs - BUG-DIST-01) | ✅ `POST -.yml` | ✅ `distribution_export_data.csv` (13 TCs) | ❌ Chưa tích hợp | **Đạt** |
-| 5.6 | Hủy phiếu xuất và tự động hoàn kho (Rollback Inventory) | `POST /api/v1/distributions/{id}/cancel` | ✅ `DistributionControllerTest` (2 TCs) | ✅ `POST -complete-transfer.yml` | ❌ Chưa có test riêng | ❌ Chưa tích hợp | **Đạt** |
+| 5.5 | Xuất kho cứu trợ theo nhiệm vụ (Decision Table chặn âm kho) | `POST /api/v1/distributions` | ✅ `DistributionServiceTest` (8 TCs - BUG-DIST-01) | ✅ `POST -.yml` | ✅ `distribution_export_data.csv` (13 TCs) | ✅ `warehouse_distribution_test.js` | **Đạt** |
+| 5.6 | Hủy phiếu xuất và tự động hoàn kho (Rollback Inventory) | `POST /api/v1/distributions/{id}/cancel` | ✅ `DistributionControllerTest` (2 TCs) | ✅ `POST -complete-transfer.yml` | ❌ Chưa có test riêng | ✅ `warehouse_distribution_test.js` | **Đạt** |
 
 ---
 
