@@ -44,12 +44,33 @@ public class VehiclesService {
         return stats;
     }
 
+    // Danh mục chủng loại phương tiện cứu hộ hợp lệ
+    private static final java.util.Set<String> VALID_VEHICLE_TYPES = java.util.Set.of(
+            "CANO", "CANOE", "THUYEN", "XE_LOI_NUOC"
+    );
+
     // --- 3. THÊM MỚI ---
     @Transactional
     public VehicleResponse createVehicle(VehicleRequest request, String userId) {
         if (vehiclesRepository.existsByLicensePlate(request.getLicensePlate())) {
             throw new vn.rescue.core.presentation.exceptions.BadRequestException("Biển số xe đã tồn tại trong hệ thống: " + request.getLicensePlate());
         }
+
+        // BVA & Validation kiểm tra chủng loại phương tiện
+        if (request.getVehicleType() == null || !VALID_VEHICLE_TYPES.contains(request.getVehicleType().toUpperCase())) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Chủng loại phương tiện không hợp lệ: " + request.getVehicleType() + ". Chỉ chấp nhận: CANO, THUYEN, XE_LOI_NUOC");
+        }
+
+        // BVA kiểm tra sức chứa chở người (capacity)
+        if (request.getCapacity() != null) {
+            if (request.getCapacity() < 1) {
+                throw new vn.rescue.core.presentation.exceptions.BadRequestException("Sức chứa phải lớn hơn hoặc bằng 1");
+            }
+            if (request.getCapacity() > 20) {
+                throw new vn.rescue.core.presentation.exceptions.BadRequestException("Sức chứa vượt quá tải trọng quy chuẩn (tối đa 20 người)");
+            }
+        }
+
         Vehicles vehicle = new Vehicles();
         mapRequestToEntity(vehicle, request);
         vehicle.setStatus("AVAILABLE");
@@ -94,6 +115,9 @@ public class VehiclesService {
         vehicle.setCurrentLocation(request.getCurrentLocation());
         vehicle.setTeamId(request.getTeamId());
         vehicle.setWarehouseId(request.getWarehouseId());
+        if (request.getCapacity() != null) {
+            vehicle.setCapacity(String.valueOf(request.getCapacity()));
+        }
     }
 
     private VehicleResponse mapToResponse(Vehicles vehicle) {
@@ -105,6 +129,7 @@ public class VehiclesService {
                 .currentLocation(vehicle.getCurrentLocation())
                 .teamId(vehicle.getTeamId())
                 .warehouseId(vehicle.getWarehouseId())
+                .capacity(vehicle.getCapacity())
                 .build();
     }
 }

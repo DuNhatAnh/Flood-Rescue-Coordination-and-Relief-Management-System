@@ -16,4 +16,5 @@ public class VehicleRequest {
     private String currentLocation; // Khớp với text
     private String teamId; // Khớp với string (MongoDB ID)
     private String warehouseId;
+    private Integer capacity; // Sức chứa chở người (người)
 }
