@@ -1,5 +1,3 @@
-const { setHeadlessWhen, setCommonPlugins } = require('@codeceptjs/configure');
-
 exports.config = {
   tests: './epic-*/*_test.js',
   output: './output',
