@@ -1,5 +1,7 @@
+const mockServer = require('./mock_server');
+
 exports.config = {
-  tests: './epic-*/*_test.js',
+  tests: process.env.TEST_PATH || './citizen_portal_test.js',
   output: './output',
   helpers: {
     REST: {
@@ -10,6 +12,12 @@ exports.config = {
       timeout: 10000
     },
     JSONResponse: {}
+  },
+  bootstrap: async () => {
+    await mockServer.start();
+  },
+  teardown: async () => {
+    await mockServer.stop();
   },
   include: {},
   mocha: {
