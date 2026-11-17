@@ -93,6 +93,12 @@ Scenario('[KCPM-114] [E2E-04-09] [POSITIVE] Lấy danh sách phương tiện đa
   const res = await I.sendGetRequest('/api/v1/vehicles/available');
   I.seeResponseCodeIs(200);
   I.seeResponseContainsKeys(['code', 'data']);
+  // Xác minh danh sách chỉ chứa xe có status = AVAILABLE
+  if (res.data && res.data.data && Array.isArray(res.data.data)) {
+    res.data.data.forEach(v => {
+      I.assertDeepEqual(v.status.toUpperCase(), 'AVAILABLE', 'Phương tiện trong danh sách available phải có status = AVAILABLE');
+    });
+  }
 });
 
 Scenario('[KCPM-114] [E2E-04-10] [POSITIVE] Cập nhật thông tin phương tiện [PUT /api/v1/vehicles/{id}?userId=...]', async ({ I }) => {
@@ -110,23 +116,49 @@ Scenario('[KCPM-114] [E2E-04-10] [POSITIVE] Cập nhật thông tin phương ti�
 
 // ==================== NHÓM 3: MÁY TRẠNG THÁI BẢO TRÌ XE (STATE TRANSITION MACHINE) ====================
 
-Scenario('[KCPM-114] [E2E-04-11] [WORKFLOW] Chuyển phương tiện sang trạng thái bảo trì khi gặp sự cố lũ lụt [PUT /api/v1/vehicles/{id}]', async ({ I }) => {
+Scenario('[KCPM-114] [E2E-04-11] [WORKFLOW] Vòng đời bảo trì xe: BUSY -> Gặp sự cố chuyển sang MAINTENANCE -> Nghiệm thu về AVAILABLE [PUT /api/v1/vehicles/{id}]', async ({ I }) => {
   const targetId = createdVehicleId || 'veh-cano-01';
-  const res = await I.sendPutRequest(`/api/v1/vehicles/${targetId}`, {
+
+  // Bước 1: Giả lập điều động phương tiện nhận đơn cứu hộ (chuyển sang BUSY)
+  await I.sendPutRequest(`/api/v1/vehicles/${targetId}?userId=${testUserId}`, {
+    status: 'BUSY',
+    currentLocation: 'Vùng rốn lũ Lệ Thủy'
+  });
+
+  // Bước 2: Phương tiện gặp sự cố thủy lực giữa dòng lũ -> Gọi PUT chuyển sang MAINTENANCE
+  const resMaint = await I.sendPutRequest(`/api/v1/vehicles/${targetId}?userId=${testUserId}`, {
     status: 'MAINTENANCE',
-    reason: 'Hỏng chân vịt do vướng rác lũ'
+    reason: 'Sự cố thủy lực do ngập nước sâu và vướng rác lũ',
+    currentLocation: 'Xưởng sửa chữa tiền phương'
+  });
+  I.seeResponseCodeIs(200);
+  I.seeResponseContainsKeys(['code']);
+
+  // Bước 3: Hoàn tất sửa chữa nghiệm thu an toàn kỹ thuật -> Chuyển về AVAILABLE thành công
+  const resAvail = await I.sendPutRequest(`/api/v1/vehicles/${targetId}?userId=${testUserId}`, {
+    status: 'AVAILABLE',
+    currentLocation: 'Bến Lệ Thủy - Sẵn sàng nhận lệnh'
   });
   I.seeResponseCodeIs(200);
   I.seeResponseContainsKeys(['code']);
 });
 
-Scenario('[KCPM-114] [E2E-04-12] [NEGATIVE] Chặn điều phối phương tiện đang trong trạng thái MAINTENANCE [POST /api/v1/assignments]', async ({ I }) => {
+Scenario('[KCPM-114] [E2E-04-12] [NEGATIVE] Chặn điều phối phương tiện đang trong trạng thái MAINTENANCE [POST /api/v1/assignments/dispatch]', async ({ I }) => {
+  const targetId = createdVehicleId || 'veh-cano-01';
+
+  // Đảm bảo phương tiện đang ở trạng thái MAINTENANCE
+  await I.sendPutRequest(`/api/v1/vehicles/${targetId}?userId=${testUserId}`, {
+    status: 'MAINTENANCE',
+    reason: 'Đang bảo dưỡng động cơ'
+  });
+
+  // Thử lập lệnh điều phối xe này -> Xác nhận hệ thống chặn ném lỗi 400
   const payload = {
     requestId: 'REQ-DEMO-03',
     teamId: 'team-01',
-    vehicleIds: [createdVehicleId || 'veh-cano-01']
+    vehicleIds: [targetId]
   };
-  const res = await I.sendPostRequest('/api/v1/assignments', payload);
+  const res = await I.sendPostRequest('/api/v1/assignments/dispatch', payload);
   I.seeResponseCodeIs(400);
 });
 
