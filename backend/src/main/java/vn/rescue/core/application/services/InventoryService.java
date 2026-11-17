@@ -43,8 +43,17 @@ public class InventoryService {
         if (!warehouseRepository.existsById(request.getWarehouseId())) {
             throw new ResourceNotFoundException("Không tìm thấy kho hàng với ID: " + request.getWarehouseId());
         }
+        if (request.getItemId() == null || request.getItemId().trim().isEmpty()) {
+            throw new BadRequestException("Mã vật phẩm không được để trống");
+        }
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new BadRequestException("Số lượng nhập kho phải lớn hơn 0");
+        }
+        if (request.getQuantity() > 10000) {
+            throw new BadRequestException("Số lượng nhập vượt quá sức chứa tối đa một lô (10000)");
+        }
+        if (request.getExpiryDate() != null && request.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Hàng hóa đã hết hạn sử dụng");
         }
 
         // 0. Lấy thông tin Item từ danh mục để đồng bộ dữ liệu (tránh bị null/Vật phẩm)
