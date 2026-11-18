@@ -93,4 +93,95 @@ class DangerPointServiceTest {
         assertNotNull(result.getUpdatedAt());
         verify(dangerPointRepository).save(existingPoint);
     }
+
+    // =========================================================================
+    // KCPM-101: BỔ SUNG KIỂM THỬ LỌC ĐIỂM NGUY HIỂM THEO BÁN KÍNH GPS (HAVERSINE)
+    // =========================================================================
+
+    @Test
+    @DisplayName("KCPM-101: Lọc điểm nguy hiểm trong bán kính 1000m -> Chỉ trả về điểm gần (<= 1000m)")
+    void testGetDangerPointsNearby_WhenWithinRadius_ShouldReturnOnlyNearbyPoints() {
+        // Tọa độ người dân cần cứu: 16.0610, 108.2230 (Đà Nẵng)
+        double centerLat = 16.0610;
+        double centerLng = 108.2230;
+        double radiusMeters = 1000.0; // 1km
+
+        // Điểm 1: Cách ~200m (Gần - Hợp lệ)
+        DangerPoint nearPoint = DangerPoint.builder()
+                .id("DP-NEAR-01")
+                .name("Điểm ngập sâu ngã tư")
+                .latitude(16.0620)
+                .longitude(16.0620 != 0 ? 108.2240 : 108.2230)
+                .depth(1.8)
+                .build();
+
+        // Điểm 2: Cách ~15km (Xa ngoài bán kính)
+        DangerPoint farPoint = DangerPoint.builder()
+                .id("DP-FAR-02")
+                .name("Sạt lở đèo Hải Vân")
+                .latitude(16.1500)
+                .longitude(108.1200)
+                .depth(3.0)
+                .build();
+
+        when(dangerPointRepository.findAll()).thenReturn(java.util.List.of(nearPoint, farPoint));
+
+        var result = dangerPointService.getDangerPointsNearby(centerLat, centerLng, radiusMeters);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("DP-NEAR-01", result.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("KCPM-101: Không truyền tọa độ -> Trả về toàn bộ danh sách điểm nguy hiểm")
+    void testGetDangerPointsNearby_WhenNoCoordsProvided_ShouldReturnAll() {
+        DangerPoint p1 = DangerPoint.builder().id("DP-01").name("Điểm 1").build();
+        DangerPoint p2 = DangerPoint.builder().id("DP-02").name("Điểm 2").build();
+        when(dangerPointRepository.findAll()).thenReturn(java.util.List.of(p1, p2));
+
+        var result = dangerPointService.getDangerPointsNearby(null, null, null);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    @DisplayName("KCPM-101: BVA Bán kính <= 0 -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenRadiusZeroOrNegative_ShouldThrowBadRequestException() {
+        var exZero = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(16.061, 108.223, 0.0);
+        });
+        assertTrue(exZero.getMessage().contains("Bán kính tìm kiếm (radius) phải lớn hơn 0"));
+
+        var exNeg = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(16.061, 108.223, -50.0);
+        });
+        assertTrue(exNeg.getMessage().contains("Bán kính tìm kiếm (radius) phải lớn hơn 0"));
+    }
+
+    @Test
+    @DisplayName("KCPM-101: BVA Tọa độ GPS ngoài khoảng hợp lệ -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenInvalidCoordinates_ShouldThrowBadRequestException() {
+        // Vĩ độ ngoài [-90, 90]
+        var exLat = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(95.0, 108.223, 500.0);
+        });
+        assertTrue(exLat.getMessage().contains("Vĩ độ (lat) không hợp lệ"));
+
+        // Kinh độ ngoài [-180, 180]
+        var exLng = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(16.061, 200.0, 500.0);
+        });
+        assertTrue(exLng.getMessage().contains("Kinh độ (lng) không hợp lệ"));
+    }
+
+    @Test
+    @DisplayName("KCPM-101: Truyền thiếu 1 trong 3 tham số (lat, lng, radius) -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenMissingParams_ShouldThrowBadRequestException() {
+        var ex = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(16.061, null, 500.0);
+        });
+        assertTrue(ex.getMessage().contains("Cần cung cấp đầy đủ tọa độ lat, lng và bán kính radius"));
+    }
 }

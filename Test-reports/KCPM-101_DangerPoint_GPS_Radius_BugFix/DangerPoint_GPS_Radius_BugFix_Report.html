@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Nghiệm Thu Bug KCPM-101 - Lọc Điểm Nguy Hiểm Theo Bán Kính GPS Radius</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-light: #eff6ff;
+      --success: #15803d;
+      --success-bg: #f0fdf4;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --warning: #b45309;
+      --warning-bg: #fffbeb;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f8fafc; color: var(--text); padding: 30px 20px; line-height: 1.6; }
+    .container { max-width: 1100px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); padding: 36px; border: 1px solid var(--border); }
+    .header { border-bottom: 2px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    .title-area h1 { font-size: 1.6rem; color: #0f172a; margin-bottom: 6px; }
+    .title-area .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+    .badge-bug { background-color: #fee2e2; color: #991b1b; }
+    .badge-success { background-color: #dcfce7; color: #166534; }
+    .badge-epic { background-color: #fef3c7; color: #92400e; }
+    
+    .meta-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .card-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+    .card-value { font-size: 1.05rem; font-weight: 600; color: #0f172a; }
+
+    h2 { font-size: 1.25rem; color: #1e3a8a; margin: 28px 0 14px 0; border-left: 4px solid var(--primary); padding-left: 10px; }
+    p { margin-bottom: 12px; color: #334155; }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    @media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; } }
+    .box-before { background: var(--danger-bg); border: 1px solid #fecaca; border-radius: 8px; padding: 16px; }
+    .box-after { background: var(--success-bg); border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; }
+    .box-title { font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .box-before .box-title { color: var(--danger); }
+    .box-after .box-title { color: var(--success); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
+    th { background: #f1f5f9; color: #334155; font-weight: 600; }
+    tr:hover { background-color: #f8fafc; }
+    .status-pass { color: var(--success); font-weight: 700; }
+    .code-span { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+
+    pre { background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 8px; font-size: 0.85rem; overflow-x: auto; margin: 10px 0; }
+    .formula-box { background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 6px; margin: 12px 0; font-family: monospace; font-size: 0.92rem; }
+    .footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 36px; text-align: center; font-size: 0.85rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title-area">
+        <h1>BÁO CÁO NGHIỆM THU KIỂM THỬ BUG KCPM-101</h1>
+        <p style="margin: 0; color: var(--text-muted);">Khắc phục lỗi API DangerPoint chưa lọc bán kính GPS Radius xung quanh tọa độ nạn nhân</p>
+      </div>
+      <div>
+        <span class="badge badge-bug">Jira: KCPM-101</span>
+        <span class="badge badge-epic">Epic 04: Teams & Vehicles</span>
+        <span class="badge badge-success">Status: RESOLVED & VERIFIED</span>
+      </div>
+    </div>
+
+    <!-- Metadata Cards -->
+    <div class="meta-cards">
+      <div class="card">
+        <div class="card-label">Người thực hiện (Assignee)</div>
+        <div class="card-value">Nguyễn Bảo (NB)</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Kết quả Unit Test Service</div>
+        <div class="card-value status-pass">9 / 9 Test Cases PASS (100%)</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Kỹ thuật thuật toán</div>
+        <div class="card-value">Haversine GPS Distance</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Mã phản hồi chuẩn</div>
+        <div class="card-value">HTTP 200 OK / 400 Bad Request</div>
+      </div>
+    </div>
+
+    <!-- 1. Phân tích trước và sau khi fix bug -->
+    <h2>1. Phân Tích Lỗ Hổng Nghiệp Vụ & Giải Pháp Khắc Phục</h2>
+    <div class="compare-grid">
+      <div class="box-before">
+        <div class="box-title">❌ TRƯỚC KHI KHẮC PHỤC (Lỗi Nghiệp Vụ Radar)</div>
+        <ul style="padding-left: 20px; font-size: 0.9rem;">
+          <li>API <span class="code-span">GET /api/v1/danger-points</span> gọi trực tiếp <span class="code-span">dangerPointRepository.findAll()</span>.</li>
+          <li>Khi điều phối viên hoặc người dân truyền tọa độ <span class="code-span">lat</span>, <span class="code-span">lng</span> và bán kính <span class="code-span">radius</span>, backend hoàn toàn <strong>bỏ qua</strong> các tham số này.</li>
+          <li>Radar cứu hộ hiển thị toàn bộ điểm nguy hiểm trên toàn tỉnh/quốc gia thay vì chỉ hiển thị các điểm ngập sâu quanh người dân gặp nạn.</li>
+        </ul>
+      </div>
+
+      <div class="box-after">
+        <div class="box-title">✅ SAU KHI KHẮC PHỤC (Bộ Lọc Không Gian Trắc Địa)</div>
+        <ul style="padding-left: 20px; font-size: 0.9rem;">
+          <li>Cập nhật <span class="code-span">DangerPointController</span> tiếp nhận 3 query params: <span class="code-span">lat</span>, <span class="code-span">lng</span>, <span class="code-span">radius</span> (mét).</li>
+          <li>Triển khai công thức <strong>Haversine Formula</strong> trong <span class="code-span">DangerPointService</span> để đo khoảng cách trắc địa chính xác trên mặt cầu Trái Đất.</li>
+          <li>Bắt lỗi BVA chặt chẽ: Ném <span class="code-span">BadRequestException (400)</span> nếu <span class="code-span">radius &le; 0</span> hoặc tọa độ GPS nằm ngoài dải hợp lệ.</li>
+          <li>Đảm bảo tương thích ngược: Không truyền param sẽ trả về toàn bộ danh sách điểm nguy hiểm.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula-box">
+      <strong>Công thức Haversine tính khoảng cách GPS áp dụng:</strong><br>
+      d = 2R &times; arcsin(&radic;[sin&sup2;(&Delta;&phi;/2) + cos(&phi;&sub1;)cos(&phi;&sub2;)sin&sup2;(&Delta;&lambda;/2)])<br>
+      <em>(Trong đó: R = 6,371,000 mét; &phi; là vĩ độ, &lambda; là kinh độ quy đổi sang radian)</em>
+    </div>
+
+    <!-- 2. Bảng ma trận kết quả kiểm thử -->
+    <h2>2. Bảng Ma Trận Kiểm Thử Tự Động Hóa (JUnit 5 & Mockito)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Mã Test Case</th>
+          <th>Tên Kịch Bản Kiểm Thử</th>
+          <th>Dữ Liệu Đầu Vào (Input)</th>
+          <th>Kết Quả Kỳ Vọng (Expected Output)</th>
+          <th>Kết Quả Thực Tế</th>
+          <th>Đánh Giá</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="code-span">TC_DP_101_01</span></td>
+          <td>Lọc điểm nguy hiểm trong bán kính 1000m (Haversine)</td>
+          <td>lat: 16.0610, lng: 108.2230, radius: 1000m. DB có điểm cách 200m và 15km</td>
+          <td>Chỉ trả về 1 điểm gần (&le; 1000m), loại bỏ điểm xa 15km</td>
+          <td>Khớp danh sách 1 điểm duy nhất (DP-NEAR-01)</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_DP_101_02</span></td>
+          <td>Tương thích ngược khi không truyền tọa độ</td>
+          <td>lat = null, lng = null, radius = null</td>
+          <td>Trả về toàn bộ danh sách điểm nguy hiểm trong hệ thống</td>
+          <td>Trả về đầy đủ 2 điểm nguy hiểm</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_DP_101_03</span></td>
+          <td>Kiểm thử giá trị biên BVA: Bán kính = 0 hoặc âm (-50m)</td>
+          <td>radius = 0.0 và radius = -50.0</td>
+          <td>Ném BadRequestException: "Bán kính tìm kiếm (radius) phải lớn hơn 0"</td>
+          <td>Bắt đúng BadRequestException (400)</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_DP_101_04</span></td>
+          <td>Kiểm thử giá trị biên BVA: Tọa độ GPS ngoài khoảng</td>
+          <td>lat = 95.0 (&gt; 90) hoặc lng = 200.0 (&gt; 180)</td>
+          <td>Ném BadRequestException: "Vĩ độ/Kinh độ không hợp lệ"</td>
+          <td>Bắt đúng BadRequestException (400)</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_DP_101_05</span></td>
+          <td>Kiểm thử truyền thiếu 1 trong 3 tham số</td>
+          <td>lat: 16.061, lng: null, radius: 500</td>
+          <td>Ném BadRequestException: "Cần cung cấp đầy đủ tọa độ lat, lng và bán kính"</td>
+          <td>Bắt đúng BadRequestException (400)</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_DP_REG_01</span></td>
+          <td>Xóa điểm nguy hiểm với ID không tồn tại</td>
+          <td>id: "DANGER-999" không có trong DB</td>
+          <td>Ném ResourceNotFoundException (404)</td>
+          <td>Bắt đúng ResourceNotFoundException (404)</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_DP_REG_02</span></td>
+          <td>Xóa điểm nguy hiểm hợp lệ</td>
+          <td>id: "DANGER-001" có trong DB</td>
+          <td>Xóa thành công, gọi deleteById 1 lần</td>
+          <td>Xóa thành công không văng lỗi</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_DP_REG_03</span></td>
+          <td>Cập nhật điểm nguy hiểm không tồn tại</td>
+          <td>id: "DANGER-999"</td>
+          <td>Ném ResourceNotFoundException (404)</td>
+          <td>Bắt đúng ResourceNotFoundException (404)</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+        <tr>
+          <td><span class="code-span">TC_DP_REG_04</span></td>
+          <td>Cập nhật độ sâu và tên điểm nguy hiểm thành công</td>
+          <td>id: "DANGER-001", depth: 2.5m</td>
+          <td>Lưu thông tin mới và cập nhật updatedAt</td>
+          <td>Cập nhật thành công depth = 2.5m</td>
+          <td class="status-pass">PASS</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 3. Kết quả chạy tự động Maven Test -->
+    <h2>3. Minh Chứng Thực Thi Kiểm Thử Tự Động (Maven Surefire Console)</h2>
+    <pre><code>[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running vn.rescue.core.application.services.DangerPointServiceTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.824 s -- in vn.rescue.core.application.services.DangerPointServiceTest
+[INFO] 
+[INFO] Results:
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.145 s
+[INFO] Finished at: 2026-11-18T16:26:50+07:00
+[INFO] ------------------------------------------------------------------------</code></pre>
+
+    <!-- 4. Minh chứng tích hợp Bruno Collection -->
+    <h2>4. Minh Chứng Tích Hợp Bruno API Collection</h2>
+    <p>Request kiểm thử tự động đã được tích hợp sẵn vào Collection nội bộ tại thư mục <span class="code-span">DangerPoint/GET -gps-radius-filter.yml</span>:</p>
+    <div class="formula-box">
+      <strong>Endpoint:</strong> <code>GET {{baseUrl}}/api/v1/danger-points?lat=16.061&lng=108.223&radius=500</code><br>
+      <strong>Test Assertion:</strong><br>
+      <code>test("Kiểm tra lọc điểm nguy hiểm theo bán kính GPS (KCPM-101)", function () {</code><br>
+      <code>&nbsp;&nbsp;&nbsp;&nbsp;expect(res.getStatus()).to.equal(200);</code><br>
+      <code>&nbsp;&nbsp;&nbsp;&nbsp;expect(res.getBody().data).to.be.an('array');</code><br>
+      <code>});</code>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      Dự án Hệ thống Điều phối Cứu hộ Lũ lụt & Quản lý Cứu trợ (KCPM) &bull; Báo cáo kiểm thử tự động Sprint 5 &bull; Phụ trách: Nguyễn Bảo
+    </div>
+  </div>
+</body>
+</html>
