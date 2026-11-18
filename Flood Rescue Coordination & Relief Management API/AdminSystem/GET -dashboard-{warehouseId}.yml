@@ -1,5 +1,5 @@
 info:
-  name: GET /dashboard/{warehouseId}
+  name: TC_SYS_02 - [GET] /api/v1/admin/system/dashboard/:warehouseId (Thống kê dashboard tổng hợp theo kho)
   type: http
   seq: 2
 
@@ -10,15 +10,26 @@ http:
     - name: warehouseId
       value: "1"
       type: path
-      description: ID of warehouseId
+      description: ID kho bãi
+  headers:
+    - name: Authorization
+      value: Bearer {{bearerToken}}
   auth: inherit
 
 runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("TC_SYS_02: Kiểm tra HTTP Status 200 OK", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+        test("TC_SYS_02: Kiểm tra cấu trúc DashboardStatsResponse", function () {
+            const body = res.getBody();
+            expect(body.success).to.equal(true);
+            expect(body.code).to.equal(200);
+            expect(body.data).to.have.property('totalVehicles');
+            expect(body.data).to.have.property('availableVehicles');
+            expect(body.data).to.have.property('lowStockItems');
         });
 
 settings:

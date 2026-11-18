@@ -16,7 +16,7 @@
 | 1.4 | Khóa / Mở khóa tài khoản (`ACTIVE`/`INACTIVE`) | `PUT /api/v1/admin/users/{id}/status` | ⚠️ Service logic | ✅ `PUT -{id}-status.yml` | ✅ `auth_login_data.csv` (Chặn khóa) | ❌ Chưa tích hợp | **Đạt** |
 | 1.5 | Gán / Đổi vai trò (Role) tài khoản | `PUT /api/v1/admin/users/{id}/role` | ⚠️ Service logic | ✅ `PUT -{id}-role.yml` | ✅ `auth_rbac_data.csv` | ❌ Chưa tích hợp | **Đạt** |
 | 1.6 | Ma trận phân quyền truy cập chéo (RBAC Matrix) | `/api/v1/admin/roles` | ⚠️ Security Test | ✅ 5 requests Role CRUD | ✅ `auth_rbac_data.csv` (12 TCs) | ❌ Chưa tích hợp | **Đạt** |
-| 1.7 | Cấu hình & Dashboard hệ thống quản trị | `/api/v1/admin/system/*` | ❌ Chưa có unit test | ✅ 4 requests config/dash | ❌ Chưa có test riêng | ❌ Chưa tích hợp | ⚠️ Cần bổ sung |
+| 1.7 | Cấu hình & Dashboard hệ thống quản trị | `/api/v1/admin/system/*` | ✅ `AdminSystemControllerTest` (11 TCs) | ✅ 8 requests AdminSystem (100% Pass) | ✅ `KCPM-107_AdminSystem_Test_Report.xlsx` (19 TCs) | ❌ Chưa tích hợp | **Đạt** |
 
 ---
 
@@ -89,9 +89,9 @@ Dưới đây là danh sách toàn bộ các tính năng chưa có bất kỳ k�
 
 ### A. API Backend chưa kiểm thử:
 1. Gia hạn JWT Token (`POST /api/auth/refresh` - lỗi 404 do thiếu controller)
-2. Xem nhật ký hệ thống (`GET /api/v1/admin/system/logs`)
-3. Báo cáo phân tích hệ thống chuyên sâu (`GET /api/v1/admin/system/analytics`)
-4. Báo cáo tổng hợp Admin (`GET /api/v1/admin/system/reports/general`)
+2. Xem nhật ký hệ thống (`GET /api/v1/admin/system/logs`) - *(Đã kiểm thử hoàn tất tại KCPM-107)*
+3. Báo cáo phân tích hệ thống chuyên sâu (`GET /api/v1/admin/system/analytics`) - *(Đã kiểm thử hoàn tất tại KCPM-107)*
+4. Báo cáo tổng hợp Admin (`GET /api/v1/admin/system/reports/general`) - *(Đã kiểm thử hoàn tất tại KCPM-107)*
 5. Lọc danh sách đội cứu hộ sẵn sàng (`GET /api/v1/teams/available`)
 6. Endpoint tổng hợp báo cáo gốc (`GET /api/v1/reports`)
 

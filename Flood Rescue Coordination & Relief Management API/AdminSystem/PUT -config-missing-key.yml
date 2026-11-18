@@ -1,0 +1,40 @@
+info:
+  name: TC_SYS_05 - [PUT] /api/v1/admin/system/config (Chặn cập nhật cấu hình khi thiếu tham số key)
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/admin/system/config?key=&value=ON&adminId=admin-01"
+  params:
+    - name: key
+      value: ""
+      type: query
+    - name: value
+      value: ON
+      type: query
+    - name: adminId
+      value: admin-01
+      type: query
+  headers:
+    - name: Authorization
+      value: Bearer {{bearerToken}}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("TC_SYS_05: Bắt lỗi thiếu key - HTTP 400 Bad Request", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            expect(body.success).to.equal(false);
+            expect(body.message).to.include("Khóa cấu hình");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
