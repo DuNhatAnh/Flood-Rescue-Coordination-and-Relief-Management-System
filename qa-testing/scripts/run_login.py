@@ -8,6 +8,8 @@ from excel_helper import (
     save_report
 )
 
+import live_api  # Gọi BACKEND THẬT thay cho mô phỏng logic
+
 init_console_utf8()
 
 DATA_FILE   = 'qa-testing/data/auth_login_data.csv'
@@ -19,22 +21,31 @@ ROLE_MAP = {
     'citizen@rescue.vn': 'ROLE_CITIZEN'
 }
 
+_FIXTURES = {}
+
+
+def _resolve(email):
+    """Tài khoản đặc biệt được tạo mới mỗi lần chạy để không phụ thuộc dữ liệu có sẵn trong DB."""
+    if email not in ('{{RESCUE_STAFF}}', '{{CITIZEN}}', '{{LOCKED}}'):
+        return email
+    if email not in _FIXTURES:
+        role = {'{{RESCUE_STAFF}}': 'RESCUE_STAFF', '{{CITIZEN}}': 'USER', '{{LOCKED}}': 'USER'}[email]
+        user = live_api.create_user(role, prefix='qa_login')
+        if email == '{{LOCKED}}':
+            live_api.set_status(user['id'], 'LOCKED')
+        _FIXTURES[email] = user['email']
+    return _FIXTURES[email]
+
+
 def simulate(email, password):
-    if email == 'NULL_VAL' or password == 'NULL_VAL':
-        return False, 'NONE', 400, 'Dữ liệu đăng nhập không được để trống'
-    if not email or email.strip() == '':
-        return False, 'NONE', 400, 'Email không được để trống'
-    if not password or password.strip() == '':
-        return False, 'NONE', 400, 'Mật khẩu không được để trống'
-    if '@' not in email or '.' not in email:
-        return False, 'NONE', 400, 'Email không đúng định dạng'
-    if email == 'locked_user@rescue.vn':
-        return False, 'NONE', 403, 'Tài khoản của bạn đã bị khóa'
-    if email == 'notfound@rescue.vn':
-        return False, 'NONE', 401, 'Tài khoản không tồn tại hoặc sai mật khẩu'
-    if password != 'password123':
-        return False, 'NONE', 401, 'Thông tin đăng nhập không chính xác'
-    return True, ROLE_MAP.get(email, 'ROLE_CITIZEN'), 200, 'SUCCESS'
+    """Gửi POST /api/auth/login lên backend thật và trả về (ok, role, http_code, message)."""
+    body = {'email': None if email == 'NULL_VAL' else _resolve(email),
+            'password': None if password == 'NULL_VAL' else password}
+    code, res = live_api.call('POST', '/api/auth/login', body)
+    if code == 200:
+        role = next((r for r in res.get('roles', []) if r.startswith('ROLE_')), 'NONE')
+        return True, role, code, 'SUCCESS'
+    return False, 'NONE', code, live_api.message_of(res)
 
 
 def run():

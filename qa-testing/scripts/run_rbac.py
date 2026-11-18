@@ -8,29 +8,49 @@ from excel_helper import (
     save_report
 )
 
+import live_api  # Gọi BACKEND THẬT thay cho mô phỏng logic
+
 init_console_utf8()
 
 DATA_FILE   = 'qa-testing/data/auth_rbac_data.csv'
 REPORT_FILE = 'qa-testing/reports/REPORT_AUTH_RBAC.xlsx'
 
-def simulate(user_role, token_status, http_method):
-    """
-    Mô phỏng RBAC của AdminUserController.java:
-    - Mọi endpoint đều yêu cầu @PreAuthorize("hasRole('ADMIN')")
-    - Spring Security kiểm tra token TRƯỚC khi kiểm tra quyền
-    """
-    if token_status in ('NO_TOKEN', 'EXPIRED', 'TAMPERED'):
-        msg_map = {
-            'NO_TOKEN':  'Chưa xác thực',
-            'EXPIRED':   'Token đã hết hạn',
-            'TAMPERED':  'Token không hợp lệ',
-        }
-        return False, 401, msg_map[token_status]
+_TOKENS = {}
+_TARGET = {}
 
-    if user_role != 'ADMIN':
-        return False, 403, 'Không đủ quyền truy cập'
 
-    return True, 200, 'SUCCESS'
+def _token(user_role, token_status):
+    if token_status == 'NO_TOKEN':
+        return None
+    if token_status == 'EXPIRED':
+        return live_api.expired_token()
+    if token_status == 'TAMPERED':
+        return live_api.tampered_token()
+    if user_role == 'ADMIN':
+        return live_api.admin()['token']
+    if user_role not in _TOKENS:
+        role_id = {'COORDINATOR': 'COORDINATOR', 'CITIZEN': 'USER', 'RESCUE_STAFF': 'RESCUE_STAFF'}[user_role]
+        _TOKENS[user_role] = live_api.token_of(live_api.create_user(role_id, prefix='qa_rbac'))
+    return _TOKENS[user_role]
+
+
+def simulate(user_role, token_status, http_method, api_endpoint='/api/v1/admin/users'):
+    """Gọi API quản trị thật với token tương ứng, trả về (allowed, http_code, message)."""
+    if 'id' not in _TARGET:
+        _TARGET['id'] = live_api.create_user('USER', prefix='qa_rbac_target')['id']
+    path = api_endpoint.replace('{id}', _TARGET['id'])
+    if path.endswith('/status'):
+        path += '?status=ACTIVE'
+    elif path.endswith('/role'):
+        path += '?roleId=USER'
+    body = None
+    if http_method == 'POST':
+        body = {'fullName': 'QA RBAC', 'email': f'qa_rbac_new_{int(live_api.time.time()*1000)}@rescue.vn',
+                'phone': '0912345678', 'roleId': 'USER'}
+    elif http_method == 'PUT' and path.endswith(_TARGET['id']):
+        body = {'fullName': 'QA RBAC Updated', 'phone': '0912345678', 'roleId': 'USER'}
+    code, res = live_api.call(http_method, path, body, _token(user_role, token_status))
+    return code == 200, code, ('SUCCESS' if code == 200 else live_api.message_of(res))
 
 
 def run():
@@ -58,7 +78,7 @@ def run():
         exp_code     = int(p[6])
         exp_msg      = p[7]
 
-        allowed, act_code, act_msg = simulate(user_role, token_status, http_method)
+        allowed, act_code, act_msg = simulate(user_role, token_status, http_method, api_endpoint)
         act_st  = 'PASS' if allowed else 'FAIL'
         verdict = 'PASS' if (act_st == exp_st and act_code == exp_code) else 'FAIL'
 

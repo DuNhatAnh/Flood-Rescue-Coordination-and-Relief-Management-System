@@ -8,29 +8,36 @@ from excel_helper import (
     save_report
 )
 
+import live_api  # Gọi BACKEND THẬT thay cho mô phỏng logic
+
 init_console_utf8()
 
 DATA_FILE   = 'qa-testing/data/auth_change_password_data.csv'
 REPORT_FILE = 'qa-testing/reports/REPORT_AUTH_CHANGE_PASSWORD.xlsx'
 
+_EXCEPTION_BY_CODE = {200: 'NONE', 400: 'BadRequestException', 404: 'ResourceNotFoundException'}
+
+
 def simulate(user_id, old_pass, new_pass):
-    if old_pass == 'NULL_VAL' or new_pass == 'NULL_VAL':
-        return False, 'BadRequestException', 'Dữ liệu đổi mật khẩu không được để trống'
-    if not old_pass or old_pass.strip() == '':
-        return False, 'BadRequestException', 'Mật khẩu hiện tại không được để trống'
-    if not new_pass or new_pass.strip() == '':
-        return False, 'BadRequestException', 'Mật khẩu mới không được để trống'
-    if len(new_pass) < 6:
-        return False, 'BadRequestException', 'Mật khẩu mới phải có tối thiểu 6 ký tự'
-    if len(new_pass) > 32:
-        return False, 'BadRequestException', 'Mật khẩu mới không được vượt quá 32 ký tự'
-    if old_pass == new_pass:
-        return False, 'BadRequestException', 'Mật khẩu mới không được trùng với mật khẩu cũ'
+    """
+    Mỗi ca kiểm thử dùng 1 tài khoản mới (mật khẩu ban đầu 123456) rồi gọi POST /api/v1/auth/change-password thật.
+    Trả về (ok, exception, message). Trả về None nếu ca kiểm thử không tái hiện được qua API.
+    """
     if user_id == 'USER-NOT-FOUND':
-        return False, 'ResourceNotFoundException', 'Không tìm thấy người dùng với ID: ' + user_id
-    if old_pass != 'password123':
-        return False, 'BadRequestException', 'Mật khẩu hiện tại không chính xác'
-    return True, 'NONE', 'SUCCESS'
+        # Token hợp lệ luôn gắn với user tồn tại -> nhánh 404 chỉ kiểm thử được ở JUnit (UserServiceTest)
+        return None
+    user = live_api.create_user('USER', prefix='qa_cpw')
+    token = live_api.token_of(user)
+    body = {'oldPassword': None if old_pass == 'NULL_VAL' else old_pass,
+            'newPassword': None if new_pass == 'NULL_VAL' else new_pass}
+    code, res = live_api.call('POST', '/api/v1/auth/change-password', body, token)
+    if code == 200:
+        # Xác nhận mật khẩu mới thật sự dùng được để đăng nhập (TC_CPW_14)
+        relogin, _ = live_api.login(user['email'], new_pass)
+        if relogin != 200:
+            return False, 'LOGIN_FAILED', 'Đổi mật khẩu trả 200 nhưng không đăng nhập được bằng mật khẩu mới'
+        return True, 'NONE', 'SUCCESS'
+    return False, _EXCEPTION_BY_CODE.get(code, f'HTTP_{code}'), live_api.message_of(res)
 
 
 def run():
@@ -45,6 +52,7 @@ def run():
     test_rows  = lines[1:]
     results    = []
     pass_count = 0
+    junit_only = 0
     start      = time.time()
 
     for idx, row in enumerate(test_rows, 1):
@@ -52,7 +60,14 @@ def run():
         tc_id, user_id, old_p, new_p, exp_st, exp_ex, exp_msg = \
             p[0], p[1], p[2], p[3], p[4], p[5], p[6]
 
-        ok, act_ex, act_msg = simulate(user_id, old_p, new_p)
+        outcome = simulate(user_id, old_p, new_p)
+        if outcome is None:
+            print(f'  --   [{idx:02d}/{len(test_rows)}] {tc_id}: Không tái hiện được qua API -> đã kiểm thử ở JUnit UserServiceTest')
+            results.append([tc_id, user_id, old_p or '(trống)', new_p or '(trống)', len(new_p),
+                            exp_st, exp_ex, 'JUnit', 'UserServiceTest', 'JUNIT'])
+            junit_only += 1
+            continue
+        ok, act_ex, act_msg = outcome
         act_st  = 'PASS' if ok else 'FAIL'
         verdict = 'PASS' if (act_st == exp_st and act_ex == exp_ex) else 'FAIL'
 
@@ -68,7 +83,7 @@ def run():
             length, exp_st, exp_ex, act_st, act_ex, verdict
         ])
 
-    total     = len(test_rows)
+    total     = len(test_rows) - junit_only  # Ca chỉ kiểm thử được ở JUnit không tính vào tỉ lệ API
     elapsed   = round(time.time() - start, 2)
     pass_rate = round(pass_count / total * 100, 1)
     print(f'\nTONG KET: {pass_count}/{total} ca DAT ({pass_rate}%) | Thoi gian: {elapsed}s')
