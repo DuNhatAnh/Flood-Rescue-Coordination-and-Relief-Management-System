@@ -12,6 +12,8 @@
  * ==============================================================================
  */
 
+const assert = require('assert');
+
 Feature('[EPIC-02] [Lâm Khiêm] Cổng Người Dân & Tiếp Nhận SOS (Rescue Requests & Safety Reports)');
 
 let createdRequestId = null;
@@ -126,7 +128,7 @@ Scenario('[KCPM-110] [Scenario 3] (Hủy đơn khẩn cấp): Hủy đơn cứu 
   const completedTargetId = completedSetupRes.data?.data?.id || completedSetupRes.data?.data?.requestId;
 
   // Cập nhật trạng thái sang COMPLETED
-  await I.sendPatchRequest(`/api/v1/rescue-requests/${completedTargetId}/status`, {
+  const completeRes = await I.sendPatchRequest(`/api/v1/rescue-requests/${completedTargetId}/status`, {
     status: 'COMPLETED',
     note: 'Đội cứu hộ đã đưa người già đến trạm xá an toàn, hoàn thành nhiệm vụ'
   });
@@ -136,6 +138,9 @@ Scenario('[KCPM-110] [Scenario 3] (Hủy đơn khẩn cấp): Hủy đơn cứu 
     reason: 'Cố tình hủy nhiệm vụ cứu hộ đã ở trạng thái COMPLETED'
   });
   I.seeResponseCodeIs(400);
+  // Đảm bảo bị chặn đúng lý do (đơn đã COMPLETED), không phải do bước chuẩn bị bị lỗi
+  assert.strictEqual(completeRes.status, 200, 'Bước chuẩn bị chuyển đơn sang COMPLETED phải thành công');
+  assert.strictEqual(invalidCancelRes.data.success, false);
 });
 
 // ==================== BỔ SUNG: KIỂM THỬ GIÁ TRỊ BIÊN (BVA) & VALIDATION ====================
@@ -151,6 +156,7 @@ Scenario('[KCPM-110] [Scenario 4] [NEGATIVE] Chặn tạo yêu cầu cứu nạn
   };
   const res = await I.sendPostRequest('/api/v1/rescue-requests', invalidPeoplePayload);
   I.seeResponseCodeIs(400);
+  assert.match(JSON.stringify(res.data), /vượt quá 50/, 'Phải bị chặn đúng do vượt biên 50 người');
 });
 
 Scenario('[KCPM-110] [Scenario 5] [NEGATIVE] Chặn gửi báo an toàn với số điện thoại không hợp lệ (Chứa chữ cái / Sai định dạng) [POST /api/v1/safety-reports]', async ({ I }) => {
@@ -162,4 +168,5 @@ Scenario('[KCPM-110] [Scenario 5] [NEGATIVE] Chặn gửi báo an toàn với s�
   };
   const res = await I.sendPostRequest('/api/v1/safety-reports', invalidPhonePayload);
   I.seeResponseCodeIs(400);
+  assert.match(JSON.stringify(res.data), /điện thoại/i, 'Phải bị chặn đúng do số điện thoại sai định dạng');
 });
