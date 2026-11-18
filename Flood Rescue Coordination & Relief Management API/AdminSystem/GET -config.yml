@@ -1,5 +1,5 @@
 info:
-  name: GET /config
+  name: "[KCPM-107] TC_SYS_03 - Xem danh sách cấu hình hệ thống"
   type: http
   seq: 3
 
@@ -12,8 +12,14 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("[KCPM-107] TC_SYS_03: Kiểm tra HTTP Status 200 OK", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+        test("[KCPM-107] TC_SYS_03: Kiểm tra cấu trúc danh sách cấu hình", function () {
+            const body = res.getBody();
+            expect(body.success).to.equal(true);
+            expect(body.code).to.equal(200);
+            expect(Array.isArray(body.data)).to.equal(true);
         });
 
 settings:

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import vn.rescue.core.application.dto.RoleDto;
 import vn.rescue.core.domain.entities.Role;
 import vn.rescue.core.domain.repositories.RoleRepository;
+import vn.rescue.core.presentation.exceptions.BadRequestException;
 import vn.rescue.core.presentation.exceptions.DuplicateResourceException;
 import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 import java.util.List;
@@ -30,11 +31,15 @@ public class RoleService {
     }
 
     public RoleDto createRole(RoleDto roleDto) {
-        if (roleRepository.findByName(roleDto.getName()).isPresent()) {
-            throw new DuplicateResourceException("Tên Role '" + roleDto.getName() + "' đã tồn tại trong hệ thống");
+        if (roleDto == null || roleDto.getName() == null || roleDto.getName().trim().isEmpty()) {
+            throw new BadRequestException("Tên Role không được để trống");
+        }
+        String normalizedName = roleDto.getName().trim().toUpperCase();
+        if (roleRepository.findByName(normalizedName).isPresent()) {
+            throw new DuplicateResourceException("Tên Role '" + normalizedName + "' đã tồn tại trong hệ thống");
         }
         Role role = Role.builder()
-                .name(roleDto.getName() != null ? roleDto.getName().toUpperCase() : null)
+                .name(normalizedName)
                 .description(roleDto.getDescription())
                 .permissions(roleDto.getPermissions())
                 .build();

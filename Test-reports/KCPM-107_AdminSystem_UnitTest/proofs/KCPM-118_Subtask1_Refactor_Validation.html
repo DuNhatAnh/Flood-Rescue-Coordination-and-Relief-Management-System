@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 32px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 16px; margin-bottom: 20px; }
+  .title { font-size: 20px; font-weight: 700; color: #38bdf8; }
+  .badge { background: #059669; color: #ecfdf5; padding: 6px 14px; border-radius: 9999px; font-weight: 600; font-size: 13px; }
+  .code-block { background: #0b0f19; border: 1px solid #1e293b; border-radius: 8px; padding: 18px; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6; color: #e2e8f0; }
+  .kw { color: #f43f5e; font-weight: bold; }
+  .type { color: #38bdf8; }
+  .func { color: #fbbf24; }
+  .str { color: #34d399; }
+  .comment { color: #64748b; font-style: italic; }
+  .anno { color: #c084fc; }
+  .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  .meta-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; }
+  .meta-label { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600; }
+  .meta-val { font-size: 15px; font-weight: 600; color: #f1f5f9; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="title">BẰNG CHỨNG SUBTASK 1: REFACTOR GUARD CLAUSE VALIDATION (KCPM-118)</div>
+      <div class="badge">✓ COMPLETED</div>
+    </div>
+    <div class="meta-grid">
+      <div class="meta-box"><div class="meta-label">Ticket Jira</div><div class="meta-val">KCPM-118 (Parent: KCPM-107)</div></div>
+      <div class="meta-box"><div class="meta-label">Tập tin xử lý</div><div class="meta-val">AdminSystemController.java</div></div>
+      <div class="meta-box"><div class="meta-label">Ngoại lệ xử lý</div><div class="meta-val">BadRequestException (HTTP 400)</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight: 600; margin-bottom: 12px; color: #93c5fd;">1. Guard Clause Validation tại GET /dashboard/{warehouseId}:</div>
+    <div class="code-block">
+<span class="anno">@GetMapping</span>(<span class="str">"/dashboard/{warehouseId}"</span>)<br>
+<span class="anno">@PreAuthorize</span>(<span class="str">"hasRole('ADMIN')"</span>)<br>
+<span class="kw">public</span> <span class="type">ResponseEntity</span>&lt;<span class="type">ApiResponse</span>&lt;<span class="type">DashboardStatsResponse</span>&gt;&gt; <span class="func">getDashboardStats</span>(<span class="anno">@PathVariable</span> <span class="type">String</span> warehouseId) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> (warehouseId == <span class="kw">null</span> || warehouseId.trim().isEmpty()) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">throw new</span> <span class="type">BadRequestException</span>(<span class="str">"Mã kho (warehouseId) không được để trống"</span>);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="type">DashboardStatsResponse</span> stats = systemManagementService.getDashboardStats(warehouseId);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="type">ResponseEntity</span>.ok(<span class="type">ApiResponse</span>.success(stats, <span class="str">"Dashboard statistics retrieved"</span>));<br>
+}
+    </div>
+
+    <div style="font-weight: 600; margin: 20px 0 12px 0; color: #93c5fd;">2. Guard Clause Validation tại PUT /config (Khóa tham số rỗng/chuỗi trắng):</div>
+    <div class="code-block">
+<span class="anno">@PutMapping</span>(<span class="str">"/config"</span>)<br>
+<span class="anno">@PreAuthorize</span>(<span class="str">"hasRole('ADMIN')"</span>)<br>
+<span class="kw">public</span> <span class="type">ResponseEntity</span>&lt;<span class="type">ApiResponse</span>&lt;<span class="type">SystemConfig</span>&gt;&gt; <span class="func">updateConfig</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="anno">@RequestParam</span> <span class="type">String</span> key,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="anno">@RequestParam</span> <span class="type">String</span> value,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="anno">@RequestParam</span> <span class="type">String</span> adminId) {<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> (key == <span class="kw">null</span> || key.trim().isEmpty()) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">throw new</span> <span class="type">BadRequestException</span>(<span class="str">"Khóa cấu hình (key) không được để trống"</span>);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> (adminId == <span class="kw">null</span> || adminId.trim().isEmpty()) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">throw new</span> <span class="type">BadRequestException</span>(<span class="str">"Mã quản trị viên (adminId) không được để trống"</span>);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="type">SystemConfig</span> config = systemManagementService.updateConfig(key, value);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;systemManagementService.logAction(adminId, <span class="str">"UPDATE_CONFIG"</span>, <span class="str">"Config "</span> + key + <span class="str">" updated to "</span> + value, <span class="str">"SYSTEM"</span>);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="type">ResponseEntity</span>.ok(<span class="type">ApiResponse</span>.success(config, <span class="str">"System configuration updated"</span>));<br>
+}
+    </div>
+  </div>
+</body>
+</html>

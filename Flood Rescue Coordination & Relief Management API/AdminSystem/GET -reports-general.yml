@@ -1,7 +1,7 @@
 info:
-  name: GET /reports/general
+  name: "[KCPM-107] TC_SYS_07 - Xem báo cáo tổng hợp"
   type: http
-  seq: 5
+  seq: 7
 
 http:
   method: GET
@@ -12,8 +12,13 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("[KCPM-107] TC_SYS_07: Kiểm tra HTTP Status 200 OK", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+        test("[KCPM-107] TC_SYS_07: Kiểm tra cấu trúc ApiResponse", function () {
+            const body = res.getBody();
+            expect(body.success).to.equal(true);
+            expect(body.code).to.equal(200);
         });
 
 settings:
