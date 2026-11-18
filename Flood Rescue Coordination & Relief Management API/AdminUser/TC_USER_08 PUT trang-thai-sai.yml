@@ -1,0 +1,25 @@
+info:
+  name: "[KCPM-4] TC_USER_08 - Trạng thái ngoài danh mục BANNED (400)"
+  type: http
+  seq: 8
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/admin/users/{{testUserId}}/status?status=BANNED"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-4] TC_USER_08: Chặn trạng thái không hợp lệ - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            expect(res.getBody().success).to.equal(false);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

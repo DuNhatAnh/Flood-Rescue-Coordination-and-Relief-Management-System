@@ -1,24 +1,24 @@
 info:
-  name: PUT /{id}/verify
+  name: "PUT /{id}/verify"
   type: http
   seq: 3
 
 http:
   method: PUT
-  url: "{{baseUrl}}/api/v1/rescue-requests/:id/verify"
+  url: "{{baseUrl}}/api/v1/rescue-requests/:id/verify?verifiedBy={{adminEmail}}"
   params:
     - name: id
-      value: "1"
+      value: "{{coordReqId}}"
       type: path
-      description: ID of id
   auth: inherit
 
 runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Xác minh đơn SOS - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
 
 settings:

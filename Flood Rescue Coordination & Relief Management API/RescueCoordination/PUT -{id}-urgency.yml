@@ -1,5 +1,5 @@
 info:
-  name: PUT /{id}/urgency
+  name: "PUT /{id}/urgency"
   type: http
   seq: 2
 
@@ -8,28 +8,24 @@ http:
   url: "{{baseUrl}}/api/v1/rescue-requests/:id/urgency"
   headers:
     - name: Content-Type
-      value: application/json
+      value: text/plain
   params:
     - name: id
-      value: "1"
+      value: "{{coordReqId}}"
       type: path
-      description: ID of id
   body:
     type: json
     data: |-
-      {
-        "name": "Mẫu dữ liệu",
-        "description": "Mô tả chi tiết",
-        "status": "ACTIVE"
-      }
+      CRITICAL
   auth: inherit
 
 runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Gán mức độ khẩn cấp - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
 
 settings:

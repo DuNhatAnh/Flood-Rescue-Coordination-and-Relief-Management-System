@@ -1,5 +1,5 @@
 info:
-  name: GET /{id}
+  name: "GET /{id}"
   type: http
   seq: 3
 
@@ -8,18 +8,19 @@ http:
   url: "{{baseUrl}}/api/v1/teams/:id"
   params:
     - name: id
-      value: "6ac8a49ab3505b0db326b8c0"
+      value: "{{teamId}}"
       type: path
-      description: ID of id
   auth: inherit
 
 runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Xem chi tiết đội - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
+        expect(res.getBody().data.id).to.equal(bru.getVar("teamId"));
 
 settings:
   encodeUrl: true

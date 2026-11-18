@@ -1,0 +1,37 @@
+info:
+  name: "[KCPM-4] TC_USER_03 - Tạo tài khoản trùng email (409)"
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/admin/users"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "fullName": "Trùng email",
+        "email": "{{testUserEmail}}",
+        "phone": "0987654321",
+        "roleId": "USER"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-4] TC_USER_03: Chặn trùng email - HTTP 409", function () {
+            expect(res.getStatus()).to.equal(409);
+            expect(res.getBody().success).to.equal(false);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,7 +1,7 @@
 info:
-  name: POST /dispatch
+  name: "POST /dispatch"
   type: http
-  seq: 1
+  seq: 3
 
 http:
   method: POST
@@ -13,9 +13,8 @@ http:
     type: json
     data: |-
       {
-        "requestId": "6ac8a496b3505b0db326b8a3",
-        "teamId": "6ac8a49ab3505b0db326b8c2",
-        "vehicleIds": ["6ac8a49bb3505b0db326b8c7"]
+        "requestId": "{{dispatchReqId}}",
+        "vehicleIds": ["{{dispatchVehicleId}}"]
       }
   auth: inherit
 
@@ -23,8 +22,9 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Điều phối xe cho đơn SOS - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().assignmentId !== undefined).to.be.true;
         });
 
 settings:

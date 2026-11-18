@@ -1,7 +1,7 @@
-﻿info:
-  name: PUT /{id}/status
+info:
+  name: "PUT /{id}/status"
   type: http
-  seq: 4
+  seq: 8
 
 http:
   method: PUT
@@ -11,15 +11,15 @@ http:
       value: application/json
   params:
     - name: id
-      value: "6ae9f07ae2001d7b1d888742"
+      value: "{{assignmentId}}"
       type: path
-      description: ID of id
   body:
     type: json
     data: |-
       {
-        "status": "REPORTED",
-        "userId": "6ac3beaa5219eb487c8bfc0c"
+        "status": "IN_PROGRESS",
+        "userId": "{{adminId}}",
+        "note": "Đang tiếp cận hiện trường"
       }
   auth: inherit
 
@@ -27,8 +27,8 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Cập nhật trạng thái nhiệm vụ IN_PROGRESS - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
         });
 
 settings:

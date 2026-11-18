@@ -1,5 +1,5 @@
 info:
-  name: POST /image
+  name: "POST /image - Chặn tải ảnh khi thiếu file (400)"
   type: http
   seq: 1
 
@@ -12,8 +12,9 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Chặn request không kèm file - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            expect(res.getBody().success).to.equal(false);
         });
 
 settings:

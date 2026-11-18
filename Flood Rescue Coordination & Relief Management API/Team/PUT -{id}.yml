@@ -1,5 +1,5 @@
 info:
-  name: PUT /{id}
+  name: "PUT /{id}"
   type: http
   seq: 4
 
@@ -11,14 +11,13 @@ http:
       value: application/json
   params:
     - name: id
-      value: "6ac8a49ab3505b0db326b8c0"
+      value: "{{teamId}}"
       type: path
-      description: ID of id
   body:
     type: json
     data: |-
       {
-        "teamName": "Đội Cứu Hộ Đặc Nhiệm 1"
+        "teamName": "{{teamName}}"
       }
   auth: inherit
 
@@ -26,8 +25,9 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Cập nhật tên đội (giữ nguyên tên cũ để không đổi dữ liệu mẫu) - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
 
 settings:

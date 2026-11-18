@@ -1,7 +1,7 @@
 info:
   name: POST /login (KCPM-100 - Tài khoản INACTIVE bị chặn cấp Token - 403 Forbidden)
   type: http
-  seq: 8
+  seq: 10
 
 http:
   method: POST
@@ -13,8 +13,8 @@ http:
     type: json
     data: |-
       {
-        "email": "inactive_test@rescue.vn",
-        "password": "password123"
+        "email": "{{inactiveEmail}}",
+        "password": "123456"
       }
   auth: inherit
 
