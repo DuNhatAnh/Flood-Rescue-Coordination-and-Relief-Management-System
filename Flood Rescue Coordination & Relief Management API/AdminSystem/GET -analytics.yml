@@ -1,5 +1,5 @@
 info:
-  name: TC_SYS_08 - [GET] /api/v1/admin/system/analytics (Báo cáo phân tích chuyên sâu cho Coordinator/Admin)
+  name: "[KCPM-107] TC_SYS_08 - Xem báo cáo phân tích"
   type: http
   seq: 8
 
@@ -15,10 +15,10 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("TC_SYS_08: Kiểm tra HTTP Status 200 OK", function () {
+        test("[KCPM-107] TC_SYS_08: Kiểm tra HTTP Status 200 OK", function () {
             expect(res.getStatus()).to.equal(200);
         });
-        test("TC_SYS_08: Kiểm tra cấu trúc Analytics KPIs", function () {
+        test("[KCPM-107] TC_SYS_08: Kiểm tra cấu trúc Analytics KPIs", function () {
             const body = res.getBody();
             expect(body.success).to.equal(true);
             expect(body.code).to.equal(200);

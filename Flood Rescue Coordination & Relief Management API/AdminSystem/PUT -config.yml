@@ -1,5 +1,5 @@
 info:
-  name: TC_SYS_04 - [PUT] /api/v1/admin/system/config (Cập nhật cấu hình hệ thống hợp lệ)
+  name: "[KCPM-107] TC_SYS_04 - Cập nhật cấu hình hợp lệ"
   type: http
   seq: 4
 
@@ -25,10 +25,10 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("TC_SYS_04: Cập nhật cấu hình thành công - HTTP Status 200 OK", function () {
+        test("[KCPM-107] TC_SYS_04: Cập nhật cấu hình thành công - HTTP Status 200 OK", function () {
             expect(res.getStatus()).to.equal(200);
         });
-        test("TC_SYS_04: Kiểm tra dữ liệu cấu hình cập nhật", function () {
+        test("[KCPM-107] TC_SYS_04: Kiểm tra dữ liệu cấu hình cập nhật", function () {
             const body = res.getBody();
             expect(body.success).to.equal(true);
             expect(body.code).to.equal(200);

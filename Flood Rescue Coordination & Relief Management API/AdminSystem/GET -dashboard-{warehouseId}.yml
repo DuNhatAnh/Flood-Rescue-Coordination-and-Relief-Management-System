@@ -1,5 +1,5 @@
 info:
-  name: TC_SYS_02 - [GET] /api/v1/admin/system/dashboard/:warehouseId (Thống kê dashboard tổng hợp theo kho)
+  name: "[KCPM-107] TC_SYS_02 - Xem dashboard thống kê theo kho"
   type: http
   seq: 2
 
@@ -20,10 +20,10 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("TC_SYS_02: Kiểm tra HTTP Status 200 OK", function () {
+        test("[KCPM-107] TC_SYS_02: Kiểm tra HTTP Status 200 OK", function () {
             expect(res.getStatus()).to.equal(200);
         });
-        test("TC_SYS_02: Kiểm tra cấu trúc DashboardStatsResponse", function () {
+        test("[KCPM-107] TC_SYS_02: Kiểm tra cấu trúc DashboardStatsResponse", function () {
             const body = res.getBody();
             expect(body.success).to.equal(true);
             expect(body.code).to.equal(200);

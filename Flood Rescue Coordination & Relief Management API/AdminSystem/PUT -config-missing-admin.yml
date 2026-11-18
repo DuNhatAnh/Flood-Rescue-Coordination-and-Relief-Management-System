@@ -1,5 +1,5 @@
 info:
-  name: TC_SYS_06 - [PUT] /api/v1/admin/system/config (Chặn cập nhật cấu hình khi thiếu tham số adminId)
+  name: "[KCPM-107] TC_SYS_06 - Cập nhật cấu hình thiếu adminId (400)"
   type: http
   seq: 6
 
@@ -25,7 +25,7 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("TC_SYS_06: Bắt lỗi thiếu adminId - HTTP 400 Bad Request", function () {
+        test("[KCPM-107] TC_SYS_06: Bắt lỗi thiếu adminId - HTTP 400 Bad Request", function () {
             expect(res.getStatus()).to.equal(400);
             const body = res.getBody();
             expect(body.success).to.equal(false);

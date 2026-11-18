@@ -1,5 +1,5 @@
 info:
-  name: TC_SYS_01 - [GET] /api/v1/admin/system/logs (Xem nhật ký thao tác hệ thống)
+  name: "[KCPM-107] TC_SYS_01 - Xem nhật ký hệ thống"
   type: http
   seq: 1
 
@@ -15,10 +15,10 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("TC_SYS_01: Kiểm tra HTTP Status 200 OK", function () {
+        test("[KCPM-107] TC_SYS_01: Kiểm tra HTTP Status 200 OK", function () {
             expect(res.getStatus()).to.equal(200);
         });
-        test("TC_SYS_01: Kiểm tra cấu trúc ApiResponse", function () {
+        test("[KCPM-107] TC_SYS_01: Kiểm tra cấu trúc ApiResponse", function () {
             const body = res.getBody();
             expect(body.success).to.equal(true);
             expect(body.code).to.equal(200);
