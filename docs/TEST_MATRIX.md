@@ -3,6 +3,7 @@
 > **Dự án:** Hệ thống Điều phối Cứu hộ Lũ lụt & Quản lý Cứu trợ (Flood Rescue System)  
 > **4 Trụ cột kiểm thử:** White-box (JUnit 5) · Bruno API · Black-box QA Data-Driven · CodeceptJS (E2E)  
 > **Ký hiệu:** ✅ Đã kiểm thử & Pass · ⚠️ Có một phần / Đang bổ sung · ❌ Chưa kiểm thử
+> **File tổng hợp test case:** `docs/TEST_CASES_TONG_HOP.xlsx` (554 TC, 4 dạng kiểm thử, có ma trận truy vết) — sinh lại bằng `python3 qa-testing/scripts/generate_master_testcases.py`
 > **Đối soát lần cuối:** 18/11/2026 — JUnit **162/162** · CodeceptJS **50/50** · Bruno **143/144** (còn `POST /refresh` thuộc KCPM-92) · QA Epic 01 **35/35** — tất cả chạy trên **backend thật**
 
 ---

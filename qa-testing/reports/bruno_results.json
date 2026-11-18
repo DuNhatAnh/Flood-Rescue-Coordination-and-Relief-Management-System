@@ -1,0 +1,2196 @@
+[
+ {
+  "folder": "Auth",
+  "name": "[KCPM-60] TC_AUTH_01 - Đăng nhập Admin lấy token",
+  "file": "POST -login.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-60] TC_AUTH_01: Đăng nhập thành công - Status code is 200 OK",
+    "ok": true
+   }
+  ],
+  "url": "/api/auth/login",
+  "status": 200
+ },
+ {
+  "folder": "Auth",
+  "name": "[KCPM-80] TC_AUTH_08 - Đổi mật khẩu thành công",
+  "file": "POST -change-password-success.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-80] TC_AUTH_08: Đổi mật khẩu thành công - Status code is 200 OK",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/auth/change-password",
+  "status": 200,
+  "message": "Đổi mật khẩu thành công"
+ },
+ {
+  "folder": "Auth",
+  "name": "[KCPM-80] TC_AUTH_08b - Khôi phục mật khẩu admin123",
+  "file": "POST -change-password-restore.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-80] TC_AUTH_08b: Khôi phục mật khẩu admin - Status code is 200 OK",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/auth/change-password",
+  "status": 200,
+  "message": "Đổi mật khẩu thành công"
+ },
+ {
+  "folder": "Auth",
+  "name": "[KCPM-80] TC_AUTH_09 - Đổi mật khẩu sai mật khẩu cũ (400)",
+  "file": "POST -change-password-wrong-old.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-80] TC_AUTH_09: Bắt lỗi sai mật khẩu cũ - Status code is 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/auth/change-password",
+  "status": 400,
+  "message": "Mật khẩu hiện tại không chính xác"
+ },
+ {
+  "folder": "Auth",
+  "name": "[KCPM-80] TC_AUTH_10 - Đổi mật khẩu mới quá ngắn (400)",
+  "file": "POST -change-password-too-short.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-80] TC_AUTH_10: Bắt lỗi mật khẩu quá ngắn - Status code is 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/auth/change-password",
+  "status": 400,
+  "message": "Mật khẩu mới phải có tối thiểu 6 ký tự"
+ },
+ {
+  "folder": "Auth",
+  "name": "[KCPM-80] TC_AUTH_11 - Đổi mật khẩu trùng mật khẩu cũ (400)",
+  "file": "POST -change-password-same-as-old.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-80] TC_AUTH_11: Bắt lỗi trùng mật khẩu cũ - Status code is 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/auth/change-password",
+  "status": 400,
+  "message": "Mật khẩu mới không được trùng với mật khẩu cũ"
+ },
+ {
+  "folder": "Auth",
+  "name": "[KCPM-100] Chuẩn bị 1 - Admin tạo tài khoản test",
+  "file": "POST -kcpm100-setup-create-user.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo tài khoản test - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users",
+  "status": 200,
+  "message": "User created successfully"
+ },
+ {
+  "folder": "Auth",
+  "name": "[KCPM-100] Chuẩn bị 2 - Khóa tài khoản test (INACTIVE)",
+  "file": "PUT -kcpm100-setup-lock-user.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Khóa tài khoản - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users/6afd72b50247c37be84a0437/status?status=INACTIVE",
+  "status": 200,
+  "message": "User status updated"
+ },
+ {
+  "folder": "Auth",
+  "name": "POST /login (KCPM-100 - Tài khoản INACTIVE bị chặn cấp Token - 403 Forbidden)",
+  "file": "POST -login-inactive-forbidden.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn đăng nhập tài khoản INACTIVE - HTTP 403 Forbidden",
+    "ok": true
+   }
+  ],
+  "url": "/api/auth/login",
+  "status": 403,
+  "message": "Tài khoản đã bị vô hiệu hóa hoặc chưa được kích hoạt"
+ },
+ {
+  "folder": "Auth",
+  "name": "POST /refresh",
+  "file": "POST -refresh-token.yml",
+  "method": "POST",
+  "tests": [],
+  "url": "/api/auth/refresh",
+  "status": 404,
+  "message": "Không tìm thấy đường dẫn (API Endpoint) tương ứng: api/auth/refresh"
+ },
+ {
+  "folder": "AdminSystem",
+  "name": "[KCPM-107] TC_SYS_01 - Xem nhật ký hệ thống",
+  "file": "GET -logs.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-107] TC_SYS_01: Kiểm tra HTTP Status 200 OK",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-107] TC_SYS_01: Kiểm tra cấu trúc ApiResponse",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/system/logs",
+  "status": 200,
+  "message": "System logs retrieved successfully"
+ },
+ {
+  "folder": "AdminSystem",
+  "name": "[KCPM-107] TC_SYS_02 - Xem dashboard thống kê theo kho",
+  "file": "GET -dashboard-{warehouseId}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-107] TC_SYS_02: Kiểm tra HTTP Status 200 OK",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-107] TC_SYS_02: Kiểm tra cấu trúc DashboardStatsResponse",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/system/dashboard/1",
+  "status": 200,
+  "message": "Dashboard statistics retrieved"
+ },
+ {
+  "folder": "AdminSystem",
+  "name": "[KCPM-107] TC_SYS_03 - Xem danh sách cấu hình hệ thống",
+  "file": "GET -config.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-107] TC_SYS_03: Kiểm tra HTTP Status 200 OK",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-107] TC_SYS_03: Kiểm tra cấu trúc danh sách cấu hình",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/system/config",
+  "status": 200,
+  "message": "All system configurations retrieved"
+ },
+ {
+  "folder": "AdminSystem",
+  "name": "[KCPM-107] TC_SYS_04 - Cập nhật cấu hình hợp lệ",
+  "file": "PUT -config.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-107] TC_SYS_04: Cập nhật cấu hình thành công - HTTP Status 200 OK",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-107] TC_SYS_04: Kiểm tra dữ liệu cấu hình cập nhật",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/system/config?key=ALERT&value=ON&adminId=admin-01",
+  "status": 200,
+  "message": "System configuration updated"
+ },
+ {
+  "folder": "AdminSystem",
+  "name": "[KCPM-107] TC_SYS_05 - Cập nhật cấu hình thiếu key (400)",
+  "file": "PUT -config-missing-key.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-107] TC_SYS_05: Bắt lỗi thiếu key - HTTP 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/system/config?key=&value=ON&adminId=admin-01",
+  "status": 400,
+  "message": "Khóa cấu hình (key) không được để trống"
+ },
+ {
+  "folder": "AdminSystem",
+  "name": "[KCPM-107] TC_SYS_06 - Cập nhật cấu hình thiếu adminId (400)",
+  "file": "PUT -config-missing-admin.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-107] TC_SYS_06: Bắt lỗi thiếu adminId - HTTP 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/system/config?key=ALERT&value=ON&adminId=",
+  "status": 400,
+  "message": "Mã quản trị viên (adminId) không được để trống"
+ },
+ {
+  "folder": "AdminSystem",
+  "name": "[KCPM-107] TC_SYS_07 - Xem báo cáo tổng hợp",
+  "file": "GET -reports-general.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-107] TC_SYS_07: Kiểm tra HTTP Status 200 OK",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-107] TC_SYS_07: Kiểm tra cấu trúc ApiResponse",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/system/reports/general",
+  "status": 200,
+  "message": "General reports retrieved"
+ },
+ {
+  "folder": "AdminSystem",
+  "name": "[KCPM-107] TC_SYS_08 - Xem báo cáo phân tích",
+  "file": "GET -analytics.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-107] TC_SYS_08: Kiểm tra HTTP Status 200 OK",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-107] TC_SYS_08: Kiểm tra cấu trúc Analytics KPIs",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/system/analytics",
+  "status": 200,
+  "message": "Detailed analytics retrieved"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_01 - Xem danh sách người dùng",
+  "file": "TC_USER_01 GET danh-sach.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_01: Lấy danh sách - HTTP 200",
+    "ok": true
+   },
+   {
+    "name": "TC_USER_01: data là danh sách",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users",
+  "status": 200,
+  "message": "User list retrieved"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_02 - Admin tạo tài khoản mới (mặc định ACTIVE)",
+  "file": "TC_USER_02 POST tao-moi.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_02: Tạo tài khoản - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users",
+  "status": 200,
+  "message": "User created successfully"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_03 - Tạo tài khoản trùng email (409)",
+  "file": "TC_USER_03 POST trung-email.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_03: Chặn trùng email - HTTP 409",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users",
+  "status": 409,
+  "message": "Email 'user_bruno_1794994869436@rescue.vn' đã tồn tại trong hệ thống"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_04 - Xem chi tiết tài khoản vừa tạo",
+  "file": "TC_USER_04 GET chi-tiet.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_04: Xem chi tiết - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users/6afd72b50247c37be84a043b",
+  "status": 200,
+  "message": "User found"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_05 - Cập nhật họ tên & số điện thoại",
+  "file": "TC_USER_05 PUT cap-nhat.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_05: Cập nhật thông tin - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users/6afd72b50247c37be84a043b",
+  "status": 200,
+  "message": "User updated successfully"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_06 - Đổi vai trò sang COORDINATOR",
+  "file": "TC_USER_06 PUT doi-role.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_06: Đổi vai trò - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users/6afd72b50247c37be84a043b/role?roleId=COORDINATOR",
+  "status": 200,
+  "message": "User role updated"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_07 - Khóa tài khoản (INACTIVE)",
+  "file": "TC_USER_07 PUT khoa.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_07: Khóa tài khoản - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users/6afd72b50247c37be84a043b/status?status=INACTIVE",
+  "status": 200,
+  "message": "User status updated"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_08 - Trạng thái ngoài danh mục BANNED (400)",
+  "file": "TC_USER_08 PUT trang-thai-sai.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_08: Chặn trạng thái không hợp lệ - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users/6afd72b50247c37be84a043b/status?status=BANNED",
+  "status": 400,
+  "message": "Trạng thái tài khoản không hợp lệ: BANNED. Chỉ chấp nhận ACTIVE, INACTIVE, LOCKED"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_09 - Xem tài khoản không tồn tại (404)",
+  "file": "TC_USER_09 GET khong-ton-tai.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_09: Báo không tìm thấy - HTTP 404",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users/USER_KHONG_TON_TAI",
+  "status": 404,
+  "message": "Không tìm thấy User với ID: USER_KHONG_TON_TAI"
+ },
+ {
+  "folder": "AdminUser",
+  "name": "[KCPM-4] TC_USER_10 - Lấy danh sách vai trò cho form phân quyền",
+  "file": "TC_USER_10 GET roles.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_USER_10: Lấy danh sách vai trò - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users/roles",
+  "status": 200,
+  "message": "Roles retrieved"
+ },
+ {
+  "folder": "Assignment",
+  "name": "Chuẩn bị 1 - Người dân gửi đơn SOS mới",
+  "file": "POST -setup-1-sos.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo đơn SOS - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "Assignment",
+  "name": "Chuẩn bị 2 - Tạo nhân viên cứu hộ (backend tự tạo đội AVAILABLE)",
+  "file": "POST -setup-2-staff-team.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo nhân viên cứu hộ - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/users",
+  "status": 200,
+  "message": "User created successfully"
+ },
+ {
+  "folder": "Assignment",
+  "name": "Chuẩn bị 3 - Tạo xe cứu hộ",
+  "file": "POST -setup-3-vehicles.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo xe - HTTP 201",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles?userId=6ac5fed4346e4a02fdcf9639",
+  "status": 201,
+  "message": "Tạo phương tiện thành công"
+ },
+ {
+  "folder": "Assignment",
+  "name": "POST /",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Phân công nhiệm vụ - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/assignments",
+  "status": 200,
+  "message": "Assignment created successfully"
+ },
+ {
+  "folder": "Assignment",
+  "name": "Chuẩn bị 4 - Tạo xe thay thế",
+  "file": "POST -setup-4-vehicle2.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo xe thay thế - HTTP 201",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles?userId=6ac5fed4346e4a02fdcf9639",
+  "status": 201,
+  "message": "Tạo phương tiện thành công"
+ },
+ {
+  "folder": "Assignment",
+  "name": "GET /my-tasks",
+  "file": "GET -my-tasks.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/assignments/my-tasks",
+  "status": 200,
+  "message": "No team ID provided"
+ },
+ {
+  "folder": "Assignment",
+  "name": "GET /all",
+  "file": "GET -all.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/assignments/all",
+  "status": 200,
+  "message": "All assignments retrieved"
+ },
+ {
+  "folder": "Assignment",
+  "name": "PUT /{id}/status",
+  "file": "PUT -{id}-status.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Cập nhật trạng thái nhiệm vụ IN_PROGRESS - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/assignments/6afd72b50247c37be84a0448/status",
+  "status": 200,
+  "message": ""
+ },
+ {
+  "folder": "Assignment",
+  "name": "PUT /{id}/vehicle",
+  "file": "PUT -{id}-vehicle.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Đổi xe cho nhiệm vụ - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/assignments/6afd72b50247c37be84a0448/vehicle",
+  "status": 200,
+  "message": ""
+ },
+ {
+  "folder": "Attachment",
+  "name": "POST /upload - Chặn tải lên khi thiếu file (400)",
+  "file": "POST -upload.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn request không kèm file - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/attachments/upload",
+  "status": 400,
+  "message": "Yêu cầu tải lên không hợp lệ hoặc thiếu dữ liệu tệp (multipart/form-data): Current request is not a multipart request"
+ },
+ {
+  "folder": "Attachment",
+  "name": "GET /request/{requestId}",
+  "file": "GET -request-{requestId}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/attachments/request/1",
+  "status": 200,
+  "message": "Lấy danh sách tệp đính kèm thành công"
+ },
+ {
+  "folder": "DangerPoint",
+  "name": "GET /",
+  "file": "GET -.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/danger-points",
+  "status": 200,
+  "message": "Danger points retrieved"
+ },
+ {
+  "folder": "DangerPoint",
+  "name": "POST /",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo điểm nguy hiểm thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/danger-points",
+  "status": 200,
+  "message": "Danger point created"
+ },
+ {
+  "folder": "DangerPoint",
+  "name": "PUT /{id}",
+  "file": "PUT -{id}.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Cập nhật điểm nguy hiểm thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/danger-points/6afd72b50247c37be84a044d",
+  "status": 200,
+  "message": "Danger point updated"
+ },
+ {
+  "folder": "DangerPoint",
+  "name": "DELETE /{id}",
+  "file": "DELETE -{id}.yml",
+  "method": "DELETE",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/danger-points/6afd72b50247c37be84a044d",
+  "status": 200,
+  "message": "Danger point deleted"
+ },
+ {
+  "folder": "Distribution",
+  "name": "POST /",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/distributions",
+  "status": 200
+ },
+ {
+  "folder": "Distribution",
+  "name": "GET /history",
+  "file": "GET -history.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/distributions/history",
+  "status": 200
+ },
+ {
+  "folder": "Distribution",
+  "name": "POST /{id}/complete-transfer",
+  "file": "POST -{id}-complete-transfer.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/distributions/6afd72b50247c37be84a044e/complete-transfer",
+  "status": 200
+ },
+ {
+  "folder": "File",
+  "name": "POST /upload - Chặn tải lên khi thiếu file (400)",
+  "file": "POST -upload.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn request không kèm file - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/files/upload",
+  "status": 400,
+  "message": "File is empty"
+ },
+ {
+  "folder": "FileUpload",
+  "name": "POST /image - Chặn tải ảnh khi thiếu file (400)",
+  "file": "POST -image.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn request không kèm file - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/upload/image",
+  "status": 400,
+  "message": "File tải lên bị rỗng. Vui lòng chọn tệp hợp lệ."
+ },
+ {
+  "folder": "Inventory",
+  "name": "POST /import",
+  "file": "POST -import.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/inventory/import?userId=admin-01",
+  "status": 200,
+  "message": "Nhập kho thành công"
+ },
+ {
+  "folder": "Inventory",
+  "name": "GET /warehouse/{warehouseId}",
+  "file": "GET -warehouse-{warehouseId}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/inventory/warehouse/6ac5fed5346e4a02fdcf9644",
+  "status": 200,
+  "message": "Danh sách tồn kho"
+ },
+ {
+  "folder": "Inventory",
+  "name": "GET /warehouse/{warehouseId}/low-stock",
+  "file": "GET -warehouse-{warehouseId}-low-stock.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/inventory/warehouse/6ac5fed5346e4a02fdcf9644/low-stock",
+  "status": 200,
+  "message": "Hàng hóa sắp hết"
+ },
+ {
+  "folder": "Notification",
+  "name": "POST /",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Gửi thông báo hợp lệ - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/notifications",
+  "status": 200,
+  "message": "Notification sent successfully"
+ },
+ {
+  "folder": "Notification",
+  "name": "GET /user/{userId}",
+  "file": "GET -user-{userId}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/notifications/user/1",
+  "status": 200,
+  "message": "User notifications retrieved"
+ },
+ {
+  "folder": "Notification",
+  "name": "GET /",
+  "file": "GET -.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/notifications",
+  "status": 200,
+  "message": "All notifications retrieved"
+ },
+ {
+  "folder": "Notification",
+  "name": "PATCH /{id}/read",
+  "file": "PATCH -{id}-read.yml",
+  "method": "PATCH",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/notifications/1/read",
+  "status": 200,
+  "message": "Notification marked as read"
+ },
+ {
+  "folder": "Notification",
+  "name": "GET /unread-count",
+  "file": "GET -unread-count.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Đếm thông báo chưa đọc - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/notifications/unread-count?userId=6ac5fed4346e4a02fdcf9639",
+  "status": 200,
+  "message": "Unread count retrieved"
+ },
+ {
+  "folder": "Notification",
+  "name": "DELETE /user/{userId}",
+  "file": "DELETE -user-{userId}.yml",
+  "method": "DELETE",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/notifications/user/1",
+  "status": 200,
+  "message": "All notifications deleted"
+ },
+ {
+  "folder": "ReliefItem",
+  "name": "GET /",
+  "file": "GET -.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/relief-items",
+  "status": 200,
+  "message": "Danh sách mặt hàng cứu trợ"
+ },
+ {
+  "folder": "ReliefItem",
+  "name": "POST /",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/relief-items",
+  "status": 200,
+  "message": "Tạo mặt hàng thành công"
+ },
+ {
+  "folder": "ReliefItem",
+  "name": "PUT /{id}",
+  "file": "PUT -{id}.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/relief-items/6afd72b50247c37be84a0455",
+  "status": 200,
+  "message": "Cập nhật mặt hàng thành công"
+ },
+ {
+  "folder": "ReliefItem",
+  "name": "DELETE /{id}",
+  "file": "DELETE -{id}.yml",
+  "method": "DELETE",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/relief-items/6afd72b50247c37be84a0455",
+  "status": 200,
+  "message": "Xóa mặt hàng thành công"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /staff-dashboard",
+  "file": "GET -staff-dashboard.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/staff-dashboard",
+  "status": 200,
+  "message": "Dữ liệu Dashboard đã được tải thành công"
+ },
+ {
+  "folder": "Report",
+  "name": "POST / (Nộp báo cáo cứu hộ tổng kết - 200)",
+  "file": "POST -submit-rescue-report.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Nộp báo cáo tổng kết cứu hộ thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports",
+  "status": 200,
+  "message": "Báo cáo tổng kết cứu hộ đã được nộp thành công"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /general-stats",
+  "file": "GET -general-stats.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/general-stats",
+  "status": 200,
+  "message": "Thống kê tổng quát đã được tải thành công"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /analytics",
+  "file": "GET -analytics.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/analytics",
+  "status": 200,
+  "message": "Thống kê chi tiết đã được tải thành công"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /warehouse-trend",
+  "file": "GET -warehouse-trend.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/warehouse-trend",
+  "status": 200,
+  "message": "Dữ liệu xu hướng kho đã được tải"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /available-items",
+  "file": "GET -available-items.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/available-items",
+  "status": 200,
+  "message": "Danh sách vật phẩm đã được tải"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /extended-stats",
+  "file": "GET -extended-stats.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/extended-stats",
+  "status": 200,
+  "message": "Thống kê mở rộng đã được tải"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /rescue-history",
+  "file": "GET -rescue-history.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/rescue-history",
+  "status": 200,
+  "message": "Lịch sử cứu hộ đã được tải"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /warehouse-history",
+  "file": "GET -warehouse-history.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/warehouse-history",
+  "status": 200,
+  "message": "Lịch sử kho đã được tải"
+ },
+ {
+  "folder": "Report",
+  "name": "GET /vehicle-history",
+  "file": "GET -vehicle-history.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/reports/vehicle-history",
+  "status": 200,
+  "message": "Lịch sử phương tiện đã được tải"
+ },
+ {
+  "folder": "RescueCoordination",
+  "name": "GET /pending",
+  "file": "GET -pending.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Lấy đơn chờ xử lý - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/pending",
+  "status": 200,
+  "message": "Pending requests retrieved"
+ },
+ {
+  "folder": "RescueCoordination",
+  "name": "PUT /{id}/urgency",
+  "file": "PUT -{id}-urgency.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Gán mức độ khẩn cấp - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/6ac5fed5346e4a02fdcf963e/urgency",
+  "status": 200,
+  "message": "Urgency updated"
+ },
+ {
+  "folder": "RescueCoordination",
+  "name": "PUT /{id}/verify",
+  "file": "PUT -{id}-verify.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Xác minh đơn SOS - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/6ac5fed5346e4a02fdcf963e/verify?verifiedBy=admin@rescue.vn",
+  "status": 200,
+  "message": "Request verified"
+ },
+ {
+  "folder": "RescueCoordination",
+  "name": "GET /{id}/history",
+  "file": "GET -{id}-history.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Xem lịch sử trạng thái - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/6ac5fed5346e4a02fdcf963e/history",
+  "status": 200,
+  "message": "Request history retrieved"
+ },
+ {
+  "folder": "RescueReport",
+  "name": "POST / (Nộp báo cáo cứu hộ tổng kết - 200)",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Nộp báo cáo tổng kết cứu hộ thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-reports",
+  "status": 200,
+  "message": "Rescue report submitted successfully"
+ },
+ {
+  "folder": "RescueReport",
+  "name": "TC_REPORT_02 - POST / (Biên Min: 0 người được cứu - 200 OK)",
+  "file": "POST -bva-rescued-count-0.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Cho phép nộp báo cáo với 0 người cần cứu hộ (chỉ tiếp tế) -> HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-reports",
+  "status": 200,
+  "message": "Rescue report submitted successfully"
+ },
+ {
+  "folder": "RescueReport",
+  "name": "TC_REPORT_03 - POST / (Biên Max: 50 người giải cứu thành công - 200 OK)",
+  "file": "POST -bva-rescued-count-max-50.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Nộp báo cáo giải cứu số lượng tối đa 50 người thành công -> HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-reports",
+  "status": 200,
+  "message": "Rescue report submitted successfully"
+ },
+ {
+  "folder": "RescueReport",
+  "name": "TC_REPORT_04 - POST / (Báo cáo chỉ cứu người không cấp phát hàng - 200 OK)",
+  "file": "POST -empty-items.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Cho phép danh sách hàng phân phối rỗng khi chỉ thực hiện cứu người -> HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-reports",
+  "status": 200,
+  "message": "Rescue report submitted successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "POST /",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "GET /track/{id}",
+  "file": "GET -track-{id}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/track/6afd72b50247c37be84a045b",
+  "status": 200,
+  "message": "Rescue request found"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "GET /stats",
+  "file": "GET -stats.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/stats",
+  "status": 200,
+  "message": "Statistics retrieved"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "GET /",
+  "file": "GET -.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "All rescue requests retrieved"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "GET /{id}",
+  "file": "GET -{id}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/6afd72b50247c37be84a045b",
+  "status": 200,
+  "message": "Rescue request details retrieved"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "PATCH /{id}/status (Chuyển sang COMPLETED)",
+  "file": "PATCH -{id}-status.yml",
+  "method": "PATCH",
+  "tests": [
+   {
+    "name": "Cập nhật trạng thái sang COMPLETED thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/0003/status",
+  "status": 200,
+  "message": "Rescue request status updated successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "POST /{id}/confirm-safety",
+  "file": "POST -{id}-confirm-safety.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/0003/confirm-safety",
+  "status": 200,
+  "message": "Safety confirmed by citizen"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "POST / (Invalid GPS & Phone - 400)",
+  "file": "POST -invalid-gps-phone.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Bắt lỗi dữ liệu không hợp lệ - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 400,
+  "message": "Dữ liệu không hợp lệ: Vĩ độ (Lat) phải nằm trong khoảng từ -90.0 đến 90.0, Số điện thoại không hợp lệ"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "GET / (Filter Status PENDING)",
+  "file": "GET -filter-status-pending.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Lọc danh sách theo trạng thái PENDING thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests?status=PENDING",
+  "status": 200,
+  "message": "All rescue requests retrieved"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "GET / (Filter Status IN_PROGRESS)",
+  "file": "GET -filter-status-in-progress.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Lọc danh sách theo trạng thái IN_PROGRESS thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests?status=IN_PROGRESS",
+  "status": 200,
+  "message": "All rescue requests retrieved"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "GET / (Filter District)",
+  "file": "GET -filter-district.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Lọc danh sách theo quận/huyện thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests?district=Hải Châu",
+  "status": 200,
+  "message": "All rescue requests retrieved"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "GET / (Filter Invalid Status - 400 Bad Request)",
+  "file": "GET -filter-invalid-status.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Chặn lọc với trạng thái không hợp lệ - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests?status=INVALID_STATUS_TEST",
+  "status": 400,
+  "message": "Trạng thái không hợp lệ: INVALID_STATUS_TEST. Trạng thái hợp lệ gồm: [IN_PROGRESS, RETURNING, PENDING, CANCELLED, REJECTED, REPORTED, VERIFIED, ASSIGNED, COMPLETED, RESCUING]"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "PUT /{id}/cancel (Người dân tự hủy khi nước rút - 200)",
+  "file": "PUT -{id}-cancel-citizen.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Người dân tự hủy yêu cầu cứu hộ thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/6afd72b50247c37be84a045b/cancel",
+  "status": 200,
+  "message": "Yêu cầu cứu hộ đã được hủy thành công"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "PUT /{id}/cancel (Chặn hủy khi đã COMPLETED - 400 Bad Request)",
+  "file": "PUT -{id}-cancel-completed-invalid.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Chặn hủy yêu cầu cứu hộ đã hoàn thành - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests/0003/cancel",
+  "status": 400,
+  "message": "Không thể hủy yêu cầu cứu hộ đã ở trạng thái COMPLETED!"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC04 - POST / (Biên Min: 1 người - 200 OK)",
+  "file": "POST -bva-people-min-1.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Kiểm tra biên dưới hợp lệ (Min = 1 người) -> HTTP 200/201",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC08 - POST / (Biên Max: 50 người - 200 OK)",
+  "file": "POST -bva-people-max-50.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Kiểm tra biên trên hợp lệ (Max = 50 người) -> HTTP 200/201",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC03 - POST / (Biên lỗi Min-1: 0 người - 400 Bad Request)",
+  "file": "POST -bva-people-err-0.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn lỗi dưới biên dưới (0 người) -> HTTP 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 400,
+  "message": "Dữ liệu không hợp lệ: Số người gặp nạn phải lớn hơn 0"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC01 - POST / (Biên lỗi số âm: -1 người - 400 Bad Request)",
+  "file": "POST -bva-people-err-negative.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn lỗi số người âm (-1) -> HTTP 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 400,
+  "message": "Dữ liệu không hợp lệ: Số người gặp nạn phải lớn hơn 0"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC09 - POST / (Biên lỗi Max+1: 51 người - 400 Bad Request)",
+  "file": "POST -bva-people-err-51.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn lỗi vượt quá biên trên (51 người) -> HTTP 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 400,
+  "message": "Dữ liệu không hợp lệ: Số người gặp nạn không được vượt quá 50 người"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC12 - POST / (Biên GPS cực Bắc VN: Lũng Cú - 200 OK)",
+  "file": "POST -bva-gps-vn-extreme-north.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Kiểm tra tọa độ biên giới cực Bắc Việt Nam (Lat 23.39) -> HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC13 - POST / (Biên GPS cực Nam VN: Cà Mau - 200 OK)",
+  "file": "POST -bva-gps-vn-extreme-south.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Kiểm tra tọa độ biên giới cực Nam Việt Nam (Lat 8.18) -> HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC16 - POST / (Biên lỗi ngoài VN phía Bắc: Lat 24.50 - 400)",
+  "file": "POST -bva-gps-outside-vn-north.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn tọa độ nằm ngoài lãnh thổ Việt Nam phía Bắc -> HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 400,
+  "message": "Tọa độ vĩ độ nằm ngoài lãnh thổ Việt Nam (8.18 - 23.39)"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC18 - POST / (Biên lỗi ngoài VN phía Tây: Lng 101.50 - 400)",
+  "file": "POST -bva-gps-outside-vn-west.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn tọa độ nằm ngoài lãnh thổ Việt Nam phía Tây -> HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 400,
+  "message": "Tọa độ kinh độ nằm ngoài lãnh thổ Việt Nam (102.14 - 109.46)"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC23 - POST / (Biên Note rỗng: 0 ký tự - 200 OK)",
+  "file": "POST -bva-note-len-0.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Cho phép để trống mô tả khẩn cấp (0 ký tự) -> HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC27 - POST / (Biên Note tối đa: 1000 ký tự - 200 OK)",
+  "file": "POST -bva-note-len-1000.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Kiểm tra biên trên hợp lệ cho độ dài mô tả (đúng 1000 ký tự) -> HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC28 - POST / (Biên lỗi Note vượt Max: 1001 ký tự - 400)",
+  "file": "POST -bva-note-len-1001-err.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn mô tả vượt quá độ dài tối đa (1001 ký tự) -> HTTP 400 Bad Request",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 400,
+  "message": "Dữ liệu không hợp lệ: Độ dài mô tả khẩn cấp vượt quá giới hạn tối đa 1000 ký tự"
+ },
+ {
+  "folder": "RescueRequest",
+  "name": "BVA TC30 - POST / (Phối hợp đa biên Max: 50 người, 1000 ký tự, Cực Đông - 200)",
+  "file": "POST -bva-combo-max.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Kiểm tra phối hợp đa biên: People=50 + Note=1000 + Tọa độ cực Đông VN -> HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_01 - Xem danh sách vai trò",
+  "file": "TC_ROLE_01 GET danh-sach.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_01: Lấy danh sách thành công - HTTP 200",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-4] TC_ROLE_01: Có đủ 4 vai trò mặc định",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles",
+  "status": 200,
+  "message": "Roles retrieved successfully"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_02 - Xem chi tiết vai trò ADMIN",
+  "file": "TC_ROLE_02 GET chi-tiet.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_02: Lấy chi tiết thành công - HTTP 200",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-4] TC_ROLE_02: Đúng vai trò ADMIN",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles/ADMIN",
+  "status": 200,
+  "message": "Role retrieved successfully"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_03 - Xem vai trò không tồn tại (404)",
+  "file": "TC_ROLE_03 GET khong-ton-tai.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_03: Báo không tìm thấy - HTTP 404",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles/ROLE_KHONG_TON_TAI",
+  "status": 404,
+  "message": "Không tìm thấy Role với ID: ROLE_KHONG_TON_TAI"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_04 - Tạo vai trò mới",
+  "file": "TC_ROLE_04 POST tao-moi.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_04: Tạo thành công - HTTP 200",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-4] TC_ROLE_04: Tên được lưu IN HOA",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles",
+  "status": 200,
+  "message": "Role created successfully"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_05 - Tạo vai trò trùng tên ADMIN (409)",
+  "file": "TC_ROLE_05 POST trung-ten.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_05: Chặn trùng tên - HTTP 409",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles",
+  "status": 409,
+  "message": "Tên Role 'ADMIN' đã tồn tại trong hệ thống"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_06 - Tạo vai trò để trống tên (400)",
+  "file": "TC_ROLE_06 POST ten-rong.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_06: Chặn tên rỗng - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles",
+  "status": 400,
+  "message": "Tên Role không được để trống"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_07 - Cập nhật mô tả vai trò vừa tạo",
+  "file": "TC_ROLE_07 PUT cap-nhat.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_07: Cập nhật thành công - HTTP 200",
+    "ok": true
+   },
+   {
+    "name": "[KCPM-4] TC_ROLE_07: Mô tả và quyền đã đổi",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles/6afd72b50247c37be84a0478",
+  "status": 200,
+  "message": "Role updated successfully"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_08 - Cập nhật vai trò không tồn tại (404)",
+  "file": "TC_ROLE_08 PUT khong-ton-tai.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_08: Báo không tìm thấy - HTTP 404",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles/ROLE_KHONG_TON_TAI",
+  "status": 404,
+  "message": "Không tìm thấy Role với ID: ROLE_KHONG_TON_TAI"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_09 - Xóa vai trò vừa tạo",
+  "file": "TC_ROLE_09 DELETE xoa.yml",
+  "method": "DELETE",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_09: Xóa thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles/6afd72b50247c37be84a0478",
+  "status": 200,
+  "message": "Role deleted successfully"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-4] TC_ROLE_10 - Xóa vai trò không tồn tại (404)",
+  "file": "TC_ROLE_10 DELETE khong-ton-tai.yml",
+  "method": "DELETE",
+  "tests": [
+   {
+    "name": "[KCPM-4] TC_ROLE_10: Báo không tìm thấy - HTTP 404",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles/ROLE_KHONG_TON_TAI",
+  "status": 404,
+  "message": "Không tìm thấy Role với ID: ROLE_KHONG_TON_TAI"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-60] TC_ROLE_11 - RBAC - Gọi API không có token (401)",
+  "file": "TC_ROLE_11 RBAC khong-token.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-60] TC_ROLE_11: Chặn truy cập ẩn danh - HTTP 401",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles",
+  "status": 401,
+  "message": "Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn"
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-60] TC_ROLE_12 - RBAC - Đăng nhập Coordinator lấy token",
+  "file": "TC_ROLE_12 RBAC login-coordinator.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "[KCPM-60] TC_ROLE_12: Coordinator đăng nhập thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/auth/login",
+  "status": 200
+ },
+ {
+  "folder": "Role",
+  "name": "[KCPM-60] TC_ROLE_13 - RBAC - Coordinator gọi API quản lý vai trò (403)",
+  "file": "TC_ROLE_13 RBAC coordinator-bi-chan.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "[KCPM-60] TC_ROLE_13: Coordinator bị chặn - HTTP 403",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/admin/roles",
+  "status": 403,
+  "message": "Bạn không có quyền truy cập tài nguyên này"
+ },
+ {
+  "folder": "SafetyReport",
+  "name": "POST / (Người dân báo an toàn sau lũ - 200)",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Người dân báo an toàn sau lũ thành công - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/safety-reports",
+  "status": 200,
+  "message": "Báo cáo an toàn đã được ghi nhận thành công"
+ },
+ {
+  "folder": "SafetyReport",
+  "name": "GET /",
+  "file": "GET -.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/safety-reports",
+  "status": 200,
+  "message": "Safety reports retrieved successfully"
+ },
+ {
+  "folder": "SafetyReport",
+  "name": "POST / (Gửi thiếu số điện thoại - 400 Bad Request)",
+  "file": "POST -missing-phone.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn gửi báo an toàn thiếu số điện thoại - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/safety-reports",
+  "status": 400,
+  "message": "Số điện thoại người báo không được để trống"
+ },
+ {
+  "folder": "SafetyReport",
+  "name": "POST / (KCPM-106 - SĐT chứa chữ cái - 400 Bad Request)",
+  "file": "POST -bva-phone-letters-err.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn SĐT chứa chữ cái - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/safety-reports",
+  "status": 400,
+  "message": "Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (bắt đầu bằng 0 hoặc +84)!"
+ },
+ {
+  "folder": "SafetyReport",
+  "name": "POST / (KCPM-106 - SĐT thiếu số 9 chữ số - 400 Bad Request)",
+  "file": "POST -bva-phone-len-9-err.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Chặn SĐT thiếu số (9 số) - HTTP 400",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/safety-reports",
+  "status": 400,
+  "message": "Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (bắt đầu bằng 0 hoặc +84)!"
+ },
+ {
+  "folder": "SafetyReport",
+  "name": "POST / (KCPM-106 - SĐT +84 và khoảng trắng - 200 Chuẩn hóa)",
+  "file": "POST -phone-normalize-plus84.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tự động chuẩn hóa SĐT +84 về 0 - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/safety-reports",
+  "status": 200,
+  "message": "Báo cáo an toàn đã được ghi nhận thành công"
+ },
+ {
+  "folder": "Team",
+  "name": "GET /",
+  "file": "GET -.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Lấy danh sách đội - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/teams",
+  "status": 200,
+  "message": "Danh sách đội cứu hộ"
+ },
+ {
+  "folder": "Team",
+  "name": "GET /available",
+  "file": "GET -available.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/teams/available",
+  "status": 200,
+  "message": "Danh sách đội cứu hộ sẵn sàng"
+ },
+ {
+  "folder": "Team",
+  "name": "GET /{id}",
+  "file": "GET -{id}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Xem chi tiết đội - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/teams/6ac5fed5346e4a02fdcf965b",
+  "status": 200,
+  "message": "Thông tin đội cứu hộ"
+ },
+ {
+  "folder": "Team",
+  "name": "PUT /{id}",
+  "file": "PUT -{id}.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Cập nhật tên đội (giữ nguyên tên cũ để không đổi dữ liệu mẫu) - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/teams/6ac5fed5346e4a02fdcf965b",
+  "status": 200,
+  "message": "Cập nhật tên đội thành công"
+ },
+ {
+  "folder": "VehicleAssignment",
+  "name": "Chuẩn bị 1 - Người dân gửi đơn SOS mới",
+  "file": "POST -setup-1-sos.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo đơn SOS - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/rescue-requests",
+  "status": 200,
+  "message": "Rescue request created successfully"
+ },
+ {
+  "folder": "VehicleAssignment",
+  "name": "Chuẩn bị 2 - Tạo xe cứu hộ",
+  "file": "POST -setup-2-vehicle.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo xe - HTTP 201",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles?userId=6ac5fed4346e4a02fdcf9639",
+  "status": 201,
+  "message": "Tạo phương tiện thành công"
+ },
+ {
+  "folder": "VehicleAssignment",
+  "name": "POST /dispatch",
+  "file": "POST -dispatch.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Điều phối xe cho đơn SOS - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/assignments/dispatch",
+  "status": 200,
+  "message": "Đã điều động 1 phương tiện thành công."
+ },
+ {
+  "folder": "Vehicles",
+  "name": "GET /statistics-summary",
+  "file": "GET -statistics-summary.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles/statistics-summary",
+  "status": 200,
+  "message": "Thống kê phương tiện"
+ },
+ {
+  "folder": "Vehicles",
+  "name": "POST /",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Tạo xe - HTTP 201",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles?userId=6ac5fed4346e4a02fdcf9639",
+  "status": 201,
+  "message": "Tạo phương tiện thành công"
+ },
+ {
+  "folder": "Vehicles",
+  "name": "PUT /{id}",
+  "file": "PUT -{id}.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Cập nhật xe - HTTP 200",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles/6afd72b60247c37be84a0485?userId=6ac5fed4346e4a02fdcf9639",
+  "status": 200,
+  "message": "Cập nhật phương tiện thành công"
+ },
+ {
+  "folder": "Vehicles",
+  "name": "DELETE /{id}",
+  "file": "DELETE -{id}.yml",
+  "method": "DELETE",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles/6afd72b60247c37be84a0485?userId=6ac8a492b3505b0db326b89e",
+  "status": 200,
+  "message": "Xóa phương tiện thành công"
+ },
+ {
+  "folder": "Vehicles",
+  "name": "GET /",
+  "file": "GET -.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles",
+  "status": 200,
+  "message": "Danh sách phương tiện"
+ },
+ {
+  "folder": "Vehicles",
+  "name": "GET /available",
+  "file": "GET -available.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/vehicles/available",
+  "status": 200,
+  "message": "Danh sách phương tiện sẵn sàng"
+ },
+ {
+  "folder": "Warehouse",
+  "name": "GET /",
+  "file": "GET -.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/warehouses",
+  "status": 200,
+  "message": "Danh sách kho bãi"
+ },
+ {
+  "folder": "Warehouse",
+  "name": "GET /manager/{managerId}",
+  "file": "GET -manager-{managerId}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/warehouses/manager/1",
+  "status": 200,
+  "message": "Tìm thấy kho bãi"
+ },
+ {
+  "folder": "Warehouse",
+  "name": "POST /",
+  "file": "POST -.yml",
+  "method": "POST",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/warehouses",
+  "status": 200,
+  "message": "Tạo kho bãi thành công"
+ },
+ {
+  "folder": "Warehouse",
+  "name": "GET /{id}",
+  "file": "GET -{id}.yml",
+  "method": "GET",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/warehouses/6afd72b60247c37be84a0489",
+  "status": 200,
+  "message": "Tìm thấy kho bãi"
+ },
+ {
+  "folder": "Warehouse",
+  "name": "PUT /{id}",
+  "file": "PUT -{id}.yml",
+  "method": "PUT",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/warehouses/6afd72b60247c37be84a0489",
+  "status": 200,
+  "message": "Cập nhật kho bãi thành công"
+ },
+ {
+  "folder": "Warehouse",
+  "name": "DELETE /{id}",
+  "file": "DELETE -{id}.yml",
+  "method": "DELETE",
+  "tests": [
+   {
+    "name": "Phản hồi thành công (200, 201, 204)",
+    "ok": true
+   }
+  ],
+  "url": "/api/v1/warehouses/6afd72b60247c37be84a0489",
+  "status": 200,
+  "message": "Xóa kho bãi thành công"
+ }
+]
