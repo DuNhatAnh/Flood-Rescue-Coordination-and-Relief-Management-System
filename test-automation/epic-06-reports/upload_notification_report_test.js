@@ -7,6 +7,8 @@
  * ==============================================================================
  */
 
+const { assert, createUser } = require('../support/api');
+
 Feature('[EPIC-06] [Dư Nhật Anh] Báo Cáo Phân Tích & Hạ Tầng Chung (Reports & Files)');
 
 // ==================== NHÓM 1: FILE UPLOAD (CHẶN HTTP 500 & VALIDATION) ====================
@@ -41,15 +43,20 @@ Scenario('[KCPM-117] [E2E-06-04] [NEGATIVE] Lấy số thông báo chưa đọc 
   I.seeResponseCodeIs(400);
 });
 
-Scenario('[KCPM-117] [E2E-06-05] [POSITIVE] Gửi thông báo khẩn cấp hợp lệ [POST /api/v1/notifications]', async ({ I }) => {
-  const payload = {
-    userId: 'user-flood-001',
+Scenario('[KCPM-117] [E2E-06-05] [POSITIVE] Gửi thông báo khẩn cấp hợp lệ -> Số thông báo chưa đọc của người nhận tăng 1 [POST /api/v1/notifications]', async ({ I }) => {
+  const receiver = await createUser(I, 'USER', 'Notify'); // Người nhận là user thật, không dùng ID giả
+  const before = await I.sendGetRequest(`/api/v1/notifications/unread-count?userId=${receiver.id}`);
+  assert.strictEqual(before.status, 200);
+
+  const res = await I.sendPostRequest('/api/v1/notifications', {
+    userId: receiver.id,
     title: 'Thông báo điều động cano cứu nạn',
-    content: 'Đội số 1 đã xuất phát đi Lệ Thủy'
-  };
-  const res = await I.sendPostRequest('/api/v1/notifications', payload);
+    content: 'Đội số 1 đã xuất phát đi Lệ Thủy',
+  });
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code']);
+
+  const after = await I.sendGetRequest(`/api/v1/notifications/unread-count?userId=${receiver.id}`);
+  assert.strictEqual(Number(after.data.data), Number(before.data.data) + 1, 'Số thông báo chưa đọc phải tăng thêm 1');
 });
 
 // ==================== NHÓM 3: CHẶN LỌC BÁO CÁO KHI NGÀY BẮT ĐẦU > NGÀY KẾT THÚC ====================
