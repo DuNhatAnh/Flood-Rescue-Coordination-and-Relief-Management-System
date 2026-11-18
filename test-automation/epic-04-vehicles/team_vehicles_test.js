@@ -64,7 +64,7 @@ Scenario('[KCPM-114] [E2E-04-06] [WORKFLOW] Tạo mới ca nô cứu hộ hợp 
     vehicleType: 'CANO',
     licensePlate: plate,
     currentLocation: 'Bến Lệ Thủy - Quảng Bình',
-    warehouseId: warehouses.data.data[0].id, // Xe không gắn kho sẽ bị ẩn khỏi GET /vehicles (bug đã báo cho Epic 04)
+    warehouseId: warehouses.data.data[0].id, // Xe được biên chế vào kho có sẵn như nghiệp vụ thực tế
   });
   I.seeResponseCodeIs(201);
   createdVehicleId = res.data.data.id;
