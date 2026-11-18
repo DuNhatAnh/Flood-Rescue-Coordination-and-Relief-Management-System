@@ -1,7 +1,7 @@
 info:
-  name: GET /roles
+  name: "[KCPM-4] TC_USER_10 - Lấy danh sách vai trò cho form phân quyền"
   type: http
-  seq: 7
+  seq: 10
 
 http:
   method: GET
@@ -12,8 +12,9 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("[KCPM-4] TC_USER_10: Lấy danh sách vai trò - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
 
 settings:

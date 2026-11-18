@@ -1,43 +1,36 @@
 info:
-  name: POST /
+  name: "POST /"
   type: http
   seq: 2
 
 http:
   method: POST
-  url: "{{baseUrl}}/api/v1/vehicles?userId=6ac8a492b3505b0db326b89e"
+  url: "{{baseUrl}}/api/v1/vehicles?userId={{adminId}}"
   headers:
     - name: Content-Type
       value: application/json
-  params:
-    - name: userId
-      value: "6ac8a492b3505b0db326b89e"
-      type: query
   body:
     type: json
     data: |-
       {
         "vehicleType": "CANO",
-        "licensePlate": "43A-888.99",
-        "currentLocation": "Ben song Thu Bon",
-        "teamId": "6ac8a49ab3505b0db326b8c1"
+        "licensePlate": "{{vehPlate}}",
+        "currentLocation": "Ben song Thu Bon"
       }
   auth: inherit
 
 runtime:
   scripts:
+    - type: before-request
+      code: |-
+        bru.setVar("vehPlate", "BR-V" + Date.now().toString().slice(-8));
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Tạo xe - HTTP 201", function () {
+            expect(res.getStatus()).to.equal(201);
+            expect(res.getBody().success).to.equal(true);
         });
-
-        try {
-            var resData = res.getBody();
-            if (resData && resData.data && resData.data.id) {
-                bru.setCollectionVar("createdVehicleId", resData.data.id);
-            }
-        } catch (e) {}
+        bru.setCollectionVar("createdVehicleId", res.getBody().data.id);
 
 settings:
   encodeUrl: true

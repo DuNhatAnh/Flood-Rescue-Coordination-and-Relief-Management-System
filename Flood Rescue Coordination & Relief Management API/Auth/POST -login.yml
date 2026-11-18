@@ -33,6 +33,8 @@ runtime:
             if (token) {
                 bru.setEnvVar("bearerToken", token);
                 bru.setCollectionVar("bearerToken", token);
+                bru.setVar("adminId", jsonData.id);
+                bru.setVar("adminEmail", jsonData.email);
                 console.log("Đã lưu token thành công:", token);
             }
         } catch (e) {

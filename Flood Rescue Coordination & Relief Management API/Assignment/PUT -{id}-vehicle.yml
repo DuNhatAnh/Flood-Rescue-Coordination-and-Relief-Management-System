@@ -1,7 +1,7 @@
 info:
-  name: PUT /{id}/vehicle
+  name: "PUT /{id}/vehicle"
   type: http
-  seq: 5
+  seq: 9
 
 http:
   method: PUT
@@ -11,14 +11,13 @@ http:
       value: application/json
   params:
     - name: id
-      value: "6aca005835acdb55aae31192"
+      value: "{{assignmentId}}"
       type: path
-      description: ID of id
   body:
     type: json
     data: |-
       {
-        "newVehicleIds": ["6ac8a49bb3505b0db326b8c4"],
+        "newVehicleIds": ["{{assignVehicleId2}}"],
         "reason": "Xe thay the do hu hong"
       }
   auth: inherit
@@ -27,8 +26,8 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Đổi xe cho nhiệm vụ - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
         });
 
 settings:

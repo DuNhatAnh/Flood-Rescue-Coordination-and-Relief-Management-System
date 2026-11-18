@@ -1,7 +1,7 @@
-﻿info:
-  name: POST /
+info:
+  name: "POST /"
   type: http
-  seq: 1
+  seq: 4
 
 http:
   method: POST
@@ -13,19 +13,11 @@ http:
     type: json
     data: |-
       {
-        "requestId": "6ae9f0a87c11de07e162668a",
-        "teamId": "6ac3beab5219eb487c8bfc30",
-        "vehicleIds": ["6ac3beab5219eb487c8bfc33"],
-        "assignedBy": "admin@rescue.vn",
-        "note": "Dieu dong ho tro khan cap",
-        "missionItems": [
-          {
-            "itemId": "6ac3beab5219eb487c8bfc1a",
-            "itemName": "Gao",
-            "quantity": 50,
-            "unit": "kg"
-          }
-        ]
+        "requestId": "{{assignReqId}}",
+        "teamId": "{{assignTeamId}}",
+        "vehicleIds": ["{{assignVehicleId}}"],
+        "assignedBy": "{{adminId}}",
+        "note": "Dieu dong ho tro khan cap"
       }
   auth: inherit
 
@@ -33,9 +25,12 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Phân công nhiệm vụ - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
+        expect(res.getBody().data.status).to.equal("ASSIGNED");
+        bru.setVar("assignmentId", res.getBody().data.id);
 
 settings:
   encodeUrl: true

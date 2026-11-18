@@ -1,0 +1,42 @@
+info:
+  name: "Chuẩn bị 1 - Người dân gửi đơn SOS mới"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn Bruno",
+        "citizenPhone": "0912345678",
+        "locationLat": 17.2185,
+        "locationLng": 106.7842,
+        "addressText": "Xã Phong Thủy, Lệ Thủy, Quảng Bình",
+        "numberOfPeople": 3,
+        "urgencyLevel": "HIGH",
+        "description": "Đơn SOS sinh tự động cho Bruno"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Tạo đơn SOS - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
+        });
+        bru.setVar("dispatchReqId", res.getBody().data.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,30 +1,25 @@
 info:
-  name: PUT /{id}
+  name: "PUT /{id}"
   type: http
   seq: 3
 
 http:
   method: PUT
-  url: "{{baseUrl}}/api/v1/vehicles/:id?userId=6ac8a492b3505b0db326b89e"
+  url: "{{baseUrl}}/api/v1/vehicles/:id?userId={{adminId}}"
   headers:
     - name: Content-Type
       value: application/json
   params:
     - name: id
-      value: "6ac8a49bb3505b0db326b8c3"
+      value: "{{createdVehicleId}}"
       type: path
-      description: ID of id
-    - name: userId
-      value: "6ac8a492b3505b0db326b89e"
-      type: query
   body:
     type: json
     data: |-
       {
         "vehicleType": "CANO",
-        "licensePlate": "43A-001.23",
-        "currentLocation": "Ben Cua Dai",
-        "teamId": "6ac8a49ab3505b0db326b8c0"
+        "licensePlate": "{{vehPlate}}",
+        "currentLocation": "Ben Cua Dai"
       }
   auth: inherit
 
@@ -32,9 +27,11 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Cập nhật xe - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
+        expect(res.getBody().data.currentLocation).to.equal("Ben Cua Dai");
 
 settings:
   encodeUrl: true

@@ -1,5 +1,5 @@
 info:
-  name: POST /
+  name: "POST /"
   type: http
   seq: 1
 
@@ -13,9 +13,10 @@ http:
     type: json
     data: |-
       {
-        "name": "Mẫu dữ liệu",
-        "description": "Mô tả chi tiết",
-        "status": "ACTIVE"
+        "userId": "{{adminId}}",
+        "title": "Cảnh báo lũ khẩn cấp",
+        "content": "Mực nước sông dâng cao, chuẩn bị sơ tán",
+        "type": "WARNING"
       }
   auth: inherit
 
@@ -23,8 +24,9 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Gửi thông báo hợp lệ - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
 
 settings:

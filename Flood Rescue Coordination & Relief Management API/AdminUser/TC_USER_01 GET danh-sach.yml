@@ -1,0 +1,26 @@
+info:
+  name: "[KCPM-4] TC_USER_01 - Xem danh sách người dùng"
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/admin/users"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-4] TC_USER_01: Lấy danh sách - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
+        });
+        test("TC_USER_01: data là danh sách", function () { expect(Array.isArray(res.getBody().data)).to.be.true; });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

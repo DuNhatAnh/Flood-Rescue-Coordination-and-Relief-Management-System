@@ -1,5 +1,5 @@
 info:
-  name: GET /
+  name: "GET /"
   type: http
   seq: 1
 
@@ -12,9 +12,13 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phản hồi thành công (200, 201, 204)", function () {
-            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        test("Lấy danh sách đội - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
         });
+        const team = res.getBody().data[0];
+        bru.setVar("teamId", team.id);
+        bru.setVar("teamName", team.teamName);
 
 settings:
   encodeUrl: true

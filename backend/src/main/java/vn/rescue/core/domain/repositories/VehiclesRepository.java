@@ -24,6 +24,8 @@ public interface VehiclesRepository extends MongoRepository<Vehicles, String> {
     List<Vehicles> findByTeamIdAndStatus(String teamId, String status);
 
     // Hàm tìm kiếm chính xác để dùng trong Service (Sửa lỗi "Cannot resolve")
+    Page<Vehicles> findByVehicleTypeContainingIgnoreCaseAndStatusContainingIgnoreCase(String vehicleType, String status, Pageable pageable);
+
     Page<Vehicles> findByVehicleTypeContainingIgnoreCaseAndStatusContainingIgnoreCaseAndWarehouseIdContainingIgnoreCase(
             String vehicleType, String status, String warehouseId, Pageable pageable
     );

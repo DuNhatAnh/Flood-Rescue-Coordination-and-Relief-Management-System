@@ -3,7 +3,7 @@
 > **Dự án:** Hệ thống Điều phối Cứu hộ Lũ lụt & Quản lý Cứu trợ (Flood Rescue System)  
 > **4 Trụ cột kiểm thử:** White-box (JUnit 5) · Bruno API · Black-box QA Data-Driven · CodeceptJS (E2E)  
 > **Ký hiệu:** ✅ Đã kiểm thử & Pass · ⚠️ Có một phần / Đang bổ sung · ❌ Chưa kiểm thử
-> **Đối soát lần cuối:** 18/11/2026 — JUnit **149/149 pass** (`mvn test`) · CodeceptJS **50/50 pass trên backend thật** (không dùng mock server)
+> **Đối soát lần cuối:** 18/11/2026 — JUnit **162/162** · CodeceptJS **50/50** · Bruno **143/144** (còn `POST /refresh` thuộc KCPM-92) · QA Epic 01 **35/35** — tất cả chạy trên **backend thật**
 
 ---
 
@@ -11,12 +11,12 @@
 
 | STT | Chức năng nghiệp vụ | Endpoint API | White-box (JUnit 5) | Bruno API | QA Data-Driven | CodeceptJS (E2E) | Trạng thái |
 |:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| 1.1 | Đăng nhập hệ thống & Cấp JWT Token | `POST /api/auth/login` | ✅ `AuthControllerTest` (4 TCs - KCPM-100) | ✅ `TC_AUTH_01` | ✅ `auth_login_data.csv` (10 TCs) | ✅ E2E-01-01, 01-02 | **Đạt** |
-| 1.2 | Đổi mật khẩu (BVA độ dài Min 6) | `POST /api/v1/auth/change-password` | ✅ `UserServiceTest` (6 TCs) | ✅ `TC_AUTH_08` → `TC_AUTH_11` | ⚠️ `auth_change_password_data.csv` (14 TCs - còn luật Max 32 backend không có) | ✅ E2E-01-03, 01-04 | **Đạt** |
-| 1.3 | Quản lý người dùng (Danh sách, Chi tiết, Tạo mới) | `/api/v1/admin/users` | ⚠️ Chưa có test riêng cho CRUD | ✅ 4 requests CRUD | ✅ `auth_rbac_data.csv` | ✅ E2E-01-05 | **Đạt** |
-| 1.4 | Khóa / Mở khóa tài khoản (`ACTIVE`/`INACTIVE`/`LOCKED`) | `PUT /api/v1/admin/users/{id}/status` | ✅ `UserAccountManagementTest` (4 TCs) + `RbacAuthorizationTest` TC_RBAC_UT_04 | ✅ `PUT -{id}-status.yml` | ✅ `auth_login_data.csv` (Chặn khóa) | ✅ E2E-01-05, 01-06 | **Đạt** |
-| 1.5 | Gán / Đổi vai trò (Role) tài khoản | `PUT /api/v1/admin/users/{id}/role` | ✅ `UserAccountManagementTest` (4 TCs) | ✅ `PUT -{id}-role.yml` | ✅ `auth_rbac_data.csv` | ✅ E2E-01-05 | **Đạt** |
-| 1.6 | Quản lý vai trò & Ma trận phân quyền chéo (RBAC) | `/api/v1/admin/roles` | ✅ `RoleServiceTest` (4 TCs) + `RbacAuthorizationTest` (7 TCs) | ✅ `TC_ROLE_01` → `TC_ROLE_13` (CRUD + RBAC 403) | ✅ `auth_rbac_data.csv` (12 TCs) | ✅ E2E-01-07 | **Đạt** |
+| 1.1 | Đăng nhập hệ thống & Cấp JWT Token | `POST /api/auth/login` | ✅ `AuthControllerTest` (4 TCs - KCPM-100) | ✅ `TC_AUTH_01` + KCPM-100 (tự tạo & khóa tài khoản) | ✅ `auth_login_data.csv` (10 TCs - gọi backend thật) | ✅ E2E-01-01, 01-02 | **Đạt** |
+| 1.2 | Đổi mật khẩu (BVA độ dài Min 6, Max 32) | `POST /api/v1/auth/change-password` | ✅ `UserServiceTest` (6 TCs) | ✅ `TC_AUTH_08` → `TC_AUTH_11` | ✅ `auth_change_password_data.csv` (14 TCs - gọi backend thật, TC_CPW_13 chỉ ở JUnit) | ✅ E2E-01-03, 01-04 | **Đạt** |
+| 1.3 | Quản lý người dùng (Danh sách, Chi tiết, Tạo mới) | `/api/v1/admin/users` | ⚠️ Chưa có test riêng cho CRUD | ✅ `TC_USER_01` → `TC_USER_06`, `TC_USER_09`, `TC_USER_10` | ✅ `auth_rbac_data.csv` | ✅ E2E-01-05 | **Đạt** |
+| 1.4 | Khóa / Mở khóa tài khoản (`ACTIVE`/`INACTIVE`/`LOCKED`) | `PUT /api/v1/admin/users/{id}/status` | ✅ `UserAccountManagementTest` (4 TCs) + `RbacAuthorizationTest` TC_RBAC_UT_04 | ✅ `TC_USER_07`, `TC_USER_08` (trạng thái sai → 400) | ✅ `auth_login_data.csv` TC_LOG_10 | ✅ E2E-01-05, 01-06 | **Đạt** |
+| 1.5 | Gán / Đổi vai trò (Role) tài khoản | `PUT /api/v1/admin/users/{id}/role` | ✅ `UserAccountManagementTest` (4 TCs) | ✅ `TC_USER_06` | ✅ `auth_rbac_data.csv` | ✅ E2E-01-05 | **Đạt** |
+| 1.6 | Quản lý vai trò & Ma trận phân quyền chéo (RBAC) | `/api/v1/admin/roles` | ✅ `RoleServiceTest` (4) + `RbacAuthorizationTest` (7) + `AccessDeniedStatusTest` (3 - phân biệt 401/403) | ✅ `TC_ROLE_01` → `TC_ROLE_13` (CRUD + RBAC 401/403) | ✅ `auth_rbac_data.csv` (12 TCs - gọi backend thật, token hết hạn ký thật) | ✅ E2E-01-07 | **Đạt** |
 | 1.7 | Cấu hình & Dashboard hệ thống quản trị | `/api/v1/admin/system/*` | ✅ `AdminSystemControllerTest` (11 TCs) | ✅ `TC_SYS_01` → `TC_SYS_08` | ✅ `KCPM-107_AdminSystem_Test_Report.xlsx` (19 TCs) | ❌ Chưa tích hợp | **Đạt** |
 
 ---
@@ -53,7 +53,7 @@
 | STT | Chức năng nghiệp vụ | Endpoint API | White-box (JUnit 5) | Bruno API | QA Data-Driven | CodeceptJS (E2E) | Trạng thái |
 |:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|
 | 4.1 | Quản lý Đội cứu nạn (CRUD, bắt lỗi 404 đội không tồn tại) | `/api/v1/teams/*` | ✅ `Sprint2ModuleFixesTest` (BUG-TEAM-01) | ✅ 3 requests CRUD | ✅ `teams_availability_data.csv` | ✅ E2E-04-01 → 04-04 | **Đạt** |
-| 4.2 | Đăng ký phương tiện cứu hộ (BVA sức chứa 1..20, trùng biển) | `POST /api/v1/vehicles` | ✅ `Sprint2ModuleFixesTest` (BUG-VEHICLE-01) | ✅ `POST -.yml` | ✅ `vehicles_management_data.csv` (26 TCs) | ✅ E2E-04-06, 04-07, 04-10 | **Đạt** |
+| 4.2 | Đăng ký phương tiện cứu hộ (BVA sức chứa 1..20, trùng biển) | `POST /api/v1/vehicles` | ✅ `Sprint2ModuleFixesTest` (BUG-VEHICLE-01) + `VehiclesServiceValidationTest` (7 - POST/PUT/danh sách) | ✅ `POST -.yml`, `PUT -{id}.yml` | ✅ `vehicles_management_data.csv` (26 TCs) | ✅ E2E-04-06, 04-07, 04-10 | **Đạt** |
 | 4.3 | Máy trạng thái xe & đội (`AVAILABLE` ↔ `BUSY`) — ⚠️ chưa có API chuyển `MAINTENANCE` | `POST /api/v1/assignments/dispatch` | ✅ `Sprint2ModuleFixesTest` (BUG-ASSIGNMENT-01 chặn xe bận) | ✅ `PUT -{id}.yml` | ✅ `teams_availability_data.csv` (24 TCs) | ✅ E2E-04-11, 04-12 | **Đạt** |
 | 4.4 | Lọc phương tiện sẵn sàng xuất kích (`AVAILABLE`) | `GET /api/v1/vehicles/available` | ⚠️ `Sprint2ModuleFixesTest` BVA-06 (chỉ kiểm tra lại dữ liệu mock) | ✅ `GET -available.yml` | ✅ `vehicles_management_data.csv` | ✅ E2E-04-09 | **Đạt** |
 | 4.5 | Lệnh xuất kích phối hợp (Gán cùng lúc Đội + Phương tiện) | `POST /api/v1/assignments/dispatch` | ✅ `RescueCoordinationServiceTest` | ✅ `POST -dispatch.yml` | ❌ Chưa có test riêng | ✅ E2E-03-04 | **Đạt** |
@@ -123,10 +123,33 @@ Dưới đây là danh sách toàn bộ các tính năng chưa có bất kỳ k�
 24. `NotificationManagementScreen` (Màn hình quản trị thông báo)
 25. `SystemSettingsScreen` (Màn hình cài đặt tham số hệ thống)
 
-### C. Bug / điểm lệch phát hiện khi đối soát (chưa xử lý):
-1. `GET /api/v1/vehicles` không trả về phương tiện có `warehouseId = null` (query `...WarehouseIdContainingIgnoreCase("")` không khớp null) — Epic 04.
-2. Chưa có API chuyển phương tiện sang `MAINTENANCE` (`VehicleRequest` không có trường `status`) — Epic 04.
-3. Dữ liệu QA `auth_change_password_data.csv` còn luật "Max 32 ký tự", `danger_point_radar_data.csv` còn BVA bán kính — backend không có các luật này; script Python trong `qa-testing/` mô phỏng logic chứ không gọi backend thật.
+### C. Kết quả đối soát chéo 5 bộ kiểm thử (18/11/2026)
+
+**Đã sửa (chưa có task Jira):**
+1. `GET /api/v1/vehicles` ẩn xe có `warehouseId = null` → không lọc kho khi không truyền `warehouseId`.
+2. `PUT /api/v1/vehicles/{id}` với ID không tồn tại trả **500** → nay **404**; PUT bổ sung validate biển số rỗng/trùng, sức chứa 1..20 (TC_VEH_20, 22, 23, 24).
+3. `PUT /assignments/{id}/vehicle` sai kiểu dữ liệu trả **500** → nay **400** (E2E-03-05).
+4. Đổi mật khẩu thiếu luật **Max 32 ký tự** theo thiết kế KCPM-88 → đã bổ sung.
+5. Đăng nhập không kiểm tra định dạng email / rỗng (thiết kế KCPM-89 yêu cầu 400) → đã bổ sung.
+6. Gọi API quản trị khi chưa xác thực (không token / hết hạn / giả mạo) trả **403** → nay **401** theo thiết kế KCPM-90; đã đăng nhập nhưng thiếu quyền vẫn **403**.
+7. KCPM-100: thông báo tiếng Việt "Tài khoản đã bị vô hiệu hóa…" không bao giờ trả ra (Spring Security chặn trước) → đã sửa; unit test cũ mock `authenticate()` nên không phát hiện.
+8. `PUT /admin/users/{id}/status` nhận mọi chuỗi trạng thái → chỉ nhận `ACTIVE` / `INACTIVE` / `LOCKED`.
+9. Bruno: folder AdminUser đổi tên admin thật và **khóa tài khoản mẫu `staff@rescue.vn`** mỗi lần chạy; folder AdminSystem chạy trước Auth nên dùng token cũ; 13 request dùng ID cứng đã hết hạn → đã viết lại tự tạo dữ liệu.
+10. QA Epic 01 (`run_login.py`, `run_change_password.py`, `run_rbac.py`) trước đây **mô phỏng logic bằng Python** → nay gọi backend thật qua `qa-testing/scripts/live_api.py`.
+
+**Đã có task Jira — không sửa trong đợt này:**
+| Điểm lệch | Task Jira | Ghi chú |
+|:---|:---|:---|
+| `POST /api/auth/refresh` vẫn 404 | KCPM-92 (Done) | Code chưa có controller dù task đã Done |
+| Radar lọc theo bán kính (`danger_point_radar_data.csv` BVA 50m..5000m) | KCPM-101 (Done), KCPM-111 (In Progress) | Code chưa có tính năng lọc bán kính dù KCPM-101 đã Done |
+| Chuyển xe sang `MAINTENANCE` (`teams_availability_data.csv`) | KCPM-114 (Done) | Chưa có API đổi trạng thái xe |
+| Upload file đa dụng | KCPM-117 (To Do) | Bruno chỉ kiểm thử nhánh thiếu file (400) |
+
+**Còn lệch, cần chủ Epic quyết định (QA vẫn mô phỏng bằng Python, chưa gọi backend thật):**
+1. `citizen_safety_report_data.csv` TC_TRK_01–03 dùng mã `RES-2026-001`, backend dùng `customId` dạng `0001` — Epic 02.
+2. `inventory_import_data.csv` TC_IMP_10 kiểm tra "ngày nhập ở tương lai" nhưng `StockInRequest` không có trường `importDate` — Epic 05.
+3. `vehicles_management_data.csv` TC_VEH_10 yêu cầu bắt buộc sức chứa, nhưng frontend chưa gửi `capacity` nên backend giữ là tùy chọn — Epic 04.
+4. `coordination_dispatch_data.csv` mô tả bảng quyết định tự tính mức khẩn cấp, backend chỉ nhận mức khẩn cấp do điều phối viên gán tay — Epic 03.
 
 ### D. Kiểm thử Phi chức năng chưa thực hiện:
 1. Kiểm thử tải và độ chịu đựng bão lũ (Load & Stress Testing với JMeter / k6)

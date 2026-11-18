@@ -175,6 +175,9 @@ public class UserService {
         if (request.getNewPassword().length() < 6) {
             throw new BadRequestException("Mật khẩu mới phải có tối thiểu 6 ký tự");
         }
+        if (request.getNewPassword().length() > 32) {
+            throw new BadRequestException("Mật khẩu mới không được vượt quá 32 ký tự");
+        }
         if (request.getOldPassword().equals(request.getNewPassword())) {
             throw new BadRequestException("Mật khẩu mới không được trùng với mật khẩu cũ");
         }

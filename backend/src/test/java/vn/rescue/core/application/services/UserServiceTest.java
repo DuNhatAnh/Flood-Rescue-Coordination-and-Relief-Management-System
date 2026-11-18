@@ -116,6 +116,22 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("TC_CPW_06/07 (BVA Max=32): Mật khẩu mới 33 ký tự -> Ném 400; đúng 32 ký tự -> không bị chặn bởi luật độ dài")
+    void testChangePassword_MaxLengthBoundary() {
+        String userId = "USER-001";
+        ChangePasswordRequest tooLong = new ChangePasswordRequest("password123", "a".repeat(33));
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> userService.changePassword(userId, tooLong));
+        assertEquals("Mật khẩu mới không được vượt quá 32 ký tự", exception.getMessage());
+        verify(userRepository, never()).save(any());
+
+        // Biên hợp lệ 32 ký tự: vượt qua luật độ dài, đi tiếp tới bước tìm user (ở đây user không tồn tại -> 404)
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        ChangePasswordRequest exactMax = new ChangePasswordRequest("password123", "a".repeat(32));
+        assertThrows(ResourceNotFoundException.class, () -> userService.changePassword(userId, exactMax));
+    }
+
+    @Test
     @DisplayName("TC_AUTH_11: Đổi mật khẩu thất bại khi mật khẩu mới trùng mật khẩu cũ -> Ném 400 BadRequestException")
     void testChangePassword_WhenNewPasswordSameAsOld_ShouldThrowBadRequestException() {
         String userId = "USER-001";

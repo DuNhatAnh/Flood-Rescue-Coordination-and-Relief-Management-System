@@ -1,7 +1,7 @@
 info:
   name: GET /my-tasks
   type: http
-  seq: 2
+  seq: 6
 
 http:
   method: GET
