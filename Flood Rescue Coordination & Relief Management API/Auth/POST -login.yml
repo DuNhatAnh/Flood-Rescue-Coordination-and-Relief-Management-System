@@ -1,5 +1,5 @@
 info:
-  name: POST /login
+  name: "[KCPM-60] TC_AUTH_01 - Đăng nhập Admin lấy token"
   type: http
   seq: 1
 
@@ -22,7 +22,7 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Status code is 200 OK", function () {
+        test("[KCPM-60] TC_AUTH_01: Đăng nhập thành công - Status code is 200 OK", function () {
             expect(res.getStatus()).to.equal(200);
         });
 

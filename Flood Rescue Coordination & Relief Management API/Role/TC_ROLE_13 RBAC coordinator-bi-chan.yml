@@ -1,0 +1,27 @@
+info:
+  name: "[KCPM-60] TC_ROLE_13 - RBAC - Coordinator gọi API quản lý vai trò (403)"
+  type: http
+  seq: 13
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/admin/roles"
+  headers:
+    - name: Authorization
+      value: Bearer {{coordinatorToken}}
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-60] TC_ROLE_13: Coordinator bị chặn - HTTP 403", function () {
+            expect(res.getStatus()).to.equal(403);
+            expect(res.getBody().success).to.equal(false);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

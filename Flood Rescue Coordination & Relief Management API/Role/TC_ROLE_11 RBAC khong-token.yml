@@ -1,0 +1,24 @@
+info:
+  name: "[KCPM-60] TC_ROLE_11 - RBAC - Gọi API không có token (403)"
+  type: http
+  seq: 11
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/admin/roles"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-60] TC_ROLE_11: Chặn truy cập ẩn danh - HTTP 403", function () {
+            expect(res.getStatus()).to.equal(403);
+            expect(res.getBody().success).to.equal(false);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

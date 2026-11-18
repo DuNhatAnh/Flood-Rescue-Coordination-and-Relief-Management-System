@@ -1,0 +1,36 @@
+info:
+  name: "[KCPM-4] TC_ROLE_06 - Tạo vai trò để trống tên (400)"
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/admin/roles"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "",
+        "description": "Thiếu tên",
+        "permissions": ["REPORT"]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-4] TC_ROLE_06: Chặn tên rỗng - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            expect(res.getBody().success).to.equal(false);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
