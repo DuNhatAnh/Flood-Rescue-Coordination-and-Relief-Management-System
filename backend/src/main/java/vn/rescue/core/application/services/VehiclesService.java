@@ -28,10 +28,12 @@ public class VehiclesService {
         String statusFilter = (status != null) ? status : "";
         String warehouseFilter = (warehouseId != null) ? warehouseId : "";
 
-        return vehiclesRepository
-                .findByVehicleTypeContainingIgnoreCaseAndStatusContainingIgnoreCaseAndWarehouseIdContainingIgnoreCase(
-                        typeFilter, statusFilter, warehouseFilter, pageable)
-                .map(this::mapToResponse);
+        // Không truyền warehouseId -> không lọc theo kho (xe chưa gắn kho có warehouseId = null vẫn phải hiển thị)
+        Page<Vehicles> page = warehouseFilter.isEmpty()
+                ? vehiclesRepository.findByVehicleTypeContainingIgnoreCaseAndStatusContainingIgnoreCase(typeFilter, statusFilter, pageable)
+                : vehiclesRepository.findByVehicleTypeContainingIgnoreCaseAndStatusContainingIgnoreCaseAndWarehouseIdContainingIgnoreCase(
+                        typeFilter, statusFilter, warehouseFilter, pageable);
+        return page.map(this::mapToResponse);
     }
 
     // --- 2. THỐNG KÊ (Dùng cho Dashboard/Charts) ---
@@ -52,24 +54,7 @@ public class VehiclesService {
     // --- 3. THÊM MỚI ---
     @Transactional
     public VehicleResponse createVehicle(VehicleRequest request, String userId) {
-        if (vehiclesRepository.existsByLicensePlate(request.getLicensePlate())) {
-            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Biển số xe đã tồn tại trong hệ thống: " + request.getLicensePlate());
-        }
-
-        // BVA & Validation kiểm tra chủng loại phương tiện
-        if (request.getVehicleType() == null || !VALID_VEHICLE_TYPES.contains(request.getVehicleType().toUpperCase())) {
-            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Chủng loại phương tiện không hợp lệ: " + request.getVehicleType() + ". Chỉ chấp nhận: CANO, THUYEN, XE_LOI_NUOC");
-        }
-
-        // BVA kiểm tra sức chứa chở người (capacity)
-        if (request.getCapacity() != null) {
-            if (request.getCapacity() < 1) {
-                throw new vn.rescue.core.presentation.exceptions.BadRequestException("Sức chứa phải lớn hơn hoặc bằng 1");
-            }
-            if (request.getCapacity() > 20) {
-                throw new vn.rescue.core.presentation.exceptions.BadRequestException("Sức chứa vượt quá tải trọng quy chuẩn (tối đa 20 người)");
-            }
-        }
+        validateVehicleRequest(request, null);
 
         Vehicles vehicle = new Vehicles();
         mapRequestToEntity(vehicle, request);
@@ -84,7 +69,8 @@ public class VehiclesService {
     @Transactional
     public VehicleResponse updateVehicle(String id, VehicleRequest request, String userId) {
         Vehicles vehicle = vehiclesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện ID: " + id));
+                .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Không tìm thấy phương tiện ID: " + id));
+        validateVehicleRequest(request, vehicle);
 
         String oldPlate = vehicle.getLicensePlate();
         mapRequestToEntity(vehicle, request); // Cập nhật các thông tin từ request
@@ -98,7 +84,7 @@ public class VehiclesService {
     @Transactional
     public void deleteVehicle(String id, String userId) {
         Vehicles vehicle = vehiclesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện để xóa!"));
+                .orElseThrow(() -> new vn.rescue.core.presentation.exceptions.ResourceNotFoundException("Không tìm thấy phương tiện ID: " + id));
 
         String plate = vehicle.getLicensePlate();
         vehiclesRepository.deleteById(id);
@@ -108,6 +94,39 @@ public class VehiclesService {
     }
 
     // --- HELPER METHODS ---
+
+    /**
+     * Validate dùng chung cho tạo mới (existing = null) và cập nhật (existing = xe hiện tại).
+     * Sức chứa không bắt buộc vì frontend chưa gửi trường này, nhưng nếu có thì phải trong biên 1..20.
+     */
+    private void validateVehicleRequest(VehicleRequest request, Vehicles existing) {
+        String currentPlate = existing != null ? existing.getLicensePlate() : null;
+        if (request.getLicensePlate() == null || request.getLicensePlate().trim().isEmpty()) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Biển số xe không được để trống");
+        }
+        boolean plateChanged = currentPlate == null || !currentPlate.equalsIgnoreCase(request.getLicensePlate());
+        if (plateChanged && vehiclesRepository.existsByLicensePlate(request.getLicensePlate())) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Biển số xe đã tồn tại trong hệ thống: " + request.getLicensePlate());
+        }
+
+        // BVA & Validation kiểm tra chủng loại phương tiện
+        // Khi cập nhật mà giữ nguyên loại xe cũ (dữ liệu mẫu có loại ngoài danh mục) thì không chặn
+        boolean typeUnchanged = existing != null && request.getVehicleType() != null
+                && request.getVehicleType().equalsIgnoreCase(existing.getVehicleType());
+        if (!typeUnchanged && (request.getVehicleType() == null || !VALID_VEHICLE_TYPES.contains(request.getVehicleType().toUpperCase()))) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("Chủng loại phương tiện không hợp lệ: " + request.getVehicleType() + ". Chỉ chấp nhận: CANO, THUYEN, XE_LOI_NUOC");
+        }
+
+        // BVA kiểm tra sức chứa chở người (capacity)
+        if (request.getCapacity() != null) {
+            if (request.getCapacity() < 1) {
+                throw new vn.rescue.core.presentation.exceptions.BadRequestException("Sức chứa phải lớn hơn hoặc bằng 1");
+            }
+            if (request.getCapacity() > 20) {
+                throw new vn.rescue.core.presentation.exceptions.BadRequestException("Sức chứa vượt quá tải trọng quy chuẩn (tối đa 20 người)");
+            }
+        }
+    }
 
     private void mapRequestToEntity(Vehicles vehicle, VehicleRequest request) {
         vehicle.setVehicleType(request.getVehicleType());
