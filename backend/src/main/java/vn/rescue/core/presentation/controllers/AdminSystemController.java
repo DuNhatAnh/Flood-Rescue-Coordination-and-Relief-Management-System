@@ -44,6 +44,7 @@ public class AdminSystemController {
     }
 
     // --- CẤU HÌNH HỆ THỐNG ---
+    // Public có chủ đích: màn hình trang chủ người dân (home_screen) cần đọc cấu hình bản đồ khi chưa đăng nhập
     @GetMapping("/config")
     public ResponseEntity<ApiResponse<List<SystemConfig>>> getAllConfigs() {
         return ResponseEntity.ok(ApiResponse.success(systemManagementService.getAllConfigs(), "All system configurations retrieved"));
@@ -74,6 +75,7 @@ public class AdminSystemController {
 
     // --- THỐNG KÊ BÁO CÁO CHI TIẾT (REPORT SERVICE) ---
     @GetMapping("/reports/general")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> getGeneralReports() {
         return ResponseEntity.ok(ApiResponse.success(reportService.getGeneralStats(), "General reports retrieved"));
     }
