@@ -1,11 +1,25 @@
-const mockServer = require('./mock_server');
+const http = require('http');
+
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8080';
+
+// Kiểm tra backend THẬT đang chạy trước khi test. Không dùng mock server: nếu backend chưa bật thì dừng ngay.
+function checkBackendAlive() {
+  return new Promise((resolve, reject) => {
+    const req = http.request(`${API_BASE_URL}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, timeout: 5000 }, res => {
+      res.resume();
+      resolve();
+    });
+    req.on('error', () => reject(new Error(`Không kết nối được backend tại ${API_BASE_URL}. Hãy chạy "docker compose up -d" trước khi test.`)));
+    req.end('{}');
+  });
+}
 
 exports.config = {
-  tests: process.env.TEST_PATH || './citizen_portal_test.js',
+  tests: process.env.TEST_PATH || './epic-*/*_test.js',
   output: './output',
   helpers: {
     REST: {
-      endpoint: process.env.API_BASE_URL || 'http://localhost:8080',
+      endpoint: API_BASE_URL,
       defaultHeaders: {
         'Content-Type': 'application/json'
       },
@@ -14,10 +28,7 @@ exports.config = {
     JSONResponse: {}
   },
   bootstrap: async () => {
-    await mockServer.start();
-  },
-  teardown: async () => {
-    await mockServer.stop();
+    await checkBackendAlive();
   },
   include: {},
   mocha: {
