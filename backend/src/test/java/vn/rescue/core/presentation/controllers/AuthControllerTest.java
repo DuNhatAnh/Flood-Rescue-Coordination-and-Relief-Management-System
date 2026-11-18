@@ -93,6 +93,41 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("TC_LOG_06 -> TC_LOG_09 (EP định dạng): Email sai định dạng / rỗng, mật khẩu rỗng, dữ liệu null -> Ném 400 và không gọi xác thực")
+    void testLogin_InvalidInputPartitions_ShouldThrowBadRequest() {
+        assertEquals("Email không đúng định dạng",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(createAuthRequest("adminrescue.vn", "admin123"))).getMessage());
+        assertEquals("Email không được để trống",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(createAuthRequest(" ", "admin123"))).getMessage());
+        assertEquals("Mật khẩu không được để trống",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(createAuthRequest("admin@rescue.vn", ""))).getMessage());
+        assertEquals("Dữ liệu đăng nhập không được để trống",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(createAuthRequest(null, null))).getMessage());
+        assertEquals("Dữ liệu đăng nhập không được để trống",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(null)).getMessage());
+        verify(authenticationManager, never()).authenticate(any());
+    }
+
+    @Test
+    @DisplayName("TC_AUTH_100_05: Spring Security chặn ngay tại authenticate() (INACTIVE/LOCKED như khi chạy thật) -> Vẫn trả thông báo tiếng Việt")
+    void testLogin_WhenAuthenticationManagerRejectsDisabledOrLocked_ShouldReturnVietnameseMessage() {
+        AuthRequest request = new AuthRequest();
+        request.setEmail("inactive@rescue.vn");
+        request.setPassword("123456");
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new DisabledException("User is disabled"));
+        DisabledException disabled = assertThrows(DisabledException.class, () -> authController.login(request));
+        assertEquals("Tài khoản đã bị vô hiệu hóa hoặc chưa được kích hoạt", disabled.getMessage());
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new org.springframework.security.authentication.LockedException("User account is locked"));
+        org.springframework.security.authentication.LockedException locked =
+                assertThrows(org.springframework.security.authentication.LockedException.class, () -> authController.login(request));
+        assertEquals("Tài khoản đã bị khóa do vi phạm chính sách", locked.getMessage());
+    }
+
+    @Test
     @DisplayName("TC_AUTH_100_02: Đăng nhập thất bại khi tài khoản có status INACTIVE -> Ném DisabledException và chặn cấp Token")
     void testLogin_WhenStatusInactive_ShouldThrowDisabledException() {
         String email = "inactive_user@rescue.vn";
