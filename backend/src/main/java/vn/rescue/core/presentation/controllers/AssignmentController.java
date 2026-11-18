@@ -47,9 +47,17 @@ public class AssignmentController {
     }
 
     @PutMapping("/{id}/vehicle")
-    @SuppressWarnings("unchecked")
     public void updateVehicle(@PathVariable("id") String id, @RequestBody Map<String, Object> body) {
-        java.util.List<String> newVehicleIds = (java.util.List<String>) body.get("newVehicleIds");
+        Object rawVehicleIds = body.get("newVehicleIds");
+        if (rawVehicleIds != null && !(rawVehicleIds instanceof List)) {
+            throw new vn.rescue.core.presentation.exceptions.BadRequestException("newVehicleIds phải là danh sách mã phương tiện (mảng)");
+        }
+        java.util.List<String> newVehicleIds = new ArrayList<>();
+        if (rawVehicleIds != null) {
+            for (Object vId : (List<?>) rawVehicleIds) {
+                newVehicleIds.add(String.valueOf(vId));
+            }
+        }
         String reason = (String) body.get("reason");
         rescueCoordinationService.updateAssignmentVehicles(id, newVehicleIds, reason);
     }
