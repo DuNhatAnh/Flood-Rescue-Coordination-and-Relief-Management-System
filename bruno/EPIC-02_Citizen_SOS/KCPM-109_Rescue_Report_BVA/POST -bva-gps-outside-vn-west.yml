@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-109] BVA TC18 - Biên lỗi ngoài VN phía Tây (400 Bad Request)"
+  name: "[KCPM-109] TC_RES_18 - BVA Biên lỗi Lng Min-1 = 102.13 ngoài VN phía Tây (400 Bad Request)"
   type: http
   seq: 9
 
@@ -17,7 +17,7 @@ http:
         "citizenPhone": "0987654338",
         "addressText": "Vị trí ngoài biên giới phía Tây",
         "locationLat": 16.0,
-        "locationLng": 101.5,
+        "locationLng": 102.13,
         "numberOfPeople": 4,
         "urgencyLevel": "LOW",
         "description": "Vị trí ngoài lãnh thổ phía Tây"

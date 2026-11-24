@@ -1,0 +1,46 @@
+info:
+  name: "[KCPM-113] TC_VEH_10 - BVA Sức chứa Nominal: 10 người (201)"
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/vehicles?userId=6ac8a492b3505b0db326b89e"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "vehicleType": "CANO",
+        "licensePlate": "{{vehPlate}}",
+        "currentLocation": "Ben song Thu Bon",
+        "capacity": 10
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        bru.setVar("vehPlate", "BVA-C10-" + Date.now().toString().slice(-8));
+    - type: after-response
+      code: |-
+        test("BVA sức chứa Nominal = 10 -> HTTP 201 tạo xe thành công", function () {
+            expect(res.getStatus()).to.equal(201);
+        });
+        // Teardown: xóa xe vừa tạo để không làm bẩn dữ liệu demo
+        if (res.getStatus() === 201 && res.getBody().data) {
+            const axios = require("axios");
+            await axios.delete(bru.interpolate("{{baseUrl}}") + "/api/v1/vehicles/" + res.getBody().data.id
+                + "?userId=6ac8a492b3505b0db326b89e",
+                { headers: { Authorization: "Bearer " + bru.interpolate("{{bearerToken}}") } });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

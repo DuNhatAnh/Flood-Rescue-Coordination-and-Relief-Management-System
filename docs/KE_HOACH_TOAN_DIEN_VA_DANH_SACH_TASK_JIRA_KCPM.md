@@ -1,7 +1,0 @@
-| Thành viên & Epic | 3 – 4 Chức năng cốt lõi | Black-box (Hộp đen) | Bruno API | Mockito JUnit 5 | QA Python Runner | CodeceptJS E2E | Đánh giá |
-| --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Dư Nhật Anh<br>(Auth & RBAC) | 1. Đăng nhập JWT<br>2. Đổi mật khẩu<br>3. Refresh Token<br>4. Ma trận phân quyền RBAC | ✅ (EP, BVA, Decision Table) | ✅ (19 APIs) | ✅ (UserServiceTest) | ✅ (39 TCs) | ✅ (Auto Token) | ĐỦ 100% |
-| Lâm Khiêm<br>(Citizen SOS) | 1. Gửi đơn SOS<br>2. Báo an toàn<br>3. Lọc & Tra cứu đơn<br>4. Hủy đơn khẩn cấp | ✅ (BVA GPS, EP SĐT) | ✅ (33 APIs) | ✅ (3 class test, 35 TCs) | ✅ (53 TCs) | ✅ (Đơn REQ-01) | ĐỦ 100% |
-| Phạm Minh Dũng<br>(Điều phối) | 1. Quét Radar điểm ngập<br>2. Xác minh & Gán độ khẩn cấp<br>3. Phân công đội cứu hộ<br>4. Nghiệm thu báo cáo | ✅ (BVA Radar, Decision Table) | ✅ (12 APIs) | ✅ (RescueCoordination, DangerPoint) | ✅ (32 TCs) | ✅ (Dispatch Test) | ĐỦ 100% |
-| Nguyễn Bảo<br>(Đội & Xe) | 1. Quản lý Đội sẵn sàng<br>2. Đăng ký & Tải trọng xe/cano<br>3. Luân chuyển trạng thái xe/đội<br>4. Chặn xe/đội bận | ✅ (BVA Sức chứa, State Machine) | ✅ (11 APIs) | ✅ (Sprint2Fixes, RescueCoordination) | ✅ (50 TCs) | ✅ (Team & Vehicle Test) | ĐỦ 100% |
-| Phan Quốc Danh<br>(Kho & Cứu trợ) | 1. Quản lý kho & Thẻ kho<br>2. Nhập kho nhu yếu phẩm<br>3. Xuất kho theo nhiệm vụ<br>4. Hủy xuất & Hoàn kho tự động | ✅ (BVA Nhập, Decision Table Xuất) | ✅ (12 APIs) | ✅ (Warehouse, Distribution, Relief) | ✅ (29 TCs) | ✅ (Phân phối Test) | ĐỦ 100% |

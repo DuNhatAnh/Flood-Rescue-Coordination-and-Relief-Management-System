@@ -8,13 +8,23 @@ http:
   url: "{{baseUrl}}/api/v1/inventory/warehouse/:warehouseId/low-stock"
   params:
     - name: warehouseId
-      value: "6ac5fed5346e4a02fdcf9644"
+      value: "{{bvaWarehouseId}}"
       type: path
       description: ID of warehouseId
   auth: inherit
 
 runtime:
   scripts:
+    - type: before-request
+      code: |-
+        // Lấy ID kho và vật tư có thật trong DB (ID thay đổi mỗi lần seed lại dữ liệu)
+        const axios = require("axios");
+        const base = bru.interpolate("{{baseUrl}}");
+        const auth = { headers: { Authorization: "Bearer " + bru.interpolate("{{bearerToken}}") } };
+        const wh = await axios.get(base + "/api/v1/warehouses", auth);
+        const it = await axios.get(base + "/api/v1/relief-items", auth);
+        bru.setVar("bvaWarehouseId", wh.data.data[0].id);
+        bru.setVar("bvaItemId", it.data.data[0].id);
     - type: after-response
       code: |-
         test("Phản hồi thành công (200, 201, 204)", function () {

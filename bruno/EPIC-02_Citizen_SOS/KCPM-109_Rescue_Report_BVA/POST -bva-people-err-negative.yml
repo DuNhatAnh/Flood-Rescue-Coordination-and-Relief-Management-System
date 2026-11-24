@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-109] BVA TC01 - Biên lỗi số âm: -1 người (400 Bad Request)"
+  name: "[KCPM-109] TC_RES_01 - BVA Biên lỗi số âm: -1 người (400 Bad Request)"
   type: http
   seq: 1
 

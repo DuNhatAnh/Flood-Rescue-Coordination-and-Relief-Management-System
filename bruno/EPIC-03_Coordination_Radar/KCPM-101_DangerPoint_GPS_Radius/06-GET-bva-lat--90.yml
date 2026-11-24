@@ -1,0 +1,25 @@
+info:
+  name: "[KCPM-101] TC_DP_101_06 - BVA lat Min = -90 (200)"
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/danger-points?lat=-90&lng=108.2&radius=5000"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("BVA lat Min = -90 -> HTTP 200, trả về danh sách", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().data).to.be.an('array');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
