@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-09: Báo Cáo Tổng Hợp, KPI & Phân Tích Xu Hướng"
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit

@@ -6,7 +6,9 @@
 
 ## 1. QUY TẮC ĐẶT TÊN FILE (BẮT BUỘC)
 
-* **Vị trí lưu file:** Trong thư mục `Flood Rescue Coordination & Relief Management API/<Tên_Module>/`
+* **Vị trí lưu file:** Trong thư mục `bruno/<EPIC_FOLDER>/<KCPM_TASK_FOLDER>/`
+  * *Cấu trúc Epic (không cần mã KCPM ở tên Epic):* `EPIC-01_Admin_Auth`, `EPIC-02_Citizen_SOS`, `EPIC-03_Coordination_Radar`, `EPIC-04_Teams_Vehicles`, `EPIC-05_Warehouse_Relief`, `EPIC-06_Common_Reports`.
+  * *Cấu trúc Subfolder theo Task Jira:* `KCPM-XX_<Ten_Task>/` (Ví dụ: `KCPM-04_User_Role_Management/`, `KCPM-60_Auth_Login_RBAC/`).
 * **Cú pháp tên file:** `[HTTP_METHOD] -[chuc_nang]-[loai_test].yml`
 * **Ví dụ chuẩn:**
   * `POST -bva-people-min-1.yml` *(Test biên Min 1 người)*

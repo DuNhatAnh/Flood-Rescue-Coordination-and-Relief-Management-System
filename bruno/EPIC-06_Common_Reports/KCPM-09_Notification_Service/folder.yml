@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-09: Quản lý & Gửi Thông Báo Khẩn Cấp"
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

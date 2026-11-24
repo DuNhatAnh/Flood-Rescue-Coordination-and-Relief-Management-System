@@ -1,0 +1,38 @@
+info:
+  name: "[KCPM-5] TC_REQ_13 - Chuyển trạng thái đơn SOS sang COMPLETED"
+  type: http
+  seq: 13
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/rescue-requests/{{completedRequestId}}/status"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "status": "COMPLETED",
+        "note": "Đã hoàn thành cứu hộ an toàn"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Cập nhật trạng thái sang COMPLETED thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+            if (res.getBody() && res.getBody().data) {
+                const id = res.getBody().data.requestId || res.getBody().data.id;
+                bru.setVar("completedRequestId", id);
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,0 +1,40 @@
+info:
+  name: "[KCPM-61] TC_ASSIGN_01 - Lập lệnh phân công nhiệm vụ cho Đội cơ động"
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/assignments"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "requestId": "{{assignReqId}}",
+        "teamId": "{{assignTeamId}}",
+        "vehicleIds": ["{{assignVehicleId}}"],
+        "assignedBy": "{{adminId}}",
+        "note": "Dieu dong ho tro khan cap"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Phân công nhiệm vụ - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
+        });
+        expect(res.getBody().data.status).to.equal("ASSIGNED");
+        bru.setVar("assignmentId", res.getBody().data.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

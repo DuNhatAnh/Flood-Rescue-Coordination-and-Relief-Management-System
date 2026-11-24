@@ -1,0 +1,42 @@
+info:
+  name: "[KCPM-105] TC_SAFE_01 - Người dân gửi báo cáo an toàn sau lũ (200 OK)"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/safety-reports"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn Dân",
+        "citizenPhone": "0905123456",
+        "addressText": "123 Lê Duẩn, Hải Châu, Đà Nẵng",
+        "locationLat": 16.0678,
+        "locationLng": 108.2208,
+        "note": "Nước lũ đã rút hoàn toàn, gia đình 4 người đều an toàn"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Người dân báo an toàn sau lũ thành công - HTTP 200", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+            const body = res.getBody();
+            expect(body.success).to.be.true;
+            expect(body.data.citizenPhone).to.equal("0905123456");
+            expect(body.data.note).to.include("Nước lũ đã rút");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

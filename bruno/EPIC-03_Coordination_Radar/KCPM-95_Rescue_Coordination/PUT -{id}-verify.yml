@@ -1,0 +1,29 @@
+info:
+  name: "[KCPM-95] TC_COORD_02 - Xác minh đơn cứu hộ (thật / tin ảo)"
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/rescue-requests/:id/verify?verifiedBy={{adminEmail}}"
+  params:
+    - name: id
+      value: "{{coordReqId}}"
+      type: path
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Xác minh đơn SOS - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

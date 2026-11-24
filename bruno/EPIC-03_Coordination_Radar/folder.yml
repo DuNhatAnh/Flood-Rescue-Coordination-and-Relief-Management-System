@@ -1,0 +1,7 @@
+info:
+  name: "Epic 03 - Điều Phối Tác Chiến & Bản Đồ Nguy Hiểm"
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit

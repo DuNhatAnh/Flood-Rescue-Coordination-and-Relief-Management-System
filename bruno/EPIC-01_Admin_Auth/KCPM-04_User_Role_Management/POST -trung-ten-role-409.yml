@@ -1,0 +1,36 @@
+info:
+  name: "[KCPM-4] TC_ROLE_05 - Tạo vai trò trùng tên ADMIN (409)"
+  type: http
+  seq: 15
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/admin/roles"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "admin",
+        "description": "Trùng tên",
+        "permissions": ["ALL"]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-4] TC_ROLE_05: Chặn trùng tên - HTTP 409", function () {
+            expect(res.getStatus()).to.equal(409);
+            expect(res.getBody().success).to.equal(false);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

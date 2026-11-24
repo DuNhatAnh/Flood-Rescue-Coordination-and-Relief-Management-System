@@ -1,7 +1,0 @@
-info:
-  name: VehicleAssignment
-  type: folder
-  seq: 20
-
-request:
-  auth: inherit

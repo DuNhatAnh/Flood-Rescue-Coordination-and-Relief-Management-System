@@ -1,0 +1,25 @@
+info:
+  name: "[KCPM-111] TC_ATT_01 - Chặn tải lên tệp đính kèm khi thiếu file (400)"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/attachments/upload"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn request không kèm file - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            expect(res.getBody().success).to.equal(false);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

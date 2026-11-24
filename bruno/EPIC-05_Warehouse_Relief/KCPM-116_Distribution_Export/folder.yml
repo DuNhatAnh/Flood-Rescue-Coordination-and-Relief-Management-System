@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-116: Phân Phối, Xuất Kho Cứu Trợ & Hoàn Kho"
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit

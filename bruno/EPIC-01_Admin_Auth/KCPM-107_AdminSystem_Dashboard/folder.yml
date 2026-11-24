@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-107: Nhật ký, Cấu hình & Dashboard Quản trị"
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit

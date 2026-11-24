@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-111: Tệp Đính Kèm & Video Hiện Trường"
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit
