@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import vn.rescue.core.application.dto.DistributionRequest;
+import vn.rescue.core.domain.entities.Assignment;
 import vn.rescue.core.domain.entities.Distribution;
 import vn.rescue.core.domain.entities.DistributionDetail;
 import vn.rescue.core.domain.entities.Inventory;
@@ -14,15 +15,17 @@ import vn.rescue.core.domain.repositories.*;
 import vn.rescue.core.presentation.exceptions.BadRequestException;
 import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("KCPM-28 & KCPM-103: Unit Test cho Phân phối, Xuất kho và Hủy hoàn kho (DistributionService)")
+@DisplayName("KCPM-126 [Sprint 5]: Chuẩn hóa độ phủ hộp trắng 100% câu lệnh cho DistributionService")
 class DistributionServiceTest {
 
     @Mock
@@ -259,5 +262,306 @@ class DistributionServiceTest {
 
         assertTrue(ex.getMessage().contains("Không tìm thấy đợt phân phối với ID: " + nonExistId));
         verify(distributionRepository, never()).save(any());
+    }
+
+    // =========================================================================
+    // KCPM-126: CÁC CA KIỂM THỬ HỘP TRẮNG BỔ SUNG ĐẠT 100% STATEMENT COVERAGE
+    // =========================================================================
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_01: createDistribution khi request null -> Ném BadRequestException (Dòng 47)")
+    void testCreateDistribution_WhenRequestIsNull_ShouldThrowBadRequest() {
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            distributionService.createDistribution(null, "user-01");
+        });
+        assertTrue(ex.getMessage().contains("Dữ liệu phân phối hàng không được để trống"));
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_02: createDistribution khi warehouseId rỗng hoặc null -> Ném BadRequestException (Dòng 50)")
+    void testCreateDistribution_WhenWarehouseIdIsBlank_ShouldThrowBadRequest() {
+        DistributionRequest req = new DistributionRequest();
+        req.setWarehouseId("   ");
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            distributionService.createDistribution(req, "user-01");
+        });
+        assertTrue(ex.getMessage().contains("Mã kho (warehouseId) không được để trống"));
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_03: createDistribution khi danh sách items rỗng hoặc null -> Ném BadRequestException (Dòng 56)")
+    void testCreateDistribution_WhenItemsIsEmpty_ShouldThrowBadRequest() {
+        String warehouseId = "WH-01";
+        when(warehouseRepository.existsById(warehouseId)).thenReturn(true);
+
+        DistributionRequest req = new DistributionRequest();
+        req.setWarehouseId(warehouseId);
+        req.setItems(Collections.emptyList());
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            distributionService.createDistribution(req, "user-01");
+        });
+        assertTrue(ex.getMessage().contains("Danh sách mặt hàng phân phối không được để trống"));
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_04: createDistribution với status tùy chỉnh -> Gán đúng status (Dòng 83)")
+    void testCreateDistribution_WithCustomStatus() {
+        String warehouseId = "WH-01";
+        String itemId = "ITEM-01";
+        when(warehouseRepository.existsById(warehouseId)).thenReturn(true);
+
+        Inventory inv = new Inventory();
+        inv.setQuantity(100);
+        when(inventoryRepository.findByWarehouseIdAndItemId(warehouseId, itemId)).thenReturn(Optional.of(inv));
+
+        DistributionRequest req = new DistributionRequest();
+        req.setWarehouseId(warehouseId);
+        req.setStatus("pending");
+        DistributionRequest.ItemQuantity itemReq = new DistributionRequest.ItemQuantity();
+        itemReq.setItemId(itemId);
+        itemReq.setQuantity(10);
+        req.setItems(List.of(itemReq));
+
+        when(distributionRepository.save(any(Distribution.class))).thenAnswer(i -> i.getArgument(0));
+
+        Distribution res = distributionService.createDistribution(req, "user-01");
+        assertNotNull(res);
+        assertEquals("PENDING", res.getStatus());
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_05: createDistribution điều chuyển kho TRANSFER có kho đích -> Gán IN_TRANSIT và gọi notifyWarehouse (Dòng 85, 94-98)")
+    void testCreateDistribution_TransferType_ShouldSetInTransitAndNotifyDestination() {
+        String warehouseId = "WH-SOURCE";
+        String destWarehouseId = "WH-DEST";
+        String itemId = "ITEM-01";
+
+        when(warehouseRepository.existsById(warehouseId)).thenReturn(true);
+
+        Inventory inv = new Inventory();
+        inv.setQuantity(50);
+        when(inventoryRepository.findByWarehouseIdAndItemId(warehouseId, itemId)).thenReturn(Optional.of(inv));
+
+        DistributionRequest req = new DistributionRequest();
+        req.setWarehouseId(warehouseId);
+        req.setType("TRANSFER");
+        req.setDestinationWarehouseId(destWarehouseId);
+        DistributionRequest.ItemQuantity itemReq = new DistributionRequest.ItemQuantity();
+        itemReq.setItemId(itemId);
+        itemReq.setQuantity(10);
+        req.setItems(List.of(itemReq));
+
+        when(distributionRepository.save(any(Distribution.class))).thenAnswer(i -> i.getArgument(0));
+
+        Distribution res = distributionService.createDistribution(req, "user-01");
+
+        assertNotNull(res);
+        assertEquals("IN_TRANSIT", res.getStatus());
+        assertEquals("TRANSFER", res.getType());
+        assertEquals(destWarehouseId, res.getDestinationWarehouseId());
+
+        verify(rescueCoordinationService, times(1)).notifyWarehouse(
+                eq(destWarehouseId),
+                eq("Yêu cầu điều phối hàng"),
+                anyString(),
+                eq("WARNING")
+        );
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_06: cancelDistribution khi ID null hoặc rỗng -> Ném BadRequestException (Dòng 198)")
+    void testCancelDistribution_WhenIdIsBlank_ShouldThrowBadRequest() {
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            distributionService.cancelDistribution("   ", "Lý do", "user-01");
+        });
+        assertTrue(ex.getMessage().contains("Mã đợt phân phối (id) không được để trống"));
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_07: cancelDistribution khi thẻ kho đích chưa từng có (inventory null) -> Tạo mới Inventory hoàn kho (Dòng 227-233)")
+    void testCancelDistribution_WhenInventoryNotExists_ShouldCreateNewInventory() {
+        String distId = "DIST-01";
+        String warehouseId = "WH-01";
+        String itemId = "ITEM-NEW";
+
+        Distribution dist = new Distribution();
+        dist.setId(distId);
+        dist.setWarehouseId(warehouseId);
+        dist.setStatus("IN_TRANSIT");
+
+        DistributionDetail detail = new DistributionDetail();
+        detail.setDistributionId(distId);
+        detail.setItemId(itemId);
+        detail.setQuantity(15);
+
+        when(distributionRepository.findById(distId)).thenReturn(Optional.of(dist));
+        when(detailRepository.findAllByDistributionId(distId)).thenReturn(List.of(detail));
+        when(inventoryRepository.findByWarehouseIdAndItemId(warehouseId, itemId)).thenReturn(Optional.empty());
+        when(distributionRepository.save(any(Distribution.class))).thenAnswer(i -> i.getArgument(0));
+
+        Distribution cancelled = distributionService.cancelDistribution(distId, null, "admin-01");
+
+        assertNotNull(cancelled);
+        assertEquals("CANCELLED", cancelled.getStatus());
+        assertEquals("Hủy theo yêu cầu điều phối", cancelled.getCancelReason()); // Kiểm tra lý do mặc định
+
+        verify(inventoryRepository, times(1)).save(argThat(inv ->
+                warehouseId.equals(inv.getWarehouseId()) &&
+                itemId.equals(inv.getItemId()) &&
+                Integer.valueOf(15).equals(inv.getQuantity()) &&
+                Integer.valueOf(100).equals(inv.getMinThreshold())
+        ));
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_08: cancelDistribution gắn với nhiệm vụ cứu nạn (requestId) -> Reset trạng thái itemsExported = false (Dòng 238-243)")
+    void testCancelDistribution_WithAssignmentRequestId_ShouldResetItemsExported() {
+        String distId = "DIST-02";
+        String warehouseId = "WH-01";
+        String requestId = "ASSIGN-TASK-99";
+
+        Distribution dist = new Distribution();
+        dist.setId(distId);
+        dist.setWarehouseId(warehouseId);
+        dist.setStatus("IN_TRANSIT");
+        dist.setRequestId(requestId);
+
+        Assignment assignment = new Assignment();
+        assignment.setId(requestId);
+        assignment.setItemsExported(true);
+
+        when(distributionRepository.findById(distId)).thenReturn(Optional.of(dist));
+        when(detailRepository.findAllByDistributionId(distId)).thenReturn(Collections.emptyList());
+        when(assignmentRepository.findById(requestId)).thenReturn(Optional.of(assignment));
+        when(distributionRepository.save(any(Distribution.class))).thenAnswer(i -> i.getArgument(0));
+
+        Distribution cancelled = distributionService.cancelDistribution(distId, "Hủy nhiệm vụ", "admin-01");
+
+        assertNotNull(cancelled);
+        assertFalse(assignment.isItemsExported(), "Nhiệm vụ điều phối phải được đặt lại itemsExported = false");
+        verify(assignmentRepository, times(1)).save(assignment);
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_09: getHistory() -> Lấy danh sách lịch sử phân phối đầy đủ (Dòng 254-256)")
+    void testGetHistory() {
+        Distribution d1 = new Distribution();
+        d1.setId("DIST-01");
+        when(distributionRepository.findAll()).thenReturn(List.of(d1));
+
+        List<Distribution> history = distributionService.getHistory();
+        assertNotNull(history);
+        assertEquals(1, history.size());
+        verify(distributionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_10: createDistribution gắn với nhiệm vụ (requestId) -> Đồng bộ itemsExported = true và gán MissionItems (Dòng 124-153)")
+    void testCreateDistribution_WithAssignment_ShouldSetItemsExportedTrue() {
+        String warehouseId = "WH-01";
+        String itemId = "ITEM-01";
+        String requestId = "REQ-ASSIGN-01";
+
+        when(warehouseRepository.existsById(warehouseId)).thenReturn(true);
+
+        Inventory inv = new Inventory();
+        inv.setItemId(itemId);
+        inv.setItemName("Mì tôm Hảo Hảo");
+        inv.setUnit("Thùng");
+        inv.setQuantity(200);
+        when(inventoryRepository.findByWarehouseIdAndItemId(warehouseId, itemId)).thenReturn(Optional.of(inv));
+
+        DistributionRequest req = new DistributionRequest();
+        req.setWarehouseId(warehouseId);
+        req.setRequestId(requestId);
+        DistributionRequest.ItemQuantity itemReq = new DistributionRequest.ItemQuantity();
+        itemReq.setItemId(itemId);
+        itemReq.setQuantity(50);
+        req.setItems(List.of(itemReq));
+
+        Assignment assignment = new Assignment();
+        assignment.setId(requestId);
+        assignment.setItemsExported(false);
+
+        when(assignmentRepository.findById(requestId)).thenReturn(Optional.of(assignment));
+        when(distributionRepository.save(any(Distribution.class))).thenAnswer(i -> i.getArgument(0));
+
+        Distribution res = distributionService.createDistribution(req, "user-01");
+
+        assertNotNull(res);
+        assertTrue(assignment.isItemsExported(), "Nhiệm vụ phải được đánh dấu itemsExported = true");
+        assertNotNull(assignment.getMissionItems());
+        assertEquals(1, assignment.getMissionItems().size());
+        assertEquals(Integer.valueOf(50), assignment.getMissionItems().get(0).getQuantity());
+        verify(assignmentRepository, times(1)).save(assignment);
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_11: completeTransfer xác nhận chuyển kho thành công (Dòng 161-186)")
+    void testCompleteTransfer_Success() {
+        String distId = "DIST-TRANSFER-01";
+        String destWarehouseId = "WH-DEST-02";
+        String itemId = "ITEM-01";
+
+        Distribution dist = new Distribution();
+        dist.setId(distId);
+        dist.setType("TRANSFER");
+        dist.setStatus("IN_TRANSIT");
+        dist.setDestinationWarehouseId(destWarehouseId);
+
+        DistributionDetail detail = new DistributionDetail();
+        detail.setDistributionId(distId);
+        detail.setItemId(itemId);
+        detail.setQuantity(25);
+
+        Inventory destInventory = new Inventory();
+        destInventory.setId("INV-DEST-01");
+        destInventory.setWarehouseId(destWarehouseId);
+        destInventory.setItemId(itemId);
+        destInventory.setQuantity(10);
+
+        when(distributionRepository.findById(distId)).thenReturn(Optional.of(dist));
+        when(detailRepository.findAllByDistributionId(distId)).thenReturn(List.of(detail));
+        when(inventoryRepository.findByWarehouseIdAndItemId(destWarehouseId, itemId)).thenReturn(Optional.of(destInventory));
+        when(distributionRepository.save(any(Distribution.class))).thenAnswer(i -> i.getArgument(0));
+
+        Distribution completed = distributionService.completeTransfer(distId);
+
+        assertNotNull(completed);
+        assertEquals("COMPLETED", completed.getStatus());
+        assertEquals(35, destInventory.getQuantity());
+        verify(inventoryRepository, times(1)).save(destInventory);
+        verify(distributionRepository, times(1)).save(dist);
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_12: completeTransfer khi sai trạng thái -> Ném BadRequestException (Dòng 164-165)")
+    void testCompleteTransfer_WhenStatusInvalid_ShouldThrowBadRequest() {
+        String distId = "DIST-EXPORT-01";
+        Distribution dist = new Distribution();
+        dist.setId(distId);
+        dist.setType("EXPORT"); // Không phải TRANSFER
+        dist.setStatus("COMPLETED");
+
+        when(distributionRepository.findById(distId)).thenReturn(Optional.of(dist));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            distributionService.completeTransfer(distId);
+        });
+
+        assertTrue(ex.getMessage().contains("Trạng thái điều chuyển không hợp lệ"));
+    }
+
+    @Test
+    @DisplayName("WB_DISTRIBUTION_13: completeTransfer khi không tìm thấy phiếu -> Ném ResourceNotFoundException (Dòng 161)")
+    void testCompleteTransfer_WhenNotFound_ShouldThrowResourceNotFound() {
+        String distId = "DIST-NOT-FOUND";
+        when(distributionRepository.findById(distId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            distributionService.completeTransfer(distId);
+        });
     }
 }

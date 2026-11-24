@@ -1,0 +1,42 @@
+info:
+  name: TC_BVA_01 - Biên Dưới Không Hợp Lệ (Quantity = 0)
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/inventory/import?userId=admin-01"
+  params:
+    - name: userId
+      value: "admin-01"
+      type: query
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "warehouseId": "6ac5fed5346e4a02fdcf9644",
+        "itemId": "6ac5fed5346e4a02fdcf9647",
+        "quantity": 0,
+        "source": "Ủy ban Mặt trận Tổ quốc",
+        "referenceNumber": "BVA-IMP-001",
+        "condition": "NEW"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[BVA-01] Chặn số lượng bằng 0 (Kỳ vọng 400 Bad Request)", function () {
+            expect(res.getStatus()).to.equal(400);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
