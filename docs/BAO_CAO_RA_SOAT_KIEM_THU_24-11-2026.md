@@ -11,9 +11,9 @@
 
 | Loại kiểm thử | Lệnh chạy | Kết quả | Ghi chú |
 |:---|:---|:---:|:---|
-| Bruno API | `bru run -r --env Local` (thư mục `bruno/`) | **190/190** | Đã sửa 4 request lỗi do ID cứng và 2 request phụ thuộc thứ tự chạy |
+| Bruno API | `bru run -r --env Local` (thư mục `bruno/`) | **197/197** | Đã sửa 4 request lỗi do ID cứng và 2 request phụ thuộc thứ tự chạy |
 | QA Data-Driven | `python qa-testing/scripts/run_*.py` (11 script) | **197/198** | TC_CPW_13 chủ đích chuyển sang JUnit. **Chỉ 3/11 script gọi backend thật** (mục 3.1) |
-| JUnit 5 + Mockito | `mvn test` (thư mục `backend/`) | **167/167** | Đủ `@DisplayName`; ~70 test chưa đúng quy chuẩn đặt tên (mục 3.3) |
+| JUnit 5 + Mockito | `mvn test` (thư mục `backend/`) | **175/175** | Đủ `@DisplayName`; ~70 test chưa đúng quy chuẩn đặt tên (mục 3.3) |
 | CodeceptJS E2E | `npx codeceptjs run` (thư mục `test-automation/`) | **50/50** | Đã chuẩn hóa tên 10 kịch bản Epic 02, 05 |
 
 ---
@@ -26,7 +26,7 @@
 | 2 | Bruno | 4 request KCPM-115, KCPM-116 dùng ID kho/vật tư cứng → trả 404 sau khi seed lại DB. Chuyển sang tự lấy ID thật ở `before-request` | `KCPM-115_Inventory_Stock/*`, `KCPM-116_Distribution_Export/POST -tao-phieu-xuat.yml` |
 | 3 | Bruno | `TC_REQ_10`, `TC_REQ_12` dùng `completedRequestId` do `TC_REQ_13` (chạy sau) tạo → fail ở lần chạy đầu. Nay tự tạo đơn SOS `COMPLETED` trước khi chạy | `KCPM-05_Citizen_SOS_Request/POST -{id}-confirm-safety.yml`, `PUT -{id}-cancel-completed-invalid.yml` |
 | 4 | Bruno – đồng bộ tên | Request mới đặt theo đúng quy ước `[KCPM-xx] TC_XXX_NN - Mô tả`; KCPM-109 đổi `BVA TCnn` → `TC_RES_nn` khớp mã testcase trong `citizen_rescue_request_data.csv` | 59 file |
-| 5 | CodeceptJS – đồng bộ tên | 10 kịch bản Epic 02, 05 đặt tên kiểu `[Scenario 1]`, `[SCENARIO 1]` → chuẩn `[E2E-xx-yy] [TYPE] ... [METHOD /endpoint]` theo `GUIDE_CODECEPTJS.md` | `citizen_portal_test.js`, `warehouse_distribution_test.js` |
+| 5 | CodeceptJS – đồng bộ tên | 10 kịch bản Epic 02, 05 đặt tên kiểu `[Scenario 1]`, `[SCENARIO 1]` → chuẩn `[E2E-xx-yy] [TYPE] ... [METHOD /endpoint]` theo `guides/GUIDE_CODECEPTJS.md` | `citizen_portal_test.js`, `warehouse_distribution_test.js` |
 | 6 | Tài liệu | `qa-testing/README.md` lặp 3 dòng lệnh chạy Epic 01 → xóa dòng lặp | `qa-testing/README.md` |
 | 7 | Tài liệu | `TEST_MATRIX.md`: cập nhật số liệu 24/11, đổi tham chiếu `Scenario n` → `E2E-02-0n`, `E2E-05-0n`; sửa ghi chú radar (đã có lọc bán kính từ commit `d305441`) | `docs/TEST_MATRIX.md` |
 
@@ -52,7 +52,7 @@ Các script dưới đây có hàm `simulate()` viết lại luật nghiệp v�
 
 Bản nháp ở mục 4, sẵn để tạo issue loại **Bug** trên Jira.
 
-### 3.3. JUnit: test chưa theo quy chuẩn `GUIDE_JUNIT.md`
+### 3.3. JUnit: test chưa theo quy chuẩn `guides/GUIDE_JUNIT.md`
 
 Quy chuẩn: tên method `test<ChứcNăng>_<ĐiềuKiện>_<KếtQuả>()`, `@DisplayName` bắt đầu bằng mã testcase (`TC_XXX_NN:`). Tất cả test đều đã có `@DisplayName`; phần lệch là thiếu mã TC hoặc tên method:
 

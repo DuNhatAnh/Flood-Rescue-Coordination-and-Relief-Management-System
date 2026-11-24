@@ -2,9 +2,9 @@
 
 > **Dự án:** `[KCPM] Kiểm chứng phần mềm - Cứu hộ lũ lụt` (Project Key: **`KCPM`**)  
 > **Giai đoạn:** Sprint 5 — Hoàn thiện Độ phủ Kiểm thử (Test Coverage Completion)  
-> **Mục tiêu:** Chuyển hóa toàn bộ 12 nhiệm vụ từ [TEST_ACTION_PLAN.md](TEST_ACTION_PLAN.md) thành các Task Jira chuẩn hóa, đồng nhất về thuộc tính (Properties), Nhãn (Labels), Phân quyền người nhận (Assignee) và Tiêu chuẩn nghiệm thu (Acceptance Criteria).
+> **Mục tiêu:** Chuyển hóa toàn bộ 12 nhiệm vụ của kế hoạch bổ sung kiểm thử Sprint 5 thành các Task Jira chuẩn hóa, đồng nhất về thuộc tính (Properties), Nhãn (Labels), Phân quyền người nhận (Assignee) và Tiêu chuẩn nghiệm thu (Acceptance Criteria).
 > - 📄 Kèm ma trận đối soát: [TEST_MATRIX.md](TEST_MATRIX.md)
-> - 📄 Cẩm nang hướng dẫn: [GUIDE_BRUNO.md](GUIDE_BRUNO.md) · [GUIDE_JUNIT.md](GUIDE_JUNIT.md) · [GUIDE_CODECEPTJS.md](GUIDE_CODECEPTJS.md)
+> - 📄 Cẩm nang hướng dẫn: [GUIDE_BRUNO.md](guides/GUIDE_BRUNO.md) · [GUIDE_JUNIT.md](guides/GUIDE_JUNIT.md) · [GUIDE_CODECEPTJS.md](guides/GUIDE_CODECEPTJS.md)
 
 ---
 

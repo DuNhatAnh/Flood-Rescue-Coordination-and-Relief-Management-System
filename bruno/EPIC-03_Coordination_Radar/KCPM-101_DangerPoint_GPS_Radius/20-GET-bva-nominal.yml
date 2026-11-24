@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-101] TC_DP_20 - BVA Giá trị danh định (lat=16.05, lng=108.2, radius=5000) (200)"
+  name: "[KCPM-101] TC_DP_101_20 - BVA Giá trị danh định lat=16.05, lng=108.2, radius=5000 (200)"
   type: http
   seq: 20
 

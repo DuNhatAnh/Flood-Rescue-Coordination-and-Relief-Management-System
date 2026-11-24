@@ -3,7 +3,7 @@
 > **Dự án:** Hệ thống Điều phối Cứu hộ Lũ lụt & Quản lý Cứu trợ (Flood Rescue System)  
 > **4 Trụ cột kiểm thử:** White-box (JUnit 5) · Bruno API · Black-box QA Data-Driven · CodeceptJS (E2E)  
 > **Ký hiệu:** ✅ Đã kiểm thử & Pass · ⚠️ Có một phần / Đang bổ sung · ❌ Chưa kiểm thử
-> **Đối soát lần cuối:** 24/11/2026 — JUnit **167/167** · CodeceptJS **50/50** · Bruno **190/190** · QA **197/198** (TC_CPW_13 chỉ kiểm thử ở JUnit) — chạy trên **backend thật**; riêng QA chỉ 3/11 script (Epic 01) gọi backend thật, 8 script còn lại vẫn mô phỏng bằng Python (xem mục E)
+> **Đối soát lần cuối:** 24/11/2026 — JUnit **175/175** · CodeceptJS **50/50** · Bruno **197/197** · QA **197/198** (TC_CPW_13 chỉ kiểm thử ở JUnit) — chạy trên **backend thật**; riêng QA chỉ 3/11 script (Epic 01) gọi backend thật, 8 script còn lại vẫn mô phỏng bằng Python (xem mục E)
 
 ---
 
