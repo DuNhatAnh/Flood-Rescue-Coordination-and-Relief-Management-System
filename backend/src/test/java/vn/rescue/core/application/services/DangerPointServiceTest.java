@@ -272,4 +272,68 @@ class DangerPointServiceTest {
         assertTrue(dangerPointService.getDangerPointsNearby(16.061, 180.0, 500.0).isEmpty());
         verify(dangerPointRepository, times(1)).findAll();
     }
+
+    // =========================================================================
+    // WB_RADAR_12 -> WB_RADAR_17: PHỦ 100% CÁC NHÁNH ĐIỀU KIỆN GET_DANGER_POINTS_NEARBY
+    // =========================================================================
+
+    @Test
+    @DisplayName("WB_RADAR_12: lat = null, lng != null, radius = null -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenLatNullLngNotNullRadiusNull_ShouldThrowBadRequestException() {
+        var ex = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(null, 108.223, null);
+        });
+        assertTrue(ex.getMessage().contains("Cần cung cấp đầy đủ tọa độ lat, lng và bán kính radius"));
+    }
+
+    @Test
+    @DisplayName("WB_RADAR_13: lat = null, lng = null, radius != null -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenLatNullLngNullRadiusNotNull_ShouldThrowBadRequestException() {
+        var ex = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(null, null, 500.0);
+        });
+        assertTrue(ex.getMessage().contains("Cần cung cấp đầy đủ tọa độ lat, lng và bán kính radius"));
+    }
+
+    @Test
+    @DisplayName("WB_RADAR_14: lat != null, lng != null, radius = null -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenLatNotNullLngNotNullRadiusNull_ShouldThrowBadRequestException() {
+        var ex = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(16.061, 108.223, null);
+        });
+        assertTrue(ex.getMessage().contains("Cần cung cấp đầy đủ tọa độ lat, lng và bán kính radius"));
+    }
+
+    @Test
+    @DisplayName("WB_RADAR_15 (BVA): Vĩ độ lat < -90 (lat = -95.0) -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenLatLessThanMinus90_ShouldThrowBadRequestException() {
+        var ex = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(-95.0, 108.223, 500.0);
+        });
+        assertTrue(ex.getMessage().contains("Vĩ độ (lat) không hợp lệ"));
+    }
+
+    @Test
+    @DisplayName("WB_RADAR_16 (BVA): Kinh độ lng < -180 (lng = -200.0) -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenLngLessThanMinus180_ShouldThrowBadRequestException() {
+        var ex = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(16.061, -200.0, 500.0);
+        });
+        assertTrue(ex.getMessage().contains("Kinh độ (lng) không hợp lệ"));
+    }
+
+    @Test
+    @DisplayName("WB_RADAR_17: Lọc bỏ điểm nguy hiểm có latitude hoặc longitude là null")
+    void testGetDangerPointsNearby_WhenPointsHaveNullCoords_ShouldFilterOut() {
+        DangerPoint validPoint = DangerPoint.builder().id("DP-OK").latitude(16.0610).longitude(108.2230).build();
+        DangerPoint nullLatPoint = DangerPoint.builder().id("DP-NO-LAT").latitude(null).longitude(108.2230).build();
+        DangerPoint nullLngPoint = DangerPoint.builder().id("DP-NO-LNG").latitude(16.0610).longitude(null).build();
+
+        when(dangerPointRepository.findAll()).thenReturn(java.util.List.of(validPoint, nullLatPoint, nullLngPoint));
+
+        var result = dangerPointService.getDangerPointsNearby(16.0610, 108.2230, 500.0);
+
+        assertEquals(1, result.size());
+        assertEquals("DP-OK", result.get(0).getId());
+    }
 }
