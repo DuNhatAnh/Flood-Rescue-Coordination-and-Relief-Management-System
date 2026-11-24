@@ -24,14 +24,17 @@ runtime:
   scripts:
     - type: before-request
       code: |-
-        bru.setVar("staffEmail", "staff_bruno_" + Date.now() + "@rescue.vn");
+        const email = "staff_bruno_" + Date.now() + "_" + Math.floor(Math.random() * 10000) + "@rescue.vn";
+        bru.setVar("staffEmail", email);
+        bru.setCollectionVar("staffEmail", email);
+        bru.setEnvVar("staffEmail", email);
     - type: after-response
       code: |-
         test("Tạo nhân viên cứu hộ - HTTP 200", function () {
             expect(res.getStatus()).to.equal(200);
             expect(res.getBody().success).to.equal(true);
         });
-        bru.setVar("assignTeamId", res.getBody().data.teamId);
+        bru.setCollectionVar("assignTeamId", res.getBody().data.teamId);
 
 settings:
   encodeUrl: true

@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-93: Quản lý Điểm Nguy Hiểm & Quét Bán Kính Radar"
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

@@ -3,8 +3,24 @@ variables:
   - name: baseUrl
     value: http://localhost:8080
   - name: bearerToken
-    value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNjdWUudm4iLCJpYXQiOjE3OTU0ODkwODIsImV4cCI6MTc5NTU3NTQ4Mn0.PMT9KYISW8FL67hY2HZm5er7QvWYxw6pPWzjcERxiAg
-  - name: dangerPointId
-    value: 6ad88981a1c6872749caab33
+    value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNjdWUudm4iLCJpYXQiOjE3OTU1MDQxMDQsImV4cCI6MTc5NTU5MDUwNH0.k18_usbDLiUrbxE-XGNfhWwnRlSz9lQyow_eRHfue7E
   - name: adminUserId
-    value: 6af4a3c3f7b5ec79f46b6098
+    value: 6ac3beaa5219eb487c8bfc0c
+  - name: adminId
+    value: 6ac3beaa5219eb487c8bfc0c
+  - name: adminEmail
+    value: admin@rescue.vn
+  - name: assignReqId
+    value: "0048"
+  - name: assignmentId
+    value: 6b0539a775a8d2635cef4179
+  - name: dangerPointId
+    value: 6b0539a575a8d2635cef416b
+  - name: coordReqId
+    value: 6afd68c4d92067458751a697
+  - name: staffEmail
+    value: staff_bruno_1795504550893_6943@rescue.vn
+  - name: assignPlate
+    value: BR-A244156
+  - name: assignPlate2
+    value: BR-B840080
