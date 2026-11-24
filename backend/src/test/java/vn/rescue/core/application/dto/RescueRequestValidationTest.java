@@ -170,4 +170,36 @@ class RescueRequestValidationTest {
         assertFalse(violations.isEmpty(), "Ghi chú 1001 ký tự vượt quá biên trên phải bị vi phạm validation");
         assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("description")));
     }
+
+    @Test
+    @DisplayName("BVA: Vĩ độ (Latitude) = -90.0 (biên dưới hợp lệ) -> Không có lỗi")
+    void testValidLatitude_LowerBoundaryMinus90_ShouldPass() {
+        RescueRequestDto dto = createValidDto();
+        dto.setLocationLat(-90.0);
+        assertTrue(validator.validate(dto).isEmpty(), "Vĩ độ -90.0 là biên dưới hợp lệ");
+    }
+
+    @Test
+    @DisplayName("BVA: Vĩ độ (Latitude) = 90.0 (biên trên hợp lệ) -> Không có lỗi")
+    void testValidLatitude_UpperBoundary90_ShouldPass() {
+        RescueRequestDto dto = createValidDto();
+        dto.setLocationLat(90.0);
+        assertTrue(validator.validate(dto).isEmpty(), "Vĩ độ 90.0 là biên trên hợp lệ");
+    }
+
+    @Test
+    @DisplayName("BVA: Kinh độ (Longitude) = -180.0 (biên dưới hợp lệ) -> Không có lỗi")
+    void testValidLongitude_LowerBoundaryMinus180_ShouldPass() {
+        RescueRequestDto dto = createValidDto();
+        dto.setLocationLng(-180.0);
+        assertTrue(validator.validate(dto).isEmpty(), "Kinh độ -180.0 là biên dưới hợp lệ");
+    }
+
+    @Test
+    @DisplayName("BVA: Kinh độ (Longitude) = 180.0 (biên trên hợp lệ) -> Không có lỗi")
+    void testValidLongitude_UpperBoundary180_ShouldPass() {
+        RescueRequestDto dto = createValidDto();
+        dto.setLocationLng(180.0);
+        assertTrue(validator.validate(dto).isEmpty(), "Kinh độ 180.0 là biên trên hợp lệ");
+    }
 }

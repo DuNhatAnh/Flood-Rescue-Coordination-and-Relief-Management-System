@@ -173,4 +173,47 @@ class UserServiceTest {
         assertEquals("Dữ liệu đổi mật khẩu không được để trống", exception.getMessage());
         verify(userRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("WB_CPW_02: Mật khẩu hiện tại để trống (chỉ khoảng trắng) -> Ném 400 BadRequestException")
+    void testChangePassword_WhenOldPasswordBlank_ShouldThrowBadRequestException() {
+        ChangePasswordRequest request = new ChangePasswordRequest("   ", "newPass@123");
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> userService.changePassword("USER-001", request));
+
+        assertEquals("Mật khẩu hiện tại không được để trống", exception.getMessage());
+        verify(userRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("WB_CPW_03: Mật khẩu mới để trống (null) -> Ném 400 BadRequestException")
+    void testChangePassword_WhenNewPasswordBlank_ShouldThrowBadRequestException() {
+        ChangePasswordRequest request = new ChangePasswordRequest("password123", null);
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> userService.changePassword("USER-001", request));
+
+        assertEquals("Mật khẩu mới không được để trống", exception.getMessage());
+        verify(userRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("WB_CPW_10 (BVA Min=6): Mật khẩu mới đúng 6 ký tự -> Đổi mật khẩu thành công")
+    void testChangePassword_WhenNewPasswordExactlyMinLength_ShouldSucceed() {
+        String userId = "USER-001";
+        User mockUser = new User();
+        mockUser.setId(userId);
+        mockUser.setPassword("$2a$10$encodedOldHash");
+        ChangePasswordRequest request = new ChangePasswordRequest("password123", "abc123");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
+        when(passwordEncoder.matches("password123", "$2a$10$encodedOldHash")).thenReturn(true);
+        when(passwordEncoder.encode("abc123")).thenReturn("$2a$10$encodedNewHash");
+
+        assertDoesNotThrow(() -> userService.changePassword(userId, request));
+
+        assertEquals("$2a$10$encodedNewHash", mockUser.getPassword());
+        verify(userRepository, times(1)).save(mockUser);
+    }
 }
