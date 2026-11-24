@@ -158,4 +158,44 @@ class RescueRequestServiceTest {
     void createRequest_LngAtMax_ShouldPass() {
         assertCreated(dto(16.0544, 109.46));
     }
+
+    // ===== Bổ sung nhánh để đạt 100% Branch Coverage (AC 2) =====
+
+    @Test
+    @DisplayName("WB_SOS_10: Vĩ độ 23.40 (vượt biên trên lãnh thổ VN) -> Ném 400, không lưu DB")
+    void WB_SOS_10_createRequest_LatAboveMax_ShouldThrowBadRequest() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> rescueRequestService.createRequest(dto(23.40, 108.2022)));
+        assertTrue(ex.getMessage().contains("vĩ độ"));
+        verify(rescueRequestRepository, never()).save(any(RescueRequest.class));
+    }
+
+    @Test
+    @DisplayName("WB_SOS_11: Kinh độ 102.13 (dưới biên dưới lãnh thổ VN) -> Ném 400, không lưu DB")
+    void WB_SOS_11_createRequest_LngBelowMin_ShouldThrowBadRequest() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> rescueRequestService.createRequest(dto(16.0544, 102.13)));
+        assertTrue(ex.getMessage().contains("kinh độ"));
+        verify(rescueRequestRepository, never()).save(any(RescueRequest.class));
+    }
+
+    @Test
+    @DisplayName("WB_SOS_12: Vĩ độ null -> Bỏ qua kiểm tra vĩ độ, tạo đơn thành công")
+    void WB_SOS_12_createRequest_LatNull_ShouldPass() {
+        RescueRequestDto dto = dto(null, 108.2022);
+        RescueRequest saved = assertDoesNotThrow(() -> rescueRequestService.createRequest(dto));
+        assertNull(saved.getLocationLat());
+        assertEquals(108.2022, saved.getLocationLng());
+        verify(rescueRequestRepository, times(1)).save(any(RescueRequest.class));
+    }
+
+    @Test
+    @DisplayName("WB_SOS_13: Kinh độ null -> Bỏ qua kiểm tra kinh độ, tạo đơn thành công")
+    void WB_SOS_13_createRequest_LngNull_ShouldPass() {
+        RescueRequestDto dto = dto(16.0544, null);
+        RescueRequest saved = assertDoesNotThrow(() -> rescueRequestService.createRequest(dto));
+        assertEquals(16.0544, saved.getLocationLat());
+        assertNull(saved.getLocationLng());
+        verify(rescueRequestRepository, times(1)).save(any(RescueRequest.class));
+    }
 }
