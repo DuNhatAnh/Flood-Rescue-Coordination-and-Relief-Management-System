@@ -49,6 +49,10 @@ public class DangerPointService {
             throw new BadRequestException("Bán kính tìm kiếm (radius) phải lớn hơn 0 mét");
         }
 
+        if (radius < 50.0) {
+            throw new BadRequestException("Bán kính quét radar tối thiểu là 50m");
+        }
+
         List<DangerPoint> allPoints = dangerPointRepository.findAll();
         return allPoints.stream()
                 .filter(p -> p.getLatitude() != null && p.getLongitude() != null)
@@ -70,12 +74,18 @@ public class DangerPointService {
     }
 
     public DangerPoint createDangerPoint(DangerPoint dangerPoint) {
+        if (dangerPoint.getDepth() != null && dangerPoint.getDepth() <= 0) {
+            throw new BadRequestException("Mực nước nguy hiểm (depth) phải lớn hơn 0");
+        }
         dangerPoint.setCreatedAt(LocalDateTime.now());
         dangerPoint.setUpdatedAt(LocalDateTime.now());
         return dangerPointRepository.save(dangerPoint);
     }
 
     public DangerPoint updateDangerPoint(String id, DangerPoint updatedData) {
+        if (updatedData.getDepth() != null && updatedData.getDepth() <= 0) {
+            throw new BadRequestException("Mực nước nguy hiểm (depth) phải lớn hơn 0");
+        }
         DangerPoint existing = dangerPointRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm nguy hiểm với ID: " + id));
         if (updatedData.getName() != null) existing.setName(updatedData.getName());

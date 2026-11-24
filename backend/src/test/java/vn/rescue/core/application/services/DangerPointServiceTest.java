@@ -184,4 +184,58 @@ class DangerPointServiceTest {
         });
         assertTrue(ex.getMessage().contains("Cần cung cấp đầy đủ tọa độ lat, lng và bán kính radius"));
     }
+
+    // =========================================================================
+    // KCPM-111: BỔ SUNG KIỂM THỬ BVA BÁN KÍNH QUÉT RADAR & MỰC NƯỚC NGUY HIỂM
+    // =========================================================================
+
+    @Test
+    @DisplayName("KCPM-111: BVA Bán kính quét radiusInMeters = 50m (Biên dưới hợp lệ) -> Pass")
+    void testGetDangerPointsNearby_WhenRadius50Meters_ShouldPass() {
+        when(dangerPointRepository.findAll()).thenReturn(java.util.List.of());
+        assertDoesNotThrow(() -> {
+            dangerPointService.getDangerPointsNearby(16.061, 108.223, 50.0);
+        });
+    }
+
+    @Test
+    @DisplayName("KCPM-111: BVA Bán kính quét radiusInMeters = 49m (Dưới biên) -> Ném BadRequestException (400)")
+    void testGetDangerPointsNearby_WhenRadius49Meters_ShouldThrowBadRequestException() {
+        var ex = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.getDangerPointsNearby(16.061, 108.223, 49.0);
+        });
+        assertTrue(ex.getMessage().contains("Bán kính quét radar tối thiểu là 50m"));
+    }
+
+    @Test
+    @DisplayName("KCPM-111: BVA Mực nước depth = 0.1m (10cm) và 5.0m (500cm) -> Pass")
+    void testCreateDangerPoint_WhenDepthValid_ShouldPass() {
+        DangerPoint dpMin = DangerPoint.builder().name("Điểm ngập min").depth(0.1).build();
+        when(dangerPointRepository.save(any(DangerPoint.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertDoesNotThrow(() -> {
+            dangerPointService.createDangerPoint(dpMin);
+        });
+
+        DangerPoint dpMax = DangerPoint.builder().name("Điểm ngập max").depth(5.0).build();
+        assertDoesNotThrow(() -> {
+            dangerPointService.createDangerPoint(dpMax);
+        });
+    }
+
+    @Test
+    @DisplayName("KCPM-111: BVA Mực nước depth <= 0m -> Ném BadRequestException (400)")
+    void testCreateDangerPoint_WhenDepthZeroOrNegative_ShouldThrowBadRequestException() {
+        DangerPoint dpZero = DangerPoint.builder().name("Điểm ngập 0").depth(0.0).build();
+        var exZero = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.createDangerPoint(dpZero);
+        });
+        assertTrue(exZero.getMessage().contains("Mực nước nguy hiểm (depth) phải lớn hơn 0"));
+
+        DangerPoint dpNeg = DangerPoint.builder().name("Điểm ngập âm").depth(-1.0).build();
+        var exNeg = assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> {
+            dangerPointService.createDangerPoint(dpNeg);
+        });
+        assertTrue(exNeg.getMessage().contains("Mực nước nguy hiểm (depth) phải lớn hơn 0"));
+    }
 }
