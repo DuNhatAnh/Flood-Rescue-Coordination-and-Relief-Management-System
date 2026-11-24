@@ -12,6 +12,10 @@ import vn.rescue.core.domain.repositories.*;
 import vn.rescue.core.presentation.exceptions.BadRequestException;
 import vn.rescue.core.presentation.exceptions.ResourceNotFoundException;
 
+import java.time.LocalDateTime;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -664,5 +668,920 @@ class RescueCoordinationServiceTest {
         assertEquals("CANCELLED", assignment.getStatus());
         assertEquals("AVAILABLE", vehicle.getStatus());
         verify(rescueTeamRepository, atLeastOnce()).save(team);
+    }
+
+
+    // ==========================================
+    // 3. KIỂM THỬ XÁC MINH & GÁN ĐỘ KHẨN CẤP (updateUrgency & verifyRequest)
+    // ==========================================
+
+    @Test
+    @DisplayName("WB_COORD_01: Cập nhật độ khẩn cấp thành công khi đơn cứu hộ tồn tại")
+    void testUpdateUrgency_Success_WhenRequestExists() {
+        String requestId = "REQ-001";
+        RescueRequest request = new RescueRequest();
+        request.setId(requestId);
+        request.setUrgencyLevel("LOW");
+
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        rescueCoordinationService.updateUrgency(requestId, "CRITICAL");
+
+        assertEquals("CRITICAL", request.getUrgencyLevel());
+        verify(rescueRequestRepository, times(1)).save(request);
+    }
+
+    @Test
+    @DisplayName("WB_COORD_02: Cập nhật độ khẩn cấp khi đơn không tồn tại -> Không ném exception và không gọi save")
+    void testUpdateUrgency_WhenRequestNotFound_ShouldDoNothing() {
+        String requestId = "REQ-NONEXIST";
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> rescueCoordinationService.updateUrgency(requestId, "HIGH"));
+        verify(rescueRequestRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("WB_COORD_03: Xác minh đơn cứu hộ thành công theo UUID chuẩn")
+    void testVerifyRequest_Success_WithUuid() {
+        String requestId = "REQ-UUID-12345";
+        String verifiedBy = "coordinator@rescue.vn";
+
+        RescueRequest request = new RescueRequest();
+        request.setId(requestId);
+        request.setVerified(false);
+
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        rescueCoordinationService.verifyRequest(requestId, verifiedBy);
+
+        assertTrue(request.isVerified());
+        assertEquals(verifiedBy, request.getVerifiedBy());
+        verify(rescueRequestRepository, times(1)).save(request);
+    }
+
+    @Test
+    @DisplayName("WB_COORD_04: Xác minh đơn cứu hộ thành công theo Custom ID (fallback khi findById rỗng)")
+    void testVerifyRequest_Success_WithCustomIdFallback() {
+        String customId = "REQ-20261124-001";
+        String verifiedBy = "leader@rescue.vn";
+
+        RescueRequest request = new RescueRequest();
+        request.setId("UUID-INTERNAL-999");
+        request.setCustomId(customId);
+        request.setVerified(false);
+
+        when(rescueRequestRepository.findById(customId)).thenReturn(Optional.empty());
+        when(rescueRequestRepository.findFirstByCustomId(customId)).thenReturn(Optional.of(request));
+
+        rescueCoordinationService.verifyRequest(customId, verifiedBy);
+
+        assertTrue(request.isVerified());
+        assertEquals(verifiedBy, request.getVerifiedBy());
+        verify(rescueRequestRepository, times(1)).save(request);
+    }
+
+    @Test
+    @DisplayName("WB_COORD_05: Xác minh đơn khi cả 2 cách tìm kiếm đều không thấy -> Không ném exception và không gọi save")
+    void testVerifyRequest_WhenNotFoundAnywhere_ShouldDoNothing() {
+        String nonExistId = "REQ-404";
+
+        when(rescueRequestRepository.findById(nonExistId)).thenReturn(Optional.empty());
+        when(rescueRequestRepository.findFirstByCustomId(nonExistId)).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> rescueCoordinationService.verifyRequest(nonExistId, "coordinator@rescue.vn"));
+        verify(rescueRequestRepository, never()).save(any());
+    }
+
+    // ==========================================
+    // 4. KIỂM THỬ NGOẠI LỆ BẢO MẬT & LUỒNG NGHIỆP VỤ MỞ RỘNG
+    // (updateAssignmentStatus)
+    // ==========================================
+
+    @Test
+    @DisplayName("WB_COORD_06: Chặn cập nhật khi thiếu userId hoặc userId rỗng -> Ném RuntimeException")
+    void testUpdateAssignmentStatus_WhenUserIdMissingOrEmpty_ShouldThrowRuntimeException() {
+        String assignmentId = "ASSIGN-SEC-01";
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+
+        Map<String, Object> bodyNull = new HashMap<>();
+        bodyNull.put("userId", null);
+        RuntimeException exNull = assertThrows(RuntimeException.class,
+                () -> rescueCoordinationService.updateAssignmentStatus(assignmentId, bodyNull));
+        assertTrue(exNull.getMessage().contains("Thiếu thông tin nhận diện người dùng"));
+
+        Map<String, Object> bodyEmpty = new HashMap<>();
+        bodyEmpty.put("userId", "");
+        RuntimeException exEmpty = assertThrows(RuntimeException.class,
+                () -> rescueCoordinationService.updateAssignmentStatus(assignmentId, bodyEmpty));
+        assertTrue(exEmpty.getMessage().contains("Thiếu thông tin nhận diện người dùng"));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_07: Chặn cập nhật khi không tìm thấy người dùng trong DB -> Ném RuntimeException")
+    void testUpdateAssignmentStatus_WhenUserNotFoundInDb_ShouldThrowRuntimeException() {
+        String assignmentId = "ASSIGN-SEC-02";
+        String userId = "USER-NOT-FOUND";
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> rescueCoordinationService.updateAssignmentStatus(assignmentId, body));
+        assertTrue(ex.getMessage().contains("Không tìm thấy người dùng"));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_08: Chặn cập nhật khi User thuộc team nhưng role sai (không phải Staff/Leader) -> Ném RuntimeException")
+    void testUpdateAssignmentStatus_WhenUserHasTeamIdButWrongRole_ShouldThrowRuntimeException() {
+        String assignmentId = "ASSIGN-SEC-03";
+        String userId = "USER-CITIZEN-IN-TEAM";
+        String teamId = "TEAM-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+
+        User citizenInTeam = new User();
+        citizenInTeam.setId(userId);
+        citizenInTeam.setTeamId(teamId);
+        citizenInTeam.setRoleId("ROLE_VOLUNTEER"); // Không phải STAFF, LEADER, ADMIN, COORDINATOR
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(citizenInTeam));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "IN_PROGRESS");
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> rescueCoordinationService.updateAssignmentStatus(assignmentId, body));
+        assertTrue(ex.getMessage().contains("Chỉ thành viên đội cứu hộ hoặc điều phối viên mới có quyền"));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_09: Nhân viên cứu hộ (Staff) báo COMPLETED -> Tự động chuyển targetStatus sang REPORTED")
+    void testUpdateAssignmentStatus_WhenStaffReportsCompleted_ShouldDowngradeToReported() {
+        String assignmentId = "ASSIGN-WF-01";
+        String userId = "USER-STAFF-01";
+        String teamId = "TEAM-01";
+        String requestId = "REQ-WF-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setRequestId(requestId);
+
+        User staffUser = new User();
+        staffUser.setId(userId);
+        staffUser.setTeamId(teamId);
+        staffUser.setRoleId("RESCUE_STAFF");
+        staffUser.setFullName("Nguyễn Văn Cứu Hộ");
+
+        RescueRequest request = new RescueRequest();
+        request.setId(requestId);
+        request.setAddressText("Khu phố 3, An Sơn");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(staffUser));
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "COMPLETED");
+        body.put("note", "Đã tiếp cận và đưa nạn nhân lên bờ");
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertEquals("REPORTED", assignment.getStatus(),
+                "Staff báo hoàn thành phải tự hạ sang REPORTED chờ điều phối viên duyệt");
+        assertEquals("REPORTED", request.getStatus());
+        verify(systemManagementService, times(1)).logAction(eq("Nguyễn Văn Cứu Hộ"), eq("BÁO CÁO CỨU HỘ"), anyString(),
+                eq("RESCUE"));
+        verify(assignmentRepository, times(1)).save(assignment);
+    }
+
+    @Test
+    @DisplayName("WB_COORD_10: Tự động xuất kho vật phẩm cứu trợ khi chuyển sang trạng thái tác chiến (MOVING) kèm fallback tên/đơn vị")
+    void testUpdateAssignmentStatus_AutoExportItems_WhenTransitionToMoving() {
+        String assignmentId = "ASSIGN-INV-01";
+        String userId = "USER-STAFF-01";
+        String teamId = "TEAM-01";
+        String warehouseId = "WH-CENTRAL-01";
+
+        MissionItem existingItem = new MissionItem();
+        existingItem.setItemId("ITEM-MI-TOM");
+        existingItem.setItemName("Mì ăn liền");
+        existingItem.setUnit("Thùng");
+        existingItem.setQuantity(50);
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("ASSIGNED");
+        assignment.setItemsExported(false);
+        assignment.setMissionItems(List.of(existingItem));
+
+        User staffUser = new User();
+        staffUser.setId(userId);
+        staffUser.setTeamId(teamId);
+        staffUser.setRoleId("RESCUE_STAFF");
+
+        Warehouse warehouse = new Warehouse();
+        warehouse.setId(warehouseId);
+        warehouse.setWarehouseName("Kho Tổng Cứu Trợ");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(staffUser));
+        when(warehouseRepository.findByManagerId(userId)).thenReturn(Optional.of(warehouse));
+
+        // Item 1: itemName null -> fallback lấy từ assignment.getMissionItems()
+        Map<String, Object> itemMap1 = new HashMap<>();
+        itemMap1.put("itemId", "ITEM-MI-TOM");
+        itemMap1.put("itemName", null);
+        itemMap1.put("unit", null);
+        itemMap1.put("quantity", 50);
+
+        // Item 2: quantity không phải kiểu Number -> fallback về 0
+        Map<String, Object> itemMap2 = new HashMap<>();
+        itemMap2.put("itemId", "ITEM-NUOC");
+        itemMap2.put("itemName", "Nước khoáng");
+        itemMap2.put("unit", "Chai");
+        itemMap2.put("quantity", "KHONG_PHAI_SO");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "MOVING");
+        body.put("items", List.of(itemMap1, itemMap2));
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertTrue(assignment.isItemsExported(), "Nhiệm vụ phải được đánh dấu đã xuất kho");
+        assertNotNull(assignment.getMissionItems());
+        assertEquals(2, assignment.getMissionItems().size());
+        assertEquals("Mì ăn liền", assignment.getMissionItems().get(0).getItemName(),
+                "Fallback itemName từ existing mission item");
+        assertEquals(0, assignment.getMissionItems().get(1).getQuantity(),
+                "Quantity không phải Number thì fallback về 0");
+        verify(inventoryService, times(1)).batchExport(eq(warehouseId), eq(assignmentId), anyList(), eq(userId));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_11: Điều phối viên nghiệm thu COMPLETED với ảnh, số người cứu, occurredAt, và tự động hoàn kho hàng dư")
+    void testUpdateAssignmentStatus_WithImagesRescuedCountAndActualItems_WhenCompletedByCoordinator() {
+        String assignmentId = "ASSIGN-DATA-01";
+        String userId = "USER-COORD-01";
+        String teamId = "TEAM-01";
+        String requestId = "REQ-DATA-01";
+        String warehouseId = "WH-MAIN";
+
+        MissionItem plannedItem = new MissionItem();
+        plannedItem.setItemId("ITEM-AO-PHAO");
+        plannedItem.setItemName("Áo phao");
+        plannedItem.setUnit("Cái");
+        plannedItem.setQuantity(20);
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setRequestId(requestId);
+        assignment.setMissionItems(List.of(plannedItem));
+        assignment.setAssignedItems(List.of(plannedItem));
+        assignment.setItemsExported(true);
+
+        User coordUser = new User();
+        coordUser.setId(userId);
+        coordUser.setRoleId("COORDINATOR");
+
+        RescueRequest request = new RescueRequest();
+        request.setId(requestId);
+
+        Distribution distribution = new Distribution();
+        distribution.setWarehouseId(warehouseId);
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(coordUser));
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(rescueReportRepository.findByAssignmentId(assignmentId)).thenReturn(Optional.empty());
+        // Fallback: tìm theo assignmentId rỗng thì tìm theo requestId
+        when(distributionRepository.findByRequestId(assignmentId)).thenReturn(Collections.emptyList());
+        when(distributionRepository.findByRequestId(requestId)).thenReturn(List.of(distribution));
+
+        Map<String, Object> actualItemMap = new HashMap<>();
+        actualItemMap.put("itemId", "ITEM-AO-PHAO");
+        actualItemMap.put("itemName", null); // Fallback sang assignedItems
+        actualItemMap.put("unit", null);
+        actualItemMap.put("quantity", 12); // Phát 12 cái, dư 8 cái hoàn kho
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "COMPLETED");
+        body.put("imageUrls", List.of("https://cdn.rescue.vn/evidence1.jpg", "https://cdn.rescue.vn/evidence2.jpg"));
+        body.put("rescuedCount", 8);
+        body.put("occurredAt", "2026-11-24T20:00:00");
+        body.put("actualItems", List.of(actualItemMap));
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertEquals("COMPLETED", assignment.getStatus());
+        assertEquals(8, assignment.getRescuedCount());
+        assertEquals(2, assignment.getImageUrls().size());
+        assertNotNull(assignment.getCompletedAt());
+        assertNotNull(assignment.getActualCompletedAt(), "Phải parse occurredAt khi có trong request body");
+        verify(rescueReportRepository, times(1)).save(any(RescueReport.class));
+        verify(inventoryService, times(1)).batchReturn(eq(warehouseId), eq(assignmentId), anyList(), eq(userId));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_12: Điều phối viên từ chối báo cáo (REJECTED) -> Đơn cứu nạn quay về VERIFIED và giải phóng phương tiện")
+    void testUpdateAssignmentStatus_WhenRejectedByCoordinator_ShouldResetRequestToVerified() {
+        String assignmentId = "ASSIGN-REJ-01";
+        String userId = "USER-COORD-01";
+        String teamId = "TEAM-01";
+        String requestId = "REQ-REJ-01";
+        String vehicleId = "VEH-CANO-02";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setRequestId(requestId);
+        assignment.setVehicleIds(List.of(vehicleId));
+
+        User coordUser = new User();
+        coordUser.setId(userId);
+        coordUser.setRoleId("COORDINATOR");
+
+        RescueRequest request = new RescueRequest();
+        request.setId(requestId);
+        request.setStatus("IN_PROGRESS");
+
+        Vehicles vehicle = new Vehicles();
+        vehicle.setId(vehicleId);
+        vehicle.setStatus("BUSY");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(coordUser));
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(vehiclesRepository.findById(vehicleId)).thenReturn(Optional.of(vehicle));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "REJECTED");
+        body.put("note", "Báo cáo thiếu ảnh hiện trường, yêu cầu kiểm tra lại");
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertEquals("REJECTED", assignment.getStatus());
+        assertEquals("VERIFIED", request.getStatus(),
+                "Yêu cầu cứu hộ phải quay lại trạng thái VERIFIED khi nhiệm vụ bị từ chối");
+        assertEquals("AVAILABLE", vehicle.getStatus(), "Phương tiện phải được giải phóng về AVAILABLE");
+        verify(vehiclesRepository, times(1)).save(vehicle);
+    }
+
+    // =========================================================================
+    // WB_COORD_13 -> WB_COORD_26: TỐI ĐA HÓA ĐỘ BAO PHỦ RẼ NHÁNH (BRANCH COVERAGE)
+    // =========================================================================
+
+    @Test
+    @DisplayName("WB_COORD_13: createAssignment khi vehicleIds = null và missionItems != null -> Phân công thành công không gắn xe")
+    void testCreateAssignment_WhenVehicleIdsNullAndMissionItemsNotNull_ShouldSucceed() {
+        String requestId = "REQ-NO-VEH-01";
+        String teamId = "TEAM-01";
+
+        RescueRequest request = new RescueRequest();
+        request.setId(requestId);
+        request.setStatus("PENDING");
+        request.setAddressText("123 Thôn Đông");
+
+        RescueTeam team = new RescueTeam();
+        team.setId(teamId);
+        team.setTeamName("Đội Cứu nạn 1");
+        team.setStatus("AVAILABLE");
+
+        MissionItem item = new MissionItem();
+        item.setItemId("ITEM-AO-PHAO");
+        item.setItemName("Áo phao");
+        item.setQuantity(10);
+
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(rescueTeamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(assignmentRepository.save(any(Assignment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AssignmentRequest dto = new AssignmentRequest();
+        dto.setRequestId(requestId);
+        dto.setTeamId(teamId);
+        dto.setVehicleIds(null); // vehicleIds null
+        dto.setMissionItems(List.of(item)); // missionItems not null
+        dto.setAssignedBy("coordinator@rescue.vn");
+
+        Assignment result = rescueCoordinationService.createAssignment(dto);
+
+        assertNotNull(result);
+        assertNull(result.getVehicleIds());
+        assertEquals(1, result.getMissionItems().size());
+        assertEquals(1, result.getAssignedItems().size());
+        verify(vehiclesRepository, never()).findById(any());
+        verify(rescueTeamRepository, times(1)).save(team);
+    }
+
+    @Test
+    @DisplayName("WB_COORD_14: createAssignment khi vehicleIds là danh sách rỗng -> Bỏ qua kiểm tra xe")
+    void testCreateAssignment_WhenVehicleIdsEmptyList_ShouldSucceed() {
+        String requestId = "REQ-EMPTY-VEH";
+        String teamId = "TEAM-01";
+
+        RescueRequest request = new RescueRequest();
+        request.setId(requestId);
+        request.setStatus("PENDING");
+
+        RescueTeam team = new RescueTeam();
+        team.setId(teamId);
+        team.setStatus("AVAILABLE");
+
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(rescueTeamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(assignmentRepository.save(any(Assignment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AssignmentRequest dto = new AssignmentRequest();
+        dto.setRequestId(requestId);
+        dto.setTeamId(teamId);
+        dto.setVehicleIds(Collections.emptyList()); // vehicleIds != null nhưng isEmpty() == true
+        dto.setMissionItems(null);
+
+        Assignment result = rescueCoordinationService.createAssignment(dto);
+
+        assertNotNull(result);
+        assertTrue(result.getVehicleIds().isEmpty());
+        assertNotNull(result.getMissionItems());
+        assertTrue(result.getMissionItems().isEmpty());
+    }
+
+    @Test
+    @DisplayName("WB_COORD_15: updateAssignmentStatus khi user.getRoleId() == null -> Ném RuntimeException chặn quyền")
+    void testUpdateAssignmentStatus_WhenUserRoleIdNull_ShouldThrowRuntimeException() {
+        String assignmentId = "ASSIGN-ROLE-NULL";
+        String userId = "USER-NO-ROLE";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId("TEAM-01");
+
+        User user = new User();
+        user.setId(userId);
+        user.setRoleId(null); // roleId == null
+        user.setTeamId("TEAM-01"); // đúng team nhưng không có role STAFF hay LEADER
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "IN_PROGRESS");
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+            rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+        });
+        assertTrue(ex.getMessage().contains("Chỉ thành viên đội cứu hộ hoặc điều phối viên"));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_16: updateAssignmentStatus khi user có vai trò LEADER cập nhật nhiệm vụ đội mình -> Thành công")
+    void testUpdateAssignmentStatus_WhenUserIsLeader_ShouldSucceed() {
+        String assignmentId = "ASSIGN-LEADER-01";
+        String userId = "USER-LEADER-01";
+        String teamId = "TEAM-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("ASSIGNED");
+        assignment.setRequestId("REQ-01");
+
+        User leaderUser = new User();
+        leaderUser.setId(userId);
+        leaderUser.setRoleId("ROLE_LEADER");
+        leaderUser.setTeamId(teamId);
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(leaderUser));
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "MOVING");
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertEquals("MOVING", assignment.getStatus());
+        verify(assignmentRepository, times(1)).save(assignment);
+    }
+
+    @Test
+    @DisplayName("WB_COORD_17: updateAssignmentStatus khi user.getTeamId() == null và không phải Elevated -> Ném RuntimeException")
+    void testUpdateAssignmentStatus_WhenUserTeamIdNull_ShouldThrowRuntimeException() {
+        String assignmentId = "ASSIGN-NOTEAM-01";
+        String userId = "USER-NOTEAM-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId("TEAM-01");
+
+        User user = new User();
+        user.setId(userId);
+        user.setRoleId("ROLE_VOLUNTEER");
+        user.setTeamId(null); // teamId null
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "IN_PROGRESS");
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+            rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+        });
+        assertTrue(ex.getMessage().contains("Bạn không có quyền cập nhật trạng thái cho nhiệm vụ này!"));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_18: updateAssignmentStatus chặn nhảy cóc từ PENDING sang REPORTED -> Ném 400 BadRequestException")
+    void testUpdateAssignmentStatus_WhenJumpingFromPendingToReported_ShouldThrowBadRequestException() {
+        String assignmentId = "ASSIGN-JUMP-01";
+        String userId = "USER-COORD-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setStatus("PENDING");
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ROLE_ADMIN");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "REPORTED");
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+        });
+        assertTrue(ex.getMessage().contains("Không thể chuyển trạng thái từ PENDING trực tiếp sang REPORTED"));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_19: updateAssignmentStatus chặn nhảy cóc từ ASSIGNED sang REPORTED -> Ném 400 BadRequestException")
+    void testUpdateAssignmentStatus_WhenJumpingFromAssignedToReported_ShouldThrowBadRequestException() {
+        String assignmentId = "ASSIGN-JUMP-02";
+        String userId = "USER-COORD-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setStatus("ASSIGNED");
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ROLE_ADMIN");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "REPORTED");
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> {
+            rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+        });
+        assertTrue(ex.getMessage().contains("Không thể chuyển trạng thái từ ASSIGNED trực tiếp sang REPORTED"));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_20: updateAssignmentStatus lưu reportNote khi trạng thái là MOVING kèm note")
+    void testUpdateAssignmentStatus_WhenMovingWithNote_ShouldSaveReportNote() {
+        String assignmentId = "ASSIGN-NOTE-01";
+        String userId = "USER-STAFF-01";
+        String teamId = "TEAM-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("ASSIGNED");
+
+        User staffUser = new User();
+        staffUser.setId(userId);
+        staffUser.setRoleId("ROLE_STAFF");
+        staffUser.setTeamId(teamId);
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(staffUser));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "MOVING");
+        body.put("note", "Đang trên đường đến hiện trường cách 2km");
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertEquals("MOVING", assignment.getStatus());
+        assertEquals("Đang trên đường đến hiện trường cách 2km", assignment.getReportNote());
+    }
+
+    @Test
+    @DisplayName("WB_COORD_21: updateAssignmentStatus khi requestId không tìm thấy trong RescueRequestRepository -> Vẫn cập nhật Assignment an toàn")
+    void testUpdateAssignmentStatus_WhenRescueRequestNotFound_ShouldStillSaveAssignment() {
+        String assignmentId = "ASSIGN-NOREQ-01";
+        String userId = "USER-ADMIN-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId("TEAM-01");
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setRequestId("NON_EXISTING_REQ");
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ADMIN");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+        when(rescueRequestRepository.findById("NON_EXISTING_REQ")).thenReturn(Optional.empty());
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "IN_PROGRESS");
+
+        assertDoesNotThrow(() -> rescueCoordinationService.updateAssignmentStatus(assignmentId, body));
+        verify(assignmentRepository, times(1)).save(assignment);
+        verify(requestStatusHistoryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("WB_COORD_22: updateAssignmentStatus khi note == null -> Ghi nhận RequestStatusHistory với note mặc định")
+    void testUpdateAssignmentStatus_WhenNoteIsNull_ShouldUseDefaultHistoryNote() {
+        String assignmentId = "ASSIGN-NONOTE-01";
+        String userId = "USER-ADMIN-01";
+        String requestId = "REQ-NONOTE-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId("TEAM-01");
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setRequestId(requestId);
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ADMIN");
+
+        RescueRequest request = new RescueRequest();
+        request.setId(requestId);
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+        when(rescueRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "IN_PROGRESS");
+        body.put("note", null); // note là null
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        verify(requestStatusHistoryRepository).save(argThat(h ->
+                h.getNote().equals("Trạng thái nhiệm vụ chuyển sang IN_PROGRESS")
+        ));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_23: updateAssignmentStatus khi RescueReport đã tồn tại sẵn -> Không tạo báo cáo trùng lặp")
+    void testUpdateAssignmentStatus_WhenRescueReportAlreadyExists_ShouldNotDuplicateReport() {
+        String assignmentId = "ASSIGN-DUPREPORT-01";
+        String userId = "USER-ADMIN-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId("TEAM-01");
+        assignment.setStatus("IN_PROGRESS");
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ADMIN");
+
+        RescueReport existingReport = new RescueReport();
+        existingReport.setId("REP-EXISTING-01");
+        existingReport.setAssignmentId(assignmentId);
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+        when(rescueReportRepository.findByAssignmentId(assignmentId)).thenReturn(Optional.of(existingReport));
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "COMPLETED");
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        // Không gọi rescueReportRepository.save() vì report đã tồn tại
+        verify(rescueReportRepository, never()).save(any(RescueReport.class));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_24: updateAssignmentStatus điều phối viên duyệt APPROVED -> Gửi thông báo phê duyệt cho đội cứu hộ")
+    void testUpdateAssignmentStatus_WhenApprovedByCoordinator_ShouldNotifyTeam() {
+        String assignmentId = "ASSIGN-APP-01";
+        String userId = "USER-COORD-01";
+        String teamId = "TEAM-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("IN_PROGRESS");
+
+        User coordUser = new User();
+        coordUser.setId(userId);
+        coordUser.setRoleId("ROLE_COORDINATOR");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(coordUser));
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "APPROVED");
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertEquals("APPROVED", assignment.getStatus());
+        verify(assignmentRepository).save(assignment);
+    }
+
+    @Test
+    @DisplayName("WB_COORD_25: updateAssignmentStatus hủy nhiệm vụ CANCELLED và giải phóng phương tiện khi xe không tìm thấy trong DB")
+    void testUpdateAssignmentStatus_WhenCancelledAndVehicleNotFound_ShouldHandleGracefully() {
+        String assignmentId = "ASSIGN-CANCEL-01";
+        String userId = "USER-ADMIN-01";
+        String teamId = "TEAM-01";
+        String vehicleId = "VEH-NOT-FOUND";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setVehicleIds(List.of(vehicleId));
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ADMIN");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+        when(vehiclesRepository.findById(vehicleId)).thenReturn(Optional.empty());
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "CANCELLED");
+
+        assertDoesNotThrow(() -> rescueCoordinationService.updateAssignmentStatus(assignmentId, body));
+
+        assertEquals("CANCELLED", assignment.getStatus());
+        verify(vehiclesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("WB_COORD_26: updateAssignmentStatus hoàn kho trực tiếp từ distribution của assignmentId và trường hợp không có distribution")
+    void testUpdateAssignmentStatus_ReturnSurplusItems_DirectDistribution() {
+        String assignmentId = "ASSIGN-RETURN-DIRECT";
+        String userId = "USER-ADMIN-01";
+        String teamId = "TEAM-01";
+        String warehouseId = "WH-DIRECT";
+
+        MissionItem planned = new MissionItem();
+        planned.setItemId("ITEM-GAO");
+        planned.setQuantity(50);
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setMissionItems(List.of(planned));
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ADMIN");
+
+        Distribution directDist = new Distribution();
+        directDist.setWarehouseId(warehouseId);
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+        when(rescueReportRepository.findByAssignmentId(assignmentId)).thenReturn(Optional.empty());
+        // Tìm thấy trực tiếp qua assignmentId (không rỗng)
+        when(distributionRepository.findByRequestId(assignmentId)).thenReturn(List.of(directDist));
+
+        Map<String, Object> body = Map.of("userId", userId, "status", "COMPLETED");
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        verify(inventoryService, times(1)).batchReturn(eq(warehouseId), eq(assignmentId), anyList(), eq(userId));
+    }
+
+    @Test
+    @DisplayName("WB_COORD_27: updateAssignmentStatus xử lý actualItems fallback từ assignedItems và mặc định tên vật phẩm")
+    void testUpdateAssignmentStatus_ActualItems_FallbackAssignedItemsAndDefaults() {
+        String assignmentId = "ASSIGN-ACTUAL-FB";
+        String userId = "USER-ADMIN-01";
+        String teamId = "TEAM-01";
+
+        MissionItem assignedItem = new MissionItem();
+        assignedItem.setItemId("ITEM-THUOC");
+        assignedItem.setItemName("Thuốc sát trùng");
+        assignedItem.setUnit("Hộp");
+        assignedItem.setQuantity(5);
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setMissionItems(Collections.emptyList()); // không có trong missionItems
+        assignment.setAssignedItems(List.of(assignedItem)); // có trong assignedItems
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ADMIN");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+
+        // Item 1: Fallback từ assignedItems
+        Map<String, Object> item1 = new HashMap<>();
+        item1.put("itemId", "ITEM-THUOC");
+        item1.put("itemName", null);
+        item1.put("unit", null);
+        item1.put("quantity", 3);
+
+        // Item 2: Không có trong assignedItems lẫn missionItems -> Fallback tên "Vật phẩm" và unit "-", qty không phải Number
+        Map<String, Object> item2 = new HashMap<>();
+        item2.put("itemId", "ITEM-UNKNOWN");
+        item2.put("itemName", null);
+        item2.put("unit", null);
+        item2.put("quantity", "ABC");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "IN_PROGRESS");
+        body.put("actualItems", List.of(item1, item2));
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertNotNull(assignment.getActualDistributedItems());
+        assertEquals(2, assignment.getActualDistributedItems().size());
+        assertEquals("Thuốc sát trùng", assignment.getActualDistributedItems().get(0).getItemName());
+        assertEquals("Hộp", assignment.getActualDistributedItems().get(0).getUnit());
+        assertEquals("Vật phẩm", assignment.getActualDistributedItems().get(1).getItemName());
+        assertEquals("-", assignment.getActualDistributedItems().get(1).getUnit());
+        assertEquals(0, assignment.getActualDistributedItems().get(1).getQuantity());
+    }
+
+    @Test
+    @DisplayName("WB_COORD_28: updateAssignmentStatus REJECTED không truyền note và REPORTED khi RescueRequest không tồn tại")
+    void testUpdateAssignmentStatus_RejectedWithoutNote_And_ReportedWithoutRescueRequest() {
+        String assignmentId1 = "ASSIGN-REJ-NONOTE";
+        String userId = "USER-ADMIN-01";
+        String teamId = "TEAM-01";
+
+        Assignment assignment1 = new Assignment();
+        assignment1.setId(assignmentId1);
+        assignment1.setTeamId(teamId);
+        assignment1.setStatus("IN_PROGRESS");
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ADMIN");
+
+        when(assignmentRepository.findById(assignmentId1)).thenReturn(Optional.of(assignment1));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+
+        // 1. REJECTED không note
+        Map<String, Object> body1 = new HashMap<>();
+        body1.put("userId", userId);
+        body1.put("status", "REJECTED");
+        body1.put("note", null);
+
+        assertDoesNotThrow(() -> rescueCoordinationService.updateAssignmentStatus(assignmentId1, body1));
+
+        // 2. REPORTED khi không tìm thấy RescueRequest
+        String assignmentId2 = "ASSIGN-REP-NOREQ";
+        Assignment assignment2 = new Assignment();
+        assignment2.setId(assignmentId2);
+        assignment2.setTeamId(teamId);
+        assignment2.setStatus("IN_PROGRESS");
+        assignment2.setRequestId("NON-EXISTENT-REQ");
+
+        User staffUser = new User();
+        staffUser.setId("USER-STAFF-NOREQ");
+        staffUser.setRoleId("STAFF");
+        staffUser.setTeamId(teamId);
+        staffUser.setFullName("Cứu hộ viên test");
+
+        when(assignmentRepository.findById(assignmentId2)).thenReturn(Optional.of(assignment2));
+        when(userRepository.findById("USER-STAFF-NOREQ")).thenReturn(Optional.of(staffUser));
+        when(rescueRequestRepository.findById("NON-EXISTENT-REQ")).thenReturn(Optional.empty());
+
+        Map<String, Object> body2 = Map.of("userId", "USER-STAFF-NOREQ", "status", "REPORTED");
+
+        assertDoesNotThrow(() -> rescueCoordinationService.updateAssignmentStatus(assignmentId2, body2));
+        assertEquals("REPORTED", assignment2.getStatus());
     }
 }
