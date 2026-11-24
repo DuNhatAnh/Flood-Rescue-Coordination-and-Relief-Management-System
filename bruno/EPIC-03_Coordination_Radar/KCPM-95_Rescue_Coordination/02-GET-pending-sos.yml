@@ -17,7 +17,7 @@ runtime:
             expect(res.getBody().success).to.equal(true);
         });
         expect(res.getBody().data.length > 0).to.be.true;
-        bru.setVar("coordReqId", res.getBody().data[0].id);
+        bru.setEnvVar("coordReqId", res.getBody().data[0].id);
 
 settings:
   encodeUrl: true

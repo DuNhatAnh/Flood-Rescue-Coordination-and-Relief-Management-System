@@ -1,7 +1,7 @@
 info:
-  name: "[KCPM-61] TC_ASSIGN_01 - Lập lệnh phân công nhiệm vụ cho Đội cơ động"
+  name: "[KCPM-61] TC_ASSIGN_NEG_02 - Bắt lỗi khi phân công đội không tồn tại (404)"
   type: http
-  seq: 5
+  seq: 7
 
 http:
   method: POST
@@ -14,10 +14,10 @@ http:
     data: |-
       {
         "requestId": "{{assignReqId}}",
-        "teamId": "{{assignTeamId}}",
+        "teamId": "999999999999999999999999",
         "vehicleIds": ["{{assignVehicleId}}"],
         "assignedBy": "{{adminId}}",
-        "note": "Dieu dong ho tro khan cap"
+        "note": "Gán đội không tồn tại"
       }
   auth: inherit
 
@@ -25,12 +25,9 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        test("Phân công nhiệm vụ - HTTP 200", function () {
-            expect(res.getStatus()).to.equal(200);
-            expect(res.getBody().success).to.equal(true);
+        test("Bắt lỗi đội không tồn tại - HTTP 404", function () {
+            expect(res.getStatus()).to.equal(404);
         });
-        expect(res.getBody().data.status).to.equal("ASSIGNED");
-        bru.setVar("assignmentId", res.getBody().data.id);
 
 settings:
   encodeUrl: true

@@ -32,7 +32,12 @@ runtime:
             expect(res.getStatus()).to.equal(200);
             expect(res.getBody().success).to.equal(true);
         });
-        bru.setVar("assignReqId", res.getBody().data.id);
+        if (res.getBody() && res.getBody().data) {
+            const reqId = res.getBody().data.requestId || res.getBody().data.id;
+            bru.setVar("assignReqId", reqId);
+            bru.setCollectionVar("assignReqId", reqId);
+            bru.setEnvVar("assignReqId", reqId);
+        }
 
 settings:
   encodeUrl: true
