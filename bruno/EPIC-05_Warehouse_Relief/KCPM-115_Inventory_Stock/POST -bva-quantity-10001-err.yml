@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-115] BVA 6n+1 - Số lượng nhập Max+1: 10001 (400)"
+  name: "[KCPM-115] TC_INV_09 - BVA Số lượng nhập Max+1: 10001 (400)"
   type: http
   seq: 9
 

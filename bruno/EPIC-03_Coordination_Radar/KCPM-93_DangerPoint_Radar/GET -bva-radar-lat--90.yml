@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-101] BVA 6n+1 Radar - lat Min = -90 (200)"
+  name: "[KCPM-101] TC_DP_06 - BVA lat Min = -90 (200)"
   type: http
   seq: 6
 

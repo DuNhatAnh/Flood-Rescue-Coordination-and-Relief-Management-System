@@ -23,7 +23,7 @@ async function stockOf(I) {
   return row ? row.quantity : 0;
 }
 
-Scenario('[KCPM-116] [SCENARIO 1] Tạo kho hàng dã chiến [POST /api/v1/warehouses] và Thêm mặt hàng nhu yếu phẩm [POST /api/v1/relief-items]', async ({ I }) => {
+Scenario('[KCPM-116] [E2E-05-01] [WORKFLOW] Tạo kho hàng dã chiến và thêm mặt hàng nhu yếu phẩm [POST /api/v1/warehouses & POST /api/v1/relief-items]', async ({ I }) => {
   const resWh = await I.sendPostRequest('/api/v1/warehouses', {
     warehouseName: `Kho Cứu Trợ Dã Chiến Hòa Vang ${uid('E2E')}`,
     location: 'Huyện Hòa Vang, TP Đà Nẵng',
@@ -43,7 +43,7 @@ Scenario('[KCPM-116] [SCENARIO 1] Tạo kho hàng dã chiến [POST /api/v1/ware
   assert.ok(reliefItemId, 'Phải trả về ID mặt hàng vừa tạo');
 });
 
-Scenario('[KCPM-116] [SCENARIO 2] Nhập kho 500 thùng mì tôm [POST /api/v1/inventory/import] -> Kiểm tra thẻ kho hiển thị tồn khả dụng đúng 500', async ({ I }) => {
+Scenario('[KCPM-116] [E2E-05-02] [WORKFLOW] Nhập kho 500 thùng mì tôm -> Thẻ kho hiển thị tồn khả dụng đúng 500 [POST /api/v1/inventory/import]', async ({ I }) => {
   const { id: adminId } = await admin(I);
   const res = await I.sendPostRequest(`/api/v1/inventory/import?userId=${adminId}`, {
     warehouseId,
@@ -57,7 +57,7 @@ Scenario('[KCPM-116] [SCENARIO 2] Nhập kho 500 thùng mì tôm [POST /api/v1/i
   assert.strictEqual(await stockOf(I), 500, 'Tồn kho sau khi nhập phải đúng 500');
 });
 
-Scenario('[KCPM-116] [SCENARIO 3] [NEGATIVE] Thử xuất kho 600 thùng vượt tồn kho [POST /api/v1/distributions] -> Kỳ vọng chặn lỗi 400 Bad Request', async ({ I }) => {
+Scenario('[KCPM-116] [E2E-05-03] [NEGATIVE] Chặn xuất kho 600 thùng vượt tồn kho -> 400 Bad Request [POST /api/v1/distributions]', async ({ I }) => {
   const res = await I.sendPostRequest('/api/v1/distributions', {
     warehouseId,
     type: 'EXPORT',
@@ -69,7 +69,7 @@ Scenario('[KCPM-116] [SCENARIO 3] [NEGATIVE] Thử xuất kho 600 thùng vượt
   assert.strictEqual(await stockOf(I), 500, 'Tồn kho không được thay đổi khi xuất thất bại');
 });
 
-Scenario('[KCPM-116] [SCENARIO 4] Xuất kho hợp lệ 200 thùng mì tôm [POST /api/v1/distributions] -> Tồn kho giảm còn 300 thùng', async ({ I }) => {
+Scenario('[KCPM-116] [E2E-05-04] [WORKFLOW] Xuất kho hợp lệ 200 thùng mì tôm -> Tồn kho giảm còn 300 thùng [POST /api/v1/distributions]', async ({ I }) => {
   const res = await I.sendPostRequest('/api/v1/distributions', {
     warehouseId,
     type: 'EXPORT',
@@ -82,7 +82,7 @@ Scenario('[KCPM-116] [SCENARIO 4] Xuất kho hợp lệ 200 thùng mì tôm [POS
   assert.strictEqual(await stockOf(I), 300, 'Tồn kho sau khi xuất 200 phải còn 300');
 });
 
-Scenario('[KCPM-116] [SCENARIO 5] Hủy phiếu xuất [POST /api/v1/distributions/{id}/cancel] -> Tự động hoàn lại 500 thùng (Nghiệm thu bug KCPM-103)', async ({ I }) => {
+Scenario('[KCPM-116] [E2E-05-05] [WORKFLOW] Hủy phiếu xuất -> Tự động hoàn lại 500 thùng (Nghiệm thu bug KCPM-103) [POST /api/v1/distributions/{id}/cancel]', async ({ I }) => {
   assert.ok(distributionId, 'Cần chạy SCENARIO 4 trước');
   const { headers } = await admin(I); // API hủy yêu cầu quyền ADMIN hoặc WAREHOUSE_STAFF
   const res = await I.sendPostRequest(`/api/v1/distributions/${distributionId}/cancel`, {

@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-109] BVA TC16 - Biên lỗi Lat Max+1 = 23.40 ngoài VN phía Bắc (400 Bad Request)"
+  name: "[KCPM-109] TC_RES_16 - BVA Biên lỗi Lat Max+1 = 23.40 ngoài VN phía Bắc (400 Bad Request)"
   type: http
   seq: 8
 

@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-101] BVA 6n+1 Radar - lng Max+1 = 180.01 (400)"
+  name: "[KCPM-101] TC_DP_16 - BVA lng Max+1 = 180.01 (400)"
   type: http
   seq: 16
 

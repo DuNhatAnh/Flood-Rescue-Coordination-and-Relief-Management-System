@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-101] BVA 6n+1 Radar - radius Min+1 = 2 (200)"
+  name: "[KCPM-101] TC_DP_19 - BVA radius Min+1 = 2 (200)"
   type: http
   seq: 19
 

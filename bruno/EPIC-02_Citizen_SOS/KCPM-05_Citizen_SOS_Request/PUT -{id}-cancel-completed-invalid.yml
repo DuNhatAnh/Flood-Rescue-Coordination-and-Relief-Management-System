@@ -19,6 +19,20 @@ http:
 
 runtime:
   scripts:
+    - type: before-request
+      code: |-
+        // Tự chuẩn bị 1 đơn SOS ở trạng thái COMPLETED, không phụ thuộc lần chạy trước (ID đổi sau mỗi lần seed DB)
+        const axios = require("axios");
+        const base = bru.interpolate("{{baseUrl}}");
+        const auth = { headers: { Authorization: "Bearer " + bru.interpolate("{{bearerToken}}") } };
+        const created = (await axios.post(base + "/api/v1/rescue-requests", {
+            citizenName: "Setup COMPLETED", citizenPhone: "0987654311", addressText: "Khu phố 3, Đại Lộc",
+            locationLat: 16.0544, locationLng: 108.2022, numberOfPeople: 2, urgencyLevel: "NORMAL",
+            description: "Đơn chuẩn bị cho ca kiểm thử trạng thái COMPLETED"
+        }, auth)).data.data;
+        const rid = created.requestId || created.id;
+        await axios.patch(base + "/api/v1/rescue-requests/" + rid + "/status", { status: "COMPLETED", note: "Chuẩn bị dữ liệu" }, auth);
+        bru.setVar("completedRequestId", rid);
     - type: after-response
       code: |-
         test("Chặn hủy yêu cầu cứu hộ đã hoàn thành - HTTP 400", function () {

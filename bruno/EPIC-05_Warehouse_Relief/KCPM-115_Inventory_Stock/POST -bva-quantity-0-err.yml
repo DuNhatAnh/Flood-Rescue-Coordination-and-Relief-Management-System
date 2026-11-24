@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-115] BVA 6n+1 - Số lượng nhập Min-1: 0 (400)"
+  name: "[KCPM-115] TC_INV_04 - BVA Số lượng nhập Min-1: 0 (400)"
   type: http
   seq: 4
 

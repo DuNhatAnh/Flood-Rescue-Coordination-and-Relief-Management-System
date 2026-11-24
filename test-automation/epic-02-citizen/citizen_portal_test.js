@@ -20,7 +20,7 @@ let createdRequestId = null;
 let trackingId = null;
 
 // ==================== SCENARIO 1: TẠO ĐƠN & TRA CỨU ====================
-Scenario('[KCPM-110] [Scenario 1] (Tạo đơn & Tra cứu): Người dân gửi đơn SOS -> Nhận trackingId -> Kiểm tra trạng thái ban đầu là PENDING', async ({ I }) => {
+Scenario('[KCPM-110] [E2E-02-01] [WORKFLOW] Người dân gửi đơn SOS -> Nhận trackingId -> Tra cứu trạng thái ban đầu là PENDING [POST /api/v1/rescue-requests & GET /api/v1/rescue-requests/track/{id}]', async ({ I }) => {
   const sosPayload = {
     citizenName: 'Nguyễn Văn An',
     citizenPhone: '0912345678',
@@ -58,7 +58,7 @@ Scenario('[KCPM-110] [Scenario 1] (Tạo đơn & Tra cứu): Người dân gửi
 });
 
 // ==================== SCENARIO 2: BÁO AN TOÀN ====================
-Scenario('[KCPM-110] [Scenario 2] (Báo an toàn): Người dân gửi báo an toàn với SĐT chuẩn 10 số VN -> Kiểm tra nhận phản hồi 200 OK', async ({ I }) => {
+Scenario('[KCPM-110] [E2E-02-02] [POSITIVE] Người dân gửi báo an toàn với SĐT chuẩn 10 số VN -> Nhận phản hồi 200 OK [POST /api/v1/safety-reports]', async ({ I }) => {
   const safetyPayload = {
     citizenName: 'Lê Thị Mai',
     citizenPhone: '0905123456',
@@ -81,7 +81,7 @@ Scenario('[KCPM-110] [Scenario 2] (Báo an toàn): Người dân gửi báo an t
 });
 
 // ==================== SCENARIO 3: HỦY ĐƠN KHẨN CẤP ====================
-Scenario('[KCPM-110] [Scenario 3] (Hủy đơn khẩn cấp): Hủy đơn cứu hộ khi còn PENDING -> Thành công; Thử gọi hủy đơn đã COMPLETED -> Chặn lỗi 400', async ({ I }) => {
+Scenario('[KCPM-110] [E2E-02-03] [WORKFLOW] Hủy đơn cứu hộ khi còn PENDING -> Thành công; Hủy đơn đã COMPLETED -> Chặn lỗi 400 [PUT /api/v1/rescue-requests/{id}/cancel]', async ({ I }) => {
   // 1. Chuẩn bị mã yêu cầu ở trạng thái PENDING
   let pendingId = createdRequestId;
   if (!pendingId) {
@@ -144,7 +144,7 @@ Scenario('[KCPM-110] [Scenario 3] (Hủy đơn khẩn cấp): Hủy đơn cứu 
 });
 
 // ==================== BỔ SUNG: KIỂM THỬ GIÁ TRỊ BIÊN (BVA) & VALIDATION ====================
-Scenario('[KCPM-110] [Scenario 4] [NEGATIVE] Chặn tạo yêu cầu cứu nạn khi số người vượt biên tối đa (BVA > 50 người) [POST /api/v1/rescue-requests]', async ({ I }) => {
+Scenario('[KCPM-110] [E2E-02-04] [NEGATIVE] Chặn tạo yêu cầu cứu nạn khi số người vượt biên tối đa (BVA > 50 người) [POST /api/v1/rescue-requests]', async ({ I }) => {
   const invalidPeoplePayload = {
     citizenName: 'Trần Văn Cường',
     citizenPhone: '0988776655',
@@ -159,7 +159,7 @@ Scenario('[KCPM-110] [Scenario 4] [NEGATIVE] Chặn tạo yêu cầu cứu nạn
   assert.match(JSON.stringify(res.data), /vượt quá 50/, 'Phải bị chặn đúng do vượt biên 50 người');
 });
 
-Scenario('[KCPM-110] [Scenario 5] [NEGATIVE] Chặn gửi báo an toàn với số điện thoại không hợp lệ (Chứa chữ cái / Sai định dạng) [POST /api/v1/safety-reports]', async ({ I }) => {
+Scenario('[KCPM-110] [E2E-02-05] [NEGATIVE] Chặn gửi báo an toàn với số điện thoại không hợp lệ (Chứa chữ cái / Sai định dạng) [POST /api/v1/safety-reports]', async ({ I }) => {
   const invalidPhonePayload = {
     citizenName: 'Phan Văn Sai',
     citizenPhone: '0905INVALID',

@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-101] BVA 6n+1 Radar - lng Min = -180 (200)"
+  name: "[KCPM-101] TC_DP_12 - BVA lng Min = -180 (200)"
   type: http
   seq: 12
 

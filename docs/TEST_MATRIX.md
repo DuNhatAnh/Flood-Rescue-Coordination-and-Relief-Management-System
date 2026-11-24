@@ -3,7 +3,7 @@
 > **Dự án:** Hệ thống Điều phối Cứu hộ Lũ lụt & Quản lý Cứu trợ (Flood Rescue System)  
 > **4 Trụ cột kiểm thử:** White-box (JUnit 5) · Bruno API · Black-box QA Data-Driven · CodeceptJS (E2E)  
 > **Ký hiệu:** ✅ Đã kiểm thử & Pass · ⚠️ Có một phần / Đang bổ sung · ❌ Chưa kiểm thử
-> **Đối soát lần cuối:** 18/11/2026 — JUnit **162/162** · CodeceptJS **50/50** · Bruno **143/144** (còn `POST /refresh` thuộc KCPM-92) · QA Epic 01 **35/35** — tất cả chạy trên **backend thật**
+> **Đối soát lần cuối:** 24/11/2026 — JUnit **167/167** · CodeceptJS **50/50** · Bruno **190/190** · QA **197/198** (TC_CPW_13 chỉ kiểm thử ở JUnit) — chạy trên **backend thật**; riêng QA chỉ 3/11 script (Epic 01) gọi backend thật, 8 script còn lại vẫn mô phỏng bằng Python (xem mục E)
 
 ---
 
@@ -25,11 +25,11 @@
 
 | STT | Chức năng nghiệp vụ | Endpoint API | White-box (JUnit 5) | Bruno API | QA Data-Driven | CodeceptJS (E2E) | Trạng thái |
 |:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| 2.1 | Gửi yêu cầu cứu nạn SOS (BVA người 1..50, ghi chú, GPS) | `POST /api/v1/rescue-requests` | ✅ `RescueRequestValidationTest` (13 TCs) | ✅ 13 requests BVA riêng | ✅ `citizen_rescue_request_data.csv` (31 TCs) | ✅ Scenario 1, 4 | **Đạt** |
-| 2.2 | Tra cứu tiến độ cứu hộ công dân qua mã Tracking | `GET /api/v1/rescue-requests/track/{id}` | ✅ `RescueRequestFilterAndCancelTest` | ✅ `GET -track-{id}.yml` | ✅ `citizen_safety_report_data.csv` | ✅ Scenario 1 | **Đạt** |
+| 2.1 | Gửi yêu cầu cứu nạn SOS (BVA người 1..50, ghi chú, GPS) | `POST /api/v1/rescue-requests` | ✅ `RescueRequestValidationTest` (13 TCs) | ✅ 13 requests BVA riêng | ✅ `citizen_rescue_request_data.csv` (31 TCs) | ✅ E2E-02-01, E2E-02-04 | **Đạt** |
+| 2.2 | Tra cứu tiến độ cứu hộ công dân qua mã Tracking | `GET /api/v1/rescue-requests/track/{id}` | ✅ `RescueRequestFilterAndCancelTest` | ✅ `GET -track-{id}.yml` | ✅ `citizen_safety_report_data.csv` | ✅ E2E-02-01 | **Đạt** |
 | 2.3 | Lọc danh sách cứu nạn theo quận/huyện & trạng thái | `GET /api/v1/rescue-requests` | ✅ `RescueRequestFilterAndCancelTest` (12 TCs) | ✅ 4 requests lọc | ❌ Chưa có test riêng | ❌ Chưa tích hợp | **Đạt** |
-| 2.4 | Hủy đơn cứu nạn (Chặn hủy khi đã `COMPLETED`) | `PUT /api/v1/rescue-requests/{id}/cancel` | ✅ `RescueRequestFilterAndCancelTest` | ✅ `PUT -{id}-cancel-*.yml` | ❌ Chưa có test riêng | ✅ Scenario 3 | **Đạt** |
-| 2.5 | Báo an toàn công dân (EP SĐT 10 số nhà mạng VN) | `POST /api/v1/safety-reports` | ✅ `ReportAndSafetyReportValidationTest` (17 TCs) | ✅ 3 requests BVA Phone | ✅ `citizen_safety_report_data.csv` (22 TCs) | ✅ Scenario 2, 5 | **Đạt** |
+| 2.4 | Hủy đơn cứu nạn (Chặn hủy khi đã `COMPLETED`) | `PUT /api/v1/rescue-requests/{id}/cancel` | ✅ `RescueRequestFilterAndCancelTest` | ✅ `PUT -{id}-cancel-*.yml` | ❌ Chưa có test riêng | ✅ E2E-02-03 | **Đạt** |
+| 2.5 | Báo an toàn công dân (EP SĐT 10 số nhà mạng VN) | `POST /api/v1/safety-reports` | ✅ `ReportAndSafetyReportValidationTest` (17 TCs) | ✅ 3 requests BVA Phone | ✅ `citizen_safety_report_data.csv` (22 TCs) | ✅ E2E-02-02, E2E-02-05 | **Đạt** |
 | 2.6 | Nộp báo cáo cứu nạn hiện trường (BVA số người cứu 0..50) | `POST /api/v1/rescue-reports` | ✅ `RescueReportControllerTest` (2 TCs) | ✅ 4 requests BVA count | ❌ Chưa có test riêng | ❌ Chưa tích hợp | **Đạt** |
 | 2.7 | Upload ảnh hiện trường cứu hộ (Chặn file lỗi/sai đuôi) | `POST /api/upload/image` | ✅ `FileUploadControllerTest` (3 TCs) | ✅ `POST -image.yml` | ❌ Chưa có test riêng | ✅ `upload_notification_report_test.js` | **Đạt** |
 
@@ -64,12 +64,12 @@
 
 | STT | Chức năng nghiệp vụ | Endpoint API | White-box (JUnit 5) | Bruno API | QA Data-Driven | CodeceptJS (E2E) | Trạng thái |
 |:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| 5.1 | Quản lý danh mục Kho hàng & Giải thể kho (Bắt 404) | `/api/v1/warehouses/*` | ✅ `WarehouseServiceTest` (5 TCs) | ✅ 6 requests CRUD | ❌ Chưa có test riêng | ✅ Scenario 1 | **Đạt** |
-| 5.2 | Danh mục nhu yếu phẩm cứu trợ (Validate bắt buộc tên/đơn vị) | `/api/v1/relief-items/*` | ✅ `ReliefItemServiceTest` (4 TCs) | ✅ 4 requests CRUD | ❌ Chưa có test riêng | ✅ Scenario 1 | **Đạt** |
-| 5.3 | Nhập kho nhu yếu phẩm (BVA số lượng 1..10000, chặn ngày âm) | `POST /api/v1/inventory/import` | ✅ `InventoryServiceTest` (12 TCs) | ✅ `POST -import.yml` | ✅ `inventory_import_data.csv` (14 TCs) | ✅ Scenario 2 | **Đạt** |
-| 5.4 | Tra cứu thẻ kho & Cảnh báo tồn kho cạn kiệt (Low stock) | `/api/v1/inventory/warehouse/*` | ✅ `InventoryServiceTest` | ✅ 2 requests stock/low-stock | ❌ Chưa có test riêng | ✅ Scenario 2, 4, 5 (đối soát thẻ kho) | **Đạt** |
-| 5.5 | Xuất kho cứu trợ theo nhiệm vụ (Decision Table chặn âm kho) | `POST /api/v1/distributions` | ✅ `DistributionServiceTest` (8 TCs - BUG-DIST-01) | ✅ `POST -.yml` | ✅ `distribution_export_data.csv` (13 TCs) | ✅ Scenario 3, 4 | **Đạt** |
-| 5.6 | Hủy phiếu xuất và tự động hoàn kho (Rollback Inventory) | `POST /api/v1/distributions/{id}/cancel` | ✅ `DistributionServiceTest` (4 TCs KCPM-103 - logic hoàn kho) + `DistributionControllerTest` (2 TCs) | ✅ `POST -complete-transfer.yml` | ❌ Chưa có test riêng | ✅ Scenario 5 (500 → 300 → 500) | **Đạt** |
+| 5.1 | Quản lý danh mục Kho hàng & Giải thể kho (Bắt 404) | `/api/v1/warehouses/*` | ✅ `WarehouseServiceTest` (5 TCs) | ✅ 6 requests CRUD | ❌ Chưa có test riêng | ✅ E2E-05-01 | **Đạt** |
+| 5.2 | Danh mục nhu yếu phẩm cứu trợ (Validate bắt buộc tên/đơn vị) | `/api/v1/relief-items/*` | ✅ `ReliefItemServiceTest` (4 TCs) | ✅ 4 requests CRUD | ❌ Chưa có test riêng | ✅ E2E-05-01 | **Đạt** |
+| 5.3 | Nhập kho nhu yếu phẩm (BVA số lượng 1..10000, chặn ngày âm) | `POST /api/v1/inventory/import` | ✅ `InventoryServiceTest` (12 TCs) | ✅ `POST -import.yml` | ✅ `inventory_import_data.csv` (14 TCs) | ✅ E2E-05-02 | **Đạt** |
+| 5.4 | Tra cứu thẻ kho & Cảnh báo tồn kho cạn kiệt (Low stock) | `/api/v1/inventory/warehouse/*` | ✅ `InventoryServiceTest` | ✅ 2 requests stock/low-stock | ❌ Chưa có test riêng | ✅ E2E-05-02, E2E-05-04, E2E-05-05 (đối soát thẻ kho) | **Đạt** |
+| 5.5 | Xuất kho cứu trợ theo nhiệm vụ (Decision Table chặn âm kho) | `POST /api/v1/distributions` | ✅ `DistributionServiceTest` (8 TCs - BUG-DIST-01) | ✅ `POST -.yml` | ✅ `distribution_export_data.csv` (13 TCs) | ✅ E2E-05-03, E2E-05-04 | **Đạt** |
+| 5.6 | Hủy phiếu xuất và tự động hoàn kho (Rollback Inventory) | `POST /api/v1/distributions/{id}/cancel` | ✅ `DistributionServiceTest` (4 TCs KCPM-103 - logic hoàn kho) + `DistributionControllerTest` (2 TCs) | ✅ `POST -complete-transfer.yml` | ❌ Chưa có test riêng | ✅ E2E-05-05 (500 → 300 → 500) | **Đạt** |
 
 ---
 
@@ -141,7 +141,7 @@ Dưới đây là danh sách toàn bộ các tính năng chưa có bất kỳ k�
 | Điểm lệch | Task Jira | Ghi chú |
 |:---|:---|:---|
 | `POST /api/auth/refresh` vẫn 404 | KCPM-92 (Done) | Code chưa có controller dù task đã Done |
-| Radar lọc theo bán kính (`danger_point_radar_data.csv` BVA 50m..5000m) | KCPM-101 (Done), KCPM-111 (In Progress) | Code chưa có tính năng lọc bán kính dù KCPM-101 đã Done |
+| Radar lọc theo bán kính (`danger_point_radar_data.csv` BVA 50m..5000m) | KCPM-101 (Done), KCPM-111 (In Progress) | Đã có lọc bán kính (commit `d305441`), nhưng code chỉ chặn `radius <= 0`, chưa có biên 50..5000 m như thiết kế |
 | Chuyển xe sang `MAINTENANCE` (`teams_availability_data.csv`) | KCPM-114 (Done) | Chưa có API đổi trạng thái xe |
 | Upload file đa dụng | KCPM-117 (To Do) | Bruno chỉ kiểm thử nhánh thiếu file (400) |
 

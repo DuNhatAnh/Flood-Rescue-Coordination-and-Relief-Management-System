@@ -1,5 +1,5 @@
 info:
-  name: "[KCPM-109] BVA TC09 - Biên lỗi Max+1: 51 người (400 Bad Request)"
+  name: "[KCPM-109] TC_RES_09 - BVA Biên lỗi Max+1: 51 người (400 Bad Request)"
   type: http
   seq: 5
 
