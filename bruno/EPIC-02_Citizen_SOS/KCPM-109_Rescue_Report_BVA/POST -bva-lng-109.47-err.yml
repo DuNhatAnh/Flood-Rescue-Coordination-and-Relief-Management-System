@@ -1,0 +1,40 @@
+info:
+  name: "[KCPM-109] BVA 6n+1 - Lng Max+1 = 109.47 (400)"
+  type: http
+  seq: 25
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Người dân BVA",
+        "citizenPhone": "0987654399",
+        "addressText": "Khu phố 3, Đại Lộc",
+        "locationLat": 16.0544,
+        "locationLng": 109.47,
+        "numberOfPeople": 4,
+        "urgencyLevel": "NORMAL",
+        "description": "Nhà bị ngập cần hỗ trợ"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("BVA Lng Max+1 = 109.47 -> HTTP 400 Bad Request", function () {
+            expect(res.getStatus()).to.equal(400);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

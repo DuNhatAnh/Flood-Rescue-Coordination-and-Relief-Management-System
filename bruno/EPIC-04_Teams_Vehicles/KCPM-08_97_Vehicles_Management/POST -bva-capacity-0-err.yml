@@ -1,0 +1,39 @@
+info:
+  name: "[KCPM-113] BVA 6n+1 - Sức chứa Min-1: 0 người (400)"
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/vehicles?userId=6ac8a492b3505b0db326b89e"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "vehicleType": "CANO",
+        "licensePlate": "{{vehPlate}}",
+        "currentLocation": "Ben song Thu Bon",
+        "capacity": 0
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        bru.setVar("vehPlate", "BVA-C0-" + Date.now().toString().slice(-8));
+    - type: after-response
+      code: |-
+        test("BVA sức chứa Min-1 = 0 -> HTTP 400 Bad Request", function () {
+            expect(res.getStatus()).to.equal(400);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
