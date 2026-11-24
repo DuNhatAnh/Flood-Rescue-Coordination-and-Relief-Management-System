@@ -40,7 +40,7 @@ Màu trong trang code của báo cáo:
 
 | Bước | Thao tác | Nói với thầy |
 |:---:|:---|:---|
-| 1 | Mở `docs/CO_SO_TINH_SO_TESTCASE.xlsx`, sheet **Ly thuyet**, chỉ 2 dòng cuối | "Độ phủ câu lệnh C0 = số câu lệnh đã chạy / tổng câu lệnh. Nhóm đo bằng JaCoCo." |
+| 1 | Mở `docs/CO_SO_TESTCASE.xlsx`, sheet **Ly thuyet**, chỉ 2 dòng cuối | "Độ phủ câu lệnh C0 = số câu lệnh đã chạy / tổng câu lệnh. Nhóm đo bằng JaCoCo." |
 | 2 | Sheet **Pham vi & Statement** | "Mỗi thành viên phụ trách 1 phân hệ, chọn 4 chức năng cốt lõi. Đây là độ phủ đo thật của từng chức năng." |
 | 3 | Chạy trong PowerShell: `.\mvnw.cmd test` | "Chạy toàn bộ 167 unit test, JaCoCo đo độ phủ cùng lúc." |
 | 4 | Chờ dòng `Tests run: 167, Failures: 0` và `BUILD SUCCESS` | "167/167 test pass." |
@@ -107,7 +107,7 @@ Statement chỉ cần mỗi dòng chạy ít nhất 1 lần. Branch đòi mỗi 
 
 ---
 
-## 7. Số liệu ngày 24/11/2026 (20 chức năng theo KE_HOACH_TOAN_DIEN_VA_DANH_SACH_TASK_JIRA_KCPM.md)
+## 7. Số liệu ngày 24/11/2026 (20 chức năng cốt lõi, 4 chức năng/thành viên)
 
 | Thành viên | Chỉ JUnit | Cả 4 loại kiểm thử |
 |:---|:---:|:---:|
@@ -118,4 +118,4 @@ Statement chỉ cần mỗi dòng chạy ít nhất 1 lần. Branch đòi mỗi 
 | Phan Quốc Danh | 80,3% | 91,9% |
 | **Toàn nhóm** | **69,9%** | **89,8%** |
 
-Chi tiết từng hàm: sheet **Pham vi & Statement** trong `docs/CO_SO_TINH_SO_TESTCASE.xlsx`.
+Chi tiết từng hàm: sheet **Pham vi & Statement** trong `docs/CO_SO_TESTCASE.xlsx`.
