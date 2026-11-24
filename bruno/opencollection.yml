@@ -1,0 +1,59 @@
+opencollection: 1.0.0
+
+info:
+  name: Flood Rescue Coordination & Relief Management API
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  auth:
+    type: bearer
+    token: "{{bearerToken}}"
+  variables:
+    - name: baseUrl
+      value: http://localhost:8080
+    - name: bearerToken
+      value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkByZXNjdWUudm4iLCJpYXQiOjE3OTU1MDQxMDQsImV4cCI6MTc5NTU5MDUwNH0.k18_usbDLiUrbxE-XGNfhWwnRlSz9lQyow_eRHfue7E
+    - name: createdVehicleId
+      value: 6b0538182f95127a93edf1ff
+    - name: rescueRequestId
+      value: "0001"
+    - name: completedRequestId
+      value: "0003"
+    - name: staffEmail
+      value: staff_bruno_1795504550893_6943@rescue.vn
+    - name: assignTeamId
+      value: 6b0539a775a8d2635cef4173
+    - name: assignPlate
+      value: BR-A244156
+    - name: assignVehicleId
+      value: 6b0539a775a8d2635cef4175
+    - name: assignPlate2
+      value: BR-B840080
+    - name: assignVehicleId2
+      value: 6b0539a775a8d2635cef4177
+    - name: assignReqId
+      value: "0048"
+    - name: assignmentId
+      value: 6b0539a775a8d2635cef4179
+    - name: coordReqId
+      value: "0047"
+
+docs:
+  content: Toàn bộ REST API của dự án Hệ thống điều phối cứu hộ và quản lý cứu trợ lũ lụt (Flood Rescue Coordination & Relief Management System) bao gồm 22 Controller, Authentication JWT, Quản lý yêu cầu cứu hộ, Điều phối đội cứu trợ, Quản lý kho và hàng hóa cứu trợ.
+  type: text/markdown
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git

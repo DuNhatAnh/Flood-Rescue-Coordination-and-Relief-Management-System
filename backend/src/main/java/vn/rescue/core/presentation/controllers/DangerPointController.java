@@ -18,8 +18,12 @@ public class DangerPointController {
     private final DangerPointService dangerPointService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<DangerPoint>>> getAllDangerPoints() {
-        return ResponseEntity.ok(ApiResponse.success(dangerPointService.getAllDangerPoints(), "Danger points retrieved"));
+    public ResponseEntity<ApiResponse<List<DangerPoint>>> getAllDangerPoints(
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng,
+            @RequestParam(required = false) Double radius) {
+        List<DangerPoint> points = dangerPointService.getDangerPointsNearby(lat, lng, radius);
+        return ResponseEntity.ok(ApiResponse.success(points, "Danh sách điểm nguy hiểm đã được tải"));
     }
 
     @PostMapping

@@ -1,0 +1,48 @@
+info:
+  name: "[KCPM-115] TC_INV_05 - BVA Số lượng nhập Min: 1 (200)"
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/inventory/import?userId=admin-01"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "warehouseId": "{{bvaWarehouseId}}",
+        "itemId": "{{bvaItemId}}",
+        "quantity": 1,
+        "source": "Kiểm thử BVA",
+        "referenceNumber": "PNK-BVA-1",
+        "condition": "NEW"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        // Lấy ID kho và vật tư có thật trong DB (ID thay đổi mỗi lần seed lại dữ liệu)
+        const axios = require("axios");
+        const base = bru.interpolate("{{baseUrl}}");
+        const auth = { headers: { Authorization: "Bearer " + bru.interpolate("{{bearerToken}}") } };
+        const wh = await axios.get(base + "/api/v1/warehouses", auth);
+        const it = await axios.get(base + "/api/v1/relief-items", auth);
+        bru.setVar("bvaWarehouseId", wh.data.data[0].id);
+        bru.setVar("bvaItemId", it.data.data[0].id);
+    - type: after-response
+      code: |-
+        test("BVA số lượng Min = 1 -> nhập kho thành công", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

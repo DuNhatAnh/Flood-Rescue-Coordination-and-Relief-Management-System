@@ -1,0 +1,44 @@
+info:
+  name: "[KCPM-107] TC_SYS_04 - Cập nhật cấu hình hợp lệ"
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/admin/system/config?key=ALERT&value=ON&adminId=admin-01"
+  params:
+    - name: key
+      value: ALERT
+      type: query
+    - name: value
+      value: ON
+      type: query
+    - name: adminId
+      value: admin-01
+      type: query
+  headers:
+    - name: Authorization
+      value: Bearer {{bearerToken}}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-107] TC_SYS_04: Cập nhật cấu hình thành công - HTTP Status 200 OK", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+        test("[KCPM-107] TC_SYS_04: Kiểm tra dữ liệu cấu hình cập nhật", function () {
+            const body = res.getBody();
+            expect(body.success).to.equal(true);
+            expect(body.code).to.equal(200);
+            expect(body.data.key).to.equal("ALERT");
+            expect(body.data.value).to.equal("ON");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

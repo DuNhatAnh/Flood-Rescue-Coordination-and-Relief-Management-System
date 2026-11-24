@@ -1,0 +1,49 @@
+info:
+  name: "[KCPM-60] TC_AUTH_01 - Đăng nhập Admin lấy token"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/login"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "admin@rescue.vn",
+        "password": "admin123"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-60] TC_AUTH_01: Đăng nhập thành công - Status code is 200 OK", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+
+        // Tự động trích xuất JWT Token và lưu vào Environment
+        try {
+            var jsonData = res.getBody();
+            var token = jsonData.token || jsonData.accessToken || jsonData.jwt;
+            if (token) {
+                bru.setEnvVar("bearerToken", token);
+                bru.setCollectionVar("bearerToken", token);
+                bru.setVar("adminId", jsonData.id);
+                bru.setVar("adminEmail", jsonData.email);
+                console.log("Đã lưu token thành công:", token);
+            }
+        } catch (e) {
+            console.log("Lỗi lấy token:", e);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

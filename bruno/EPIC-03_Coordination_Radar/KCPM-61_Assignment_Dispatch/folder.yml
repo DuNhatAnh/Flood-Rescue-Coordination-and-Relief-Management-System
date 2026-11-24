@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-61: Phân Công Nhiệm Vụ & Điều Động Xuất Kích"
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit

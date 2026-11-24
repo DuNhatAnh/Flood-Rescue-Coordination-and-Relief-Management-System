@@ -1,0 +1,39 @@
+info:
+  name: "[KCPM-61] TC_ASSIGN_05 - Cập nhật trạng thái nhiệm vụ (ASSIGNED -> COMPLETED)"
+  type: http
+  seq: 9
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/assignments/:id/status"
+  headers:
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: id
+      value: "{{assignmentId}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "status": "IN_PROGRESS",
+        "userId": "{{adminId}}",
+        "note": "Đang tiếp cận hiện trường"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Cập nhật trạng thái nhiệm vụ IN_PROGRESS - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

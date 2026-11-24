@@ -1,0 +1,40 @@
+info:
+  name: "[KCPM-109] TC_RES_34 - BVA Lat Max-1 = 23.38 (200)"
+  type: http
+  seq: 20
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Người dân BVA",
+        "citizenPhone": "0987654399",
+        "addressText": "Khu phố 3, Đại Lộc",
+        "locationLat": 23.38,
+        "locationLng": 108.2022,
+        "numberOfPeople": 4,
+        "urgencyLevel": "NORMAL",
+        "description": "Nhà bị ngập cần hỗ trợ"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("BVA Lat Max-1 = 23.38 -> hợp lệ, tạo đơn thành công", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201]);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

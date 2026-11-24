@@ -1,0 +1,25 @@
+info:
+  name: "[KCPM-117] TC_FILE_02 - Chặn tải ảnh hiện trường khi thiếu multipart file (400)"
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/upload/image"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn request không kèm file - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+            expect(res.getBody().success).to.equal(false);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

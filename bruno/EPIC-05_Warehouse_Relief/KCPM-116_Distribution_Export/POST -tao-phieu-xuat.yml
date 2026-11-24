@@ -1,0 +1,58 @@
+info:
+  name: "[KCPM-116] TC_DIST_01 - Lập phiếu xuất kho cấp phát cứu trợ"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/distributions"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "warehouseId": "{{distSrcWarehouseId}}",
+        "requestId": "rescue-req-01",
+        "type": "TRANSFER",
+        "destinationWarehouseId": "{{distDstWarehouseId}}",
+        "items": [
+          {
+            "itemId": "{{distItemId}}",
+            "quantity": 10
+          }
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        // Lấy ID kho nguồn, kho đích và vật tư có thật trong DB (ID thay đổi mỗi lần seed lại dữ liệu)
+        const axios = require("axios");
+        const base = bru.interpolate("{{baseUrl}}");
+        const auth = { headers: { Authorization: "Bearer " + bru.interpolate("{{bearerToken}}") } };
+        const wh = (await axios.get(base + "/api/v1/warehouses", auth)).data.data;
+        const it = (await axios.get(base + "/api/v1/relief-items", auth)).data.data;
+        bru.setVar("distSrcWarehouseId", wh[0].id);
+        bru.setVar("distDstWarehouseId", wh[1].id);
+        bru.setVar("distItemId", it[0].id);
+    - type: after-response
+      code: |-
+        test("Phản hồi thành công (200, 201, 204)", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+            const body = res.getBody();
+            const created = body && (body.data || body);
+            if (created && created.id) {
+                bru.setVar("distributionId", created.id);
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

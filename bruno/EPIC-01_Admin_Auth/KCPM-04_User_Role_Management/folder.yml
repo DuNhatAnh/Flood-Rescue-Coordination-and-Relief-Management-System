@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-04: Quản trị Tài khoản Người dùng & Vai trò"
+  type: folder
+  seq: 5
+
+request:
+  auth: inherit

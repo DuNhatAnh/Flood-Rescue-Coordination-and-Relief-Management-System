@@ -93,6 +93,41 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("TC_LOG_06 -> TC_LOG_09 (EP định dạng): Email sai định dạng / rỗng, mật khẩu rỗng, dữ liệu null -> Ném 400 và không gọi xác thực")
+    void testLogin_InvalidInputPartitions_ShouldThrowBadRequest() {
+        assertEquals("Email không đúng định dạng",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(createAuthRequest("adminrescue.vn", "admin123"))).getMessage());
+        assertEquals("Email không được để trống",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(createAuthRequest(" ", "admin123"))).getMessage());
+        assertEquals("Mật khẩu không được để trống",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(createAuthRequest("admin@rescue.vn", ""))).getMessage());
+        assertEquals("Dữ liệu đăng nhập không được để trống",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(createAuthRequest(null, null))).getMessage());
+        assertEquals("Dữ liệu đăng nhập không được để trống",
+                assertThrows(vn.rescue.core.presentation.exceptions.BadRequestException.class, () -> authController.login(null)).getMessage());
+        verify(authenticationManager, never()).authenticate(any());
+    }
+
+    @Test
+    @DisplayName("TC_AUTH_100_05: Spring Security chặn ngay tại authenticate() (INACTIVE/LOCKED như khi chạy thật) -> Vẫn trả thông báo tiếng Việt")
+    void testLogin_WhenAuthenticationManagerRejectsDisabledOrLocked_ShouldReturnVietnameseMessage() {
+        AuthRequest request = new AuthRequest();
+        request.setEmail("inactive@rescue.vn");
+        request.setPassword("123456");
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new DisabledException("User is disabled"));
+        DisabledException disabled = assertThrows(DisabledException.class, () -> authController.login(request));
+        assertEquals("Tài khoản đã bị vô hiệu hóa hoặc chưa được kích hoạt", disabled.getMessage());
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new org.springframework.security.authentication.LockedException("User account is locked"));
+        org.springframework.security.authentication.LockedException locked =
+                assertThrows(org.springframework.security.authentication.LockedException.class, () -> authController.login(request));
+        assertEquals("Tài khoản đã bị khóa do vi phạm chính sách", locked.getMessage());
+    }
+
+    @Test
     @DisplayName("TC_AUTH_100_02: Đăng nhập thất bại khi tài khoản có status INACTIVE -> Ném DisabledException và chặn cấp Token")
     void testLogin_WhenStatusInactive_ShouldThrowDisabledException() {
         String email = "inactive_user@rescue.vn";
@@ -161,5 +196,75 @@ class AuthControllerTest {
         });
 
         verify(jwtService, never()).generateToken(any());
+    }
+
+    // =========================================================================
+    // KCPM-122: Bổ sung hộp trắng cho AuthController.login (nhánh status null, dòng 70–73)
+    // =========================================================================
+
+    private UserDetails stubSuccessfulLogin(User user) {
+        UserDetails details = new org.springframework.security.core.userdetails.User(
+                user.getEmail(), "password123", List.of(new SimpleGrantedAuthority("ROLE_RESCUE_STAFF")));
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(null);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(userDetailsService.loadUserByUsername(user.getEmail())).thenReturn(details);
+        when(jwtService.generateToken(details)).thenReturn("jwt-" + user.getId());
+        return details;
+    }
+
+    @Test
+    @DisplayName("WB_LOGIN_01: Tài khoản dữ liệu cũ có status = null -> Không bị chặn, vẫn cấp Token (nhánh status != null = false)")
+    void testLogin_WhenStatusNull_ShouldStillIssueToken() {
+        User legacy = new User();
+        legacy.setId("USR-NULL");
+        legacy.setEmail("legacy@rescue.vn");
+        legacy.setStatus(null);
+        stubSuccessfulLogin(legacy);
+
+        ResponseEntity<AuthResponse> response = authController.login(createAuthRequest("legacy@rescue.vn", "password123"));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("jwt-USR-NULL", response.getBody().getToken());
+        assertNull(response.getBody().getTeamName());
+        verifyNoInteractions(rescueTeamRepository);
+    }
+
+    @Test
+    @DisplayName("WB_LOGIN_02: Nhân viên cứu hộ thuộc đội (teamId có, đội tồn tại) -> Trả kèm teamId, teamName và role")
+    void testLogin_WhenUserHasTeam_ShouldReturnTeamName() {
+        User staff = new User();
+        staff.setId("USR-STAFF");
+        staff.setEmail("staff@rescue.vn");
+        staff.setStatus("ACTIVE");
+        staff.setTeamId("TEAM-01");
+        stubSuccessfulLogin(staff);
+        vn.rescue.core.domain.entities.RescueTeam team = new vn.rescue.core.domain.entities.RescueTeam();
+        team.setId("TEAM-01");
+        team.setTeamName("Đội cano Hòa Vang");
+        when(rescueTeamRepository.findById("TEAM-01")).thenReturn(Optional.of(team));
+
+        AuthResponse body = authController.login(createAuthRequest("staff@rescue.vn", "password123")).getBody();
+
+        assertEquals("TEAM-01", body.getTeamId());
+        assertEquals("Đội cano Hòa Vang", body.getTeamName());
+        assertEquals(List.of("ROLE_RESCUE_STAFF"), body.getRoles());
+    }
+
+    @Test
+    @DisplayName("WB_LOGIN_03: teamId trỏ tới đội đã bị xóa -> Vẫn đăng nhập được, teamName = null")
+    void testLogin_WhenTeamDeleted_ShouldReturnNullTeamName() {
+        User staff = new User();
+        staff.setId("USR-ORPHAN");
+        staff.setEmail("orphan@rescue.vn");
+        staff.setStatus("ACTIVE");
+        staff.setTeamId("TEAM-DELETED");
+        stubSuccessfulLogin(staff);
+        when(rescueTeamRepository.findById("TEAM-DELETED")).thenReturn(Optional.empty());
+
+        AuthResponse body = authController.login(createAuthRequest("orphan@rescue.vn", "password123")).getBody();
+
+        assertEquals("TEAM-DELETED", body.getTeamId());
+        assertNull(body.getTeamName());
+        assertEquals("jwt-USR-ORPHAN", body.getToken());
     }
 }

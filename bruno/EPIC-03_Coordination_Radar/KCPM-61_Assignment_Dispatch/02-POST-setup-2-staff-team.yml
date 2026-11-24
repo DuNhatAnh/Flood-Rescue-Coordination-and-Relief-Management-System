@@ -1,0 +1,44 @@
+info:
+  name: "[KCPM-61] Chuẩn bị 2 - Tạo nhân viên cứu hộ & đội AVAILABLE"
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/admin/users"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "fullName": "Nhân viên Bruno",
+        "email": "{{staffEmail}}",
+        "phone": "0912345678",
+        "roleId": "RESCUE_STAFF"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const email = "staff_bruno_" + Date.now() + "_" + Math.floor(Math.random() * 10000) + "@rescue.vn";
+        bru.setVar("staffEmail", email);
+        bru.setCollectionVar("staffEmail", email);
+        bru.setEnvVar("staffEmail", email);
+    - type: after-response
+      code: |-
+        test("Tạo nhân viên cứu hộ - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.equal(true);
+        });
+        bru.setCollectionVar("assignTeamId", res.getBody().data.teamId);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

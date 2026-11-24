@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-05: Tiếp nhận, Lọc & Hủy Đơn Cứu nạn SOS"
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

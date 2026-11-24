@@ -1,0 +1,43 @@
+info:
+  name: "[KCPM-61] Chuẩn bị 3 - Tạo phương tiện cứu hộ"
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/vehicles?userId={{adminId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "vehicleType": "CANO",
+        "licensePlate": "{{assignPlate}}",
+        "currentLocation": "Bến Lệ Thủy"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const plate = "BR-A" + Math.floor(100000 + Math.random() * 900000);
+        bru.setVar("assignPlate", plate);
+        bru.setCollectionVar("assignPlate", plate);
+        bru.setEnvVar("assignPlate", plate);
+    - type: after-response
+      code: |-
+        test("Tạo xe - HTTP 201", function () {
+            expect(res.getStatus()).to.equal(201);
+            expect(res.getBody().success).to.equal(true);
+        });
+        bru.setCollectionVar("assignVehicleId", res.getBody().data.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

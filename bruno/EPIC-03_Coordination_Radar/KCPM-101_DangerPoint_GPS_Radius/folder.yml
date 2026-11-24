@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-101: [BUG] API DangerPoint Lọc Bán Kính GPS Radius"
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit

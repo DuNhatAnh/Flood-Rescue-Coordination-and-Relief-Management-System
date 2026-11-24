@@ -1,0 +1,40 @@
+info:
+  name: "[KCPM-107] TC_SYS_02 - Xem dashboard thống kê theo kho"
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/admin/system/dashboard/:warehouseId"
+  params:
+    - name: warehouseId
+      value: "1"
+      type: path
+      description: ID kho bãi
+  headers:
+    - name: Authorization
+      value: Bearer {{bearerToken}}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-107] TC_SYS_02: Kiểm tra HTTP Status 200 OK", function () {
+            expect(res.getStatus()).to.equal(200);
+        });
+        test("[KCPM-107] TC_SYS_02: Kiểm tra cấu trúc DashboardStatsResponse", function () {
+            const body = res.getBody();
+            expect(body.success).to.equal(true);
+            expect(body.code).to.equal(200);
+            expect(body.data).to.have.property('totalVehicles');
+            expect(body.data).to.have.property('availableVehicles');
+            expect(body.data).to.have.property('lowStockItems');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

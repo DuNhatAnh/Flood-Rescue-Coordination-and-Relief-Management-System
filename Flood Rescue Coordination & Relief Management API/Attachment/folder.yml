@@ -1,7 +1,0 @@
-info:
-  name: Attachment
-  type: folder
-  seq: 4
-
-request:
-  auth: inherit

@@ -4,48 +4,47 @@
  * PHÂN HỆ: [EPIC-04] ĐỘI CƠ ĐỘNG & PHƯƠNG TIỆN CỨU HỘ
  * THÀNH VIÊN PHỤ TRÁCH: NGUYỄN BẢO (Lead Teams & Vehicles)
  * JIRA TICKETS: KCPM-34, KCPM-35, KCPM-66, KCPM-67, KCPM-96, KCPM-97, KCPM-114
+ * CHẠY TRÊN BACKEND THẬT: đội và phương tiện dùng để test đều được tạo mới, không đổi tên/chiếm dụng dữ liệu mẫu.
+ * LƯU Ý: Backend hiện CHƯA có API chuyển xe sang MAINTENANCE (VehicleRequest không có trường status),
+ *        nên máy trạng thái được kiểm thử qua luồng có thật: AVAILABLE -> điều phối -> BUSY -> chặn điều phối lần 2.
  * ==============================================================================
  */
+const { assert, admin, createUser, createRescueRequest, createVehicle, uid } = require('../support/api');
 
-Feature('[EPIC-04] [Nguyễn Bảo] Đội Cơ Động & Phương Tiện Cứu Hộ (Teams, Vehicles & Maintenance)');
+Feature('[EPIC-04] [Nguyễn Bảo] Đội Cơ Động & Phương Tiện Cứu Hộ (Teams, Vehicles & State Machine)');
 
 let createdVehicleId = null;
-const testUserId = 'test-admin-uid-001';
+let ownTeamId = null;
 
 // ==================== NHÓM 1: ĐỘI CỨU HỘ (TEAMS - 4 API) ====================
 
 Scenario('[KCPM-114] [E2E-04-01] [POSITIVE] Lấy danh sách tất cả các đội cứu hộ [GET /api/v1/teams]', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/teams');
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code', 'data']);
+  assert.ok(Array.isArray(res.data.data) && res.data.data.length > 0, 'Phải có ít nhất 1 đội cứu hộ');
 });
 
 Scenario('[KCPM-114] [E2E-04-02] [POSITIVE] Lọc danh sách đội cứu hộ sẵn sàng [GET /api/v1/teams/available]', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/teams/available');
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code', 'data']);
+  res.data.data.forEach(t => assert.strictEqual(t.status, 'AVAILABLE', `Đội ${t.teamName} không ở trạng thái AVAILABLE`));
 });
 
 Scenario('[KCPM-114] [E2E-04-03] [POSITIVE] Xem chi tiết đội cứu hộ theo ID [GET /api/v1/teams/{id}]', async ({ I }) => {
-  const teamsRes = await I.sendGetRequest('/api/v1/teams');
-  if (teamsRes.data && teamsRes.data.data && teamsRes.data.data.length > 0) {
-    const validId = teamsRes.data.data[0].id;
-    const res = await I.sendGetRequest(`/api/v1/teams/${validId}`);
-    I.seeResponseCodeIs(200);
-    I.seeResponseContainsKeys(['code', 'data']);
-  }
+  const staff = await createUser(I, 'RESCUE_STAFF', 'TeamLead'); // Backend tự tạo đội riêng cho nhân viên cứu hộ
+  ownTeamId = staff.teamId;
+  const res = await I.sendGetRequest(`/api/v1/teams/${ownTeamId}`);
+  I.seeResponseCodeIs(200);
+  assert.strictEqual(res.data.data.id, ownTeamId);
+  assert.strictEqual(res.data.data.leaderId, staff.id);
 });
 
-Scenario('[KCPM-114] [E2E-04-04] [POSITIVE] Cập nhật thông tin đội cứu hộ [PUT /api/v1/teams/{id}]', async ({ I }) => {
-  const teamsRes = await I.sendGetRequest('/api/v1/teams');
-  if (teamsRes.data && teamsRes.data.data && teamsRes.data.data.length > 0) {
-    const validId = teamsRes.data.data[0].id;
-    const res = await I.sendPutRequest(`/api/v1/teams/${validId}`, {
-      teamName: 'Đội Phản Ứng Nhanh Lũ Lụt - Chuẩn Hóa'
-    });
-    I.seeResponseCodeIs(200);
-    I.seeResponseContainsKeys(['code']);
-  }
+Scenario('[KCPM-114] [E2E-04-04] [POSITIVE] Cập nhật tên đội cứu hộ [PUT /api/v1/teams/{id}]', async ({ I }) => {
+  assert.ok(ownTeamId, 'Cần chạy E2E-04-03 trước');
+  const newName = `Đội Phản Ứng Nhanh ${uid('E2E')}`;
+  const res = await I.sendPutRequest(`/api/v1/teams/${ownTeamId}`, { teamName: newName });
+  I.seeResponseCodeIs(200);
+  assert.strictEqual(res.data.data.teamName, newName);
 });
 
 // ==================== NHÓM 2: PHƯƠNG TIỆN CỨU HỘ (VEHICLES - 6 API) ====================
@@ -53,119 +52,93 @@ Scenario('[KCPM-114] [E2E-04-04] [POSITIVE] Cập nhật thông tin đội cứu
 Scenario('[KCPM-114] [E2E-04-05] [POSITIVE] Lấy thống kê số lượng phương tiện [GET /api/v1/vehicles/statistics-summary]', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/vehicles/statistics-summary');
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code', 'data']);
+  assert.ok(typeof res.data.data.available === 'number', 'Thống kê phải có số lượng xe sẵn sàng');
 });
 
 Scenario('[KCPM-114] [E2E-04-06] [WORKFLOW] Tạo mới ca nô cứu hộ hợp lệ [POST /api/v1/vehicles?userId=...]', async ({ I }) => {
-  const randomPlate = 'CN-AUTO-' + Math.floor(1000 + Math.random() * 9000);
-  const payload = {
+  const { id: adminId } = await admin(I);
+  const warehouses = await I.sendGetRequest('/api/v1/warehouses');
+  assert.ok(warehouses.data.data.length > 0, 'Cần ít nhất 1 kho để biên chế phương tiện');
+  const plate = uid('CN').slice(0, 20);
+  const res = await I.sendPostRequest(`/api/v1/vehicles?userId=${adminId}`, {
     vehicleType: 'CANO',
-    licensePlate: randomPlate,
+    licensePlate: plate,
     currentLocation: 'Bến Lệ Thủy - Quảng Bình',
-    warehouseId: 'WH-01'
-  };
-
-  const res = await I.sendPostRequest(`/api/v1/vehicles?userId=${testUserId}`, payload);
+    warehouseId: warehouses.data.data[0].id, // Xe được biên chế vào kho có sẵn như nghiệp vụ thực tế
+  });
   I.seeResponseCodeIs(201);
-  I.seeResponseContainsKeys(['code', 'data']);
-  if (res.data && res.data.data) {
-    createdVehicleId = res.data.data.id;
-  }
+  createdVehicleId = res.data.data.id;
+  assert.strictEqual(res.data.data.licensePlate, plate);
+  assert.strictEqual(res.data.data.status, 'AVAILABLE', 'Xe mới tạo phải ở trạng thái AVAILABLE');
 });
 
 Scenario('[KCPM-114] [E2E-04-07] [NEGATIVE] Chặn tạo phương tiện thiếu query param userId [POST /api/v1/vehicles]', async ({ I }) => {
-  const payload = {
+  const res = await I.sendPostRequest('/api/v1/vehicles', {
     vehicleType: 'CANO',
     licensePlate: 'CN-FAIL-001',
-    currentLocation: 'Bến Lệ Thủy'
-  };
-  const res = await I.sendPostRequest('/api/v1/vehicles', payload);
+    currentLocation: 'Bến Lệ Thủy',
+  });
   I.seeResponseCodeIs(400);
+  assert.match(JSON.stringify(res.data), /userId/);
 });
 
-Scenario('[KCPM-114] [E2E-04-08] [POSITIVE] Lấy danh sách phương tiện kèm phân trang và lọc [GET /api/v1/vehicles]', async ({ I }) => {
+Scenario('[KCPM-114] [E2E-04-08] [POSITIVE] Lấy danh sách phương tiện kèm phân trang và lọc theo loại [GET /api/v1/vehicles]', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/vehicles?type=CANO&page=0&size=5');
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code', 'data']);
+  const page = res.data.data;
+  assert.ok(page.content.length <= 5, 'Kích thước trang không được vượt quá 5');
+  page.content.forEach(v => assert.match(v.vehicleType, /CANO/i));
 });
 
-Scenario('[KCPM-114] [E2E-04-09] [POSITIVE] Lấy danh sách phương tiện đang sẵn sàng [GET /api/v1/vehicles/available]', async ({ I }) => {
+Scenario('[KCPM-114] [E2E-04-09] [POSITIVE] Lấy danh sách phương tiện đang sẵn sàng có chứa xe vừa tạo [GET /api/v1/vehicles/available]', async ({ I }) => {
   const res = await I.sendGetRequest('/api/v1/vehicles/available');
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code', 'data']);
-  // Xác minh danh sách chỉ chứa xe có status = AVAILABLE
-  if (res.data && res.data.data && Array.isArray(res.data.data)) {
-    res.data.data.forEach(v => {
-      I.assertDeepEqual(v.status.toUpperCase(), 'AVAILABLE', 'Phương tiện trong danh sách available phải có status = AVAILABLE');
-    });
-  }
+  res.data.data.forEach(v => assert.strictEqual(v.status.toUpperCase(), 'AVAILABLE'));
+  assert.ok(res.data.data.some(v => v.id === createdVehicleId), 'Xe vừa tạo phải nằm trong danh sách sẵn sàng');
 });
 
 Scenario('[KCPM-114] [E2E-04-10] [POSITIVE] Cập nhật thông tin phương tiện [PUT /api/v1/vehicles/{id}?userId=...]', async ({ I }) => {
-  if (createdVehicleId) {
-    const updatePayload = {
-      vehicleType: 'CANO',
-      licensePlate: 'CN-UPDATED-' + Math.floor(1000 + Math.random() * 9000),
-      currentLocation: 'Khu vực ngập sâu Đồng Hới'
-    };
-    const res = await I.sendPutRequest(`/api/v1/vehicles/${createdVehicleId}?userId=${testUserId}`, updatePayload);
-    I.seeResponseCodeIs(200);
-    I.seeResponseContainsKeys(['code']);
-  }
-});
-
-// ==================== NHÓM 3: MÁY TRẠNG THÁI BẢO TRÌ XE (STATE TRANSITION MACHINE) ====================
-
-Scenario('[KCPM-114] [E2E-04-11] [WORKFLOW] Vòng đời bảo trì xe: BUSY -> Gặp sự cố chuyển sang MAINTENANCE -> Nghiệm thu về AVAILABLE [PUT /api/v1/vehicles/{id}]', async ({ I }) => {
-  const targetId = createdVehicleId || 'veh-cano-01';
-
-  // Bước 1: Giả lập điều động phương tiện nhận đơn cứu hộ (chuyển sang BUSY)
-  await I.sendPutRequest(`/api/v1/vehicles/${targetId}?userId=${testUserId}`, {
-    status: 'BUSY',
-    currentLocation: 'Vùng rốn lũ Lệ Thủy'
-  });
-
-  // Bước 2: Phương tiện gặp sự cố thủy lực giữa dòng lũ -> Gọi PUT chuyển sang MAINTENANCE
-  const resMaint = await I.sendPutRequest(`/api/v1/vehicles/${targetId}?userId=${testUserId}`, {
-    status: 'MAINTENANCE',
-    reason: 'Sự cố thủy lực do ngập nước sâu và vướng rác lũ',
-    currentLocation: 'Xưởng sửa chữa tiền phương'
+  assert.ok(createdVehicleId, 'Cần chạy E2E-04-06 trước');
+  const { id: adminId } = await admin(I);
+  const newPlate = uid('UPD').slice(0, 20);
+  const warehouses = await I.sendGetRequest('/api/v1/warehouses');
+  const res = await I.sendPutRequest(`/api/v1/vehicles/${createdVehicleId}?userId=${adminId}`, {
+    vehicleType: 'CANO',
+    licensePlate: newPlate,
+    currentLocation: 'Khu vực ngập sâu Đồng Hới',
+    warehouseId: warehouses.data.data[0].id,
   });
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code']);
-
-  // Bước 3: Hoàn tất sửa chữa nghiệm thu an toàn kỹ thuật -> Chuyển về AVAILABLE thành công
-  const resAvail = await I.sendPutRequest(`/api/v1/vehicles/${targetId}?userId=${testUserId}`, {
-    status: 'AVAILABLE',
-    currentLocation: 'Bến Lệ Thủy - Sẵn sàng nhận lệnh'
-  });
-  I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code']);
+  assert.strictEqual(res.data.data.licensePlate, newPlate);
+  assert.strictEqual(res.data.data.currentLocation, 'Khu vực ngập sâu Đồng Hới');
 });
 
-Scenario('[KCPM-114] [E2E-04-12] [NEGATIVE] Chặn điều phối phương tiện đang trong trạng thái MAINTENANCE [POST /api/v1/assignments/dispatch]', async ({ I }) => {
-  const targetId = createdVehicleId || 'veh-cano-01';
+// ==================== NHÓM 3: MÁY TRẠNG THÁI PHƯƠNG TIỆN (STATE TRANSITION) ====================
 
-  // Đảm bảo phương tiện đang ở trạng thái MAINTENANCE
-  await I.sendPutRequest(`/api/v1/vehicles/${targetId}?userId=${testUserId}`, {
-    status: 'MAINTENANCE',
-    reason: 'Đang bảo dưỡng động cơ'
-  });
+Scenario('[KCPM-114] [E2E-04-11] [WORKFLOW] Máy trạng thái xe: AVAILABLE -> điều phối nhận đơn SOS -> BUSY [POST /api/v1/assignments/dispatch]', async ({ I }) => {
+  assert.ok(createdVehicleId, 'Cần chạy E2E-04-06 trước');
+  const sos = await createRescueRequest(I);
+  const res = await I.sendPostRequest('/api/v1/assignments/dispatch', { requestId: sos.id, vehicleIds: [createdVehicleId] });
+  I.seeResponseCodeIs(200);
 
-  // Thử lập lệnh điều phối xe này -> Xác nhận hệ thống chặn ném lỗi 400
-  const payload = {
-    requestId: 'REQ-DEMO-03',
-    teamId: 'team-01',
-    vehicleIds: [targetId]
-  };
-  const res = await I.sendPostRequest('/api/v1/assignments/dispatch', payload);
+  const busyList = await I.sendGetRequest('/api/v1/vehicles?status=BUSY&size=1000');
+  assert.ok(busyList.data.data.content.some(v => v.id === createdVehicleId), 'Xe sau khi điều phối phải chuyển sang BUSY');
+});
+
+Scenario('[KCPM-114] [E2E-04-12] [NEGATIVE] Chặn điều phối phương tiện đang BUSY cho đơn SOS khác [POST /api/v1/assignments/dispatch]', async ({ I }) => {
+  assert.ok(createdVehicleId, 'Cần chạy E2E-04-11 trước');
+  const anotherSos = await createRescueRequest(I);
+  const res = await I.sendPostRequest('/api/v1/assignments/dispatch', { requestId: anotherSos.id, vehicleIds: [createdVehicleId] });
   I.seeResponseCodeIs(400);
+  assert.match(JSON.stringify(res.data), /đang bận|AVAILABLE/);
 });
 
 Scenario('[KCPM-114] [E2E-04-13] [POSITIVE] Xóa phương tiện cứu hộ [DELETE /api/v1/vehicles/{id}?userId=...]', async ({ I }) => {
-  if (createdVehicleId) {
-    const res = await I.sendDeleteRequest(`/api/v1/vehicles/${createdVehicleId}?userId=${testUserId}`);
-    I.seeResponseCodeIs(200);
-    I.seeResponseContainsKeys(['code']);
-  }
+  const { id: adminId } = await admin(I);
+  const vehicle = await createVehicle(I); // Xóa xe riêng, không xóa xe đang gắn với nhiệm vụ ở E2E-04-11
+  const res = await I.sendDeleteRequest(`/api/v1/vehicles/${vehicle.id}?userId=${adminId}`);
+  I.seeResponseCodeIs(200);
+
+  const available = await I.sendGetRequest('/api/v1/vehicles/available');
+  assert.ok(!available.data.data.some(v => v.id === vehicle.id), 'Xe đã xóa không được còn trong danh sách');
 });

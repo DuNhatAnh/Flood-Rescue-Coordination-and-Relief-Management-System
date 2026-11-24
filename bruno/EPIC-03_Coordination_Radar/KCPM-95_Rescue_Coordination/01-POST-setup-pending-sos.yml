@@ -1,0 +1,47 @@
+info:
+  name: "[KCPM-95] Chuẩn bị - Tạo đơn SOS PENDING cho thẩm định"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "citizenName": "Nguyễn Văn Cứu Hộ Bruno",
+        "citizenPhone": "0988776655",
+        "locationLat": 16.061,
+        "locationLng": 108.223,
+        "addressText": "123 Đường Ngập Sâu, Hòa Vang, Đà Nẵng",
+        "numberOfPeople": 4,
+        "urgencyLevel": "MEDIUM",
+        "description": "Nước ngập trên 1.5m, có người già và trẻ em cần cứu hộ"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Tạo đơn SOS chuẩn bị - HTTP 200", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().success).to.be.true;
+        });
+        if (res.getBody() && res.getBody().data) {
+            const reqId = res.getBody().data.requestId || res.getBody().data.id;
+            bru.setVar("coordReqId", reqId);
+            bru.setCollectionVar("coordReqId", reqId);
+            bru.setEnvVar("coordReqId", reqId);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

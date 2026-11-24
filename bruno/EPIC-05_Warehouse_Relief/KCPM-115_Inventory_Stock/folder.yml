@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-115: Quản lý Nhập Kho, Tồn Kho & Cảnh Báo Cạn Kiệt"
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit

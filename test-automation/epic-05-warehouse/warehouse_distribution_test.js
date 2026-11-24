@@ -4,221 +4,91 @@
  * PHÂN HỆ: [EPIC-05] QUẢN LÝ KHO BÃI & CỨU TRỢ HIỆN TRƯỜNG
  * THÀNH VIÊN PHỤ TRÁCH: PHAN QUỐC DANH (Lead Warehouse & Relief)
  * JIRA TICKET: KCPM-116 ([Sprint 5] [E2E Test] Xây dựng Kịch bản CodeceptJS E2E Chuỗi Nhập kho, Xuất kho & Hoàn kho)
+ * CHẠY TRÊN BACKEND THẬT: mỗi lần chạy tạo kho + mặt hàng mới, nên số tồn kho luôn bắt đầu từ 0 và kiểm tra chính xác 500 / 300 / 500.
  * ==============================================================================
  */
+const { assert, admin, uid } = require('../support/api');
 
 Feature('[EPIC-05] [Phan Quốc Danh] Quản Lý Kho Bãi & Cứu Trợ Hiện Trường (Warehouse & Inventory E2E)');
 
-let authToken = null;
 let warehouseId = null;
 let reliefItemId = null;
 let distributionId = null;
 
-// ==============================================================================
-// KHỞI TẠO XÁC THỰC (AUTHENTICATION TOKEN)
-// ==============================================================================
-Before(async ({ I }) => {
-  if (!authToken) {
-    try {
-      const loginRes = await I.sendPostRequest('/login', {
-        email: 'admin@rescue.vn',
-        password: 'password123'
-      });
-      if (loginRes.data && loginRes.data.data && loginRes.data.data.token) {
-        authToken = loginRes.data.data.token;
-        I.haveRequestHeaders({
-          'Authorization': `Bearer ${authToken}`
-        });
-      }
-    } catch (e) {
-      // Tiếp tục thực hiện nếu hệ thống cho phép gọi API mở
-    }
-  } else {
-    I.haveRequestHeaders({
-      'Authorization': `Bearer ${authToken}`
-    });
-  }
-});
+/** Đọc số tồn kho thực tế của mặt hàng trong kho */
+async function stockOf(I) {
+  const res = await I.sendGetRequest(`/api/v1/inventory/warehouse/${warehouseId}`);
+  assert.strictEqual(res.status, 200);
+  const row = res.data.data.find(item => item.itemId === reliefItemId);
+  return row ? row.quantity : 0;
+}
 
-// ==============================================================================
-// SCENARIO 1: TẠO KHO HÀNG DÃ CHIẾN VÀ THÊM MẶT HÀNG NHU YẾU PHẨM
-// ==============================================================================
-Scenario('[KCPM-116] [SCENARIO 1] Tạo kho hàng dã chiến [POST /api/v1/warehouses] và Thêm mặt hàng nhu yếu phẩm [POST /api/v1/relief-items]', async ({ I }) => {
-  // 1. Tạo kho hàng dã chiến mới tiếp nhận hàng cứu trợ
-  const warehousePayload = {
-    warehouseName: 'Kho Cứu Trợ Dã Chiến Hòa Vang',
+Scenario('[KCPM-116] [E2E-05-01] [WORKFLOW] Tạo kho hàng dã chiến và thêm mặt hàng nhu yếu phẩm [POST /api/v1/warehouses & POST /api/v1/relief-items]', async ({ I }) => {
+  const resWh = await I.sendPostRequest('/api/v1/warehouses', {
+    warehouseName: `Kho Cứu Trợ Dã Chiến Hòa Vang ${uid('E2E')}`,
     location: 'Huyện Hòa Vang, TP Đà Nẵng',
-    managerId: 'admin-01',
-    status: 'ACTIVE'
-  };
-
-  const resWh = await I.sendPostRequest('/api/v1/warehouses', warehousePayload);
+    status: 'ACTIVE',
+  });
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code']);
+  warehouseId = resWh.data.data.id;
+  assert.ok(warehouseId, 'Phải trả về ID kho vừa tạo');
 
-  if (resWh.data && resWh.data.data && resWh.data.data.id) {
-    warehouseId = resWh.data.data.id;
-  } else if (resWh.data && resWh.data.id) {
-    warehouseId = resWh.data.id;
-  } else {
-    warehouseId = 'WH-HOA-VANG-01';
-  }
-  I.say(`✓ Đã tạo thành công kho hàng dã chiến ID: ${warehouseId}`);
-
-  // 2. Thêm mặt hàng nhu yếu phẩm cứu trợ mới
-  const itemPayload = {
-    itemName: 'Mì tôm Hảo Hảo cứu trợ',
+  const resItem = await I.sendPostRequest('/api/v1/relief-items', {
+    itemName: `Mì tôm cứu trợ ${uid('E2E')}`,
     unit: 'Thùng',
     description: 'Nhu yếu phẩm cứu trợ khẩn cấp mùa mưa lũ',
-    imageUrl: 'https://example.com/mitom-haohao.jpg'
-  };
-
-  const resItem = await I.sendPostRequest('/api/v1/relief-items', itemPayload);
+  });
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code']);
-
-  if (resItem.data && resItem.data.data && resItem.data.data.id) {
-    reliefItemId = resItem.data.data.id;
-  } else if (resItem.data && resItem.data.id) {
-    reliefItemId = resItem.data.id;
-  } else {
-    reliefItemId = 'ITEM-MI-TOM-01';
-  }
-  I.say(`✓ Đã thêm thành công mặt hàng nhu yếu phẩm ID: ${reliefItemId}`);
+  reliefItemId = resItem.data.data.id;
+  assert.ok(reliefItemId, 'Phải trả về ID mặt hàng vừa tạo');
 });
 
-// ==============================================================================
-// SCENARIO 2: NHẬP KHO 500 THÙNG MÌ TÔM -> KIỂM TRA THẺ KHO HIỂN THỊ TỒN KHẢ DỤNG ĐÚNG 500
-// ==============================================================================
-Scenario('[KCPM-116] [SCENARIO 2] Nhập kho 500 thùng mì tôm [POST /api/v1/inventory/import] -> Kiểm tra thẻ kho hiển thị tồn khả dụng đúng 500', async ({ I }) => {
-  const targetWarehouse = warehouseId || 'WH-HOA-VANG-01';
-  const targetItem = reliefItemId || 'ITEM-MI-TOM-01';
-
-  // 1. Gửi yêu cầu nhập kho 500 thùng mì tôm
-  const importPayload = {
-    warehouseId: targetWarehouse,
-    itemId: targetItem,
+Scenario('[KCPM-116] [E2E-05-02] [WORKFLOW] Nhập kho 500 thùng mì tôm -> Thẻ kho hiển thị tồn khả dụng đúng 500 [POST /api/v1/inventory/import]', async ({ I }) => {
+  const { id: adminId } = await admin(I);
+  const res = await I.sendPostRequest(`/api/v1/inventory/import?userId=${adminId}`, {
+    warehouseId,
+    itemId: reliefItemId,
     quantity: 500,
     source: 'MẶT TRẬN TỔ QUỐC VIỆT NAM',
     referenceNumber: 'PNK-KCPM-116-001',
-    condition: 'GOOD'
-  };
-
-  const resImport = await I.sendPostRequest('/api/v1/inventory/import?userId=admin-01', importPayload);
+    condition: 'GOOD',
+  });
   I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code']);
-  I.say(`✓ Đã nhập kho thành công 500 thùng mì tôm vào kho ${targetWarehouse}`);
-
-  // 2. Tra cứu danh sách thẻ kho và xác nhận tồn kho khả dụng
-  const resStock = await I.sendGetRequest(`/api/v1/inventory/warehouse/${targetWarehouse}`);
-  I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code', 'data']);
-
-  if (resStock.data && Array.isArray(resStock.data.data)) {
-    const itemInStock = resStock.data.data.find(item => item.itemId === targetItem) || resStock.data.data[0];
-    if (itemInStock) {
-      I.say(`✓ Thẻ kho xác nhận tồn khả dụng: ${itemInStock.quantity} ${itemInStock.unit || 'Thùng'} (Kỳ vọng: 500)`);
-    }
-  }
+  assert.strictEqual(await stockOf(I), 500, 'Tồn kho sau khi nhập phải đúng 500');
 });
 
-// ==============================================================================
-// SCENARIO 3: CHẶN ÂM KHO KHI THỬ XUẤT 600 THÙNG -> KỲ VỌNG HỆ THỐNG CHẶN LỖI 400
-// ==============================================================================
-Scenario('[KCPM-116] [SCENARIO 3] [NEGATIVE] Thử xuất kho 600 thùng vượt tồn kho [POST /api/v1/distributions] -> Kỳ vọng chặn lỗi 400 Bad Request', async ({ I }) => {
-  const targetWarehouse = warehouseId || 'WH-HOA-VANG-01';
-  const targetItem = reliefItemId || 'ITEM-MI-TOM-01';
-
-  // Thử xuất 600 thùng (trong khi tồn kho khả dụng chỉ có 500)
-  const overExportPayload = {
-    warehouseId: targetWarehouse,
-    requestId: 'REQ-KCPM116-OVER-600',
+Scenario('[KCPM-116] [E2E-05-03] [NEGATIVE] Chặn xuất kho 600 thùng vượt tồn kho -> 400 Bad Request [POST /api/v1/distributions]', async ({ I }) => {
+  const res = await I.sendPostRequest('/api/v1/distributions', {
+    warehouseId,
     type: 'EXPORT',
     status: 'PENDING',
-    items: [
-      {
-        itemId: targetItem,
-        quantity: 600
-      }
-    ]
-  };
-
-  const resOver = await I.sendPostRequest('/api/v1/distributions', overExportPayload);
-  // Kỳ vọng hệ thống kích hoạt cơ chế chặn âm kho và trả về mã lỗi 400 Bad Request
+    items: [{ itemId: reliefItemId, quantity: 600 }],
+  });
   I.seeResponseCodeIs(400);
-  I.say('✓ Hệ thống đã kích hoạt cơ chế chặn âm kho thành công (Bảo vệ tính toàn vẹn tồn kho - Bug KCPM-99)');
+  assert.match(res.data.message, /không đủ/, 'Phải bị chặn đúng lý do tồn kho không đủ (Bug KCPM-99)');
+  assert.strictEqual(await stockOf(I), 500, 'Tồn kho không được thay đổi khi xuất thất bại');
 });
 
-// ==============================================================================
-// SCENARIO 4: XUẤT KHO HỢP LỆ 200 THÙNG -> TỒN KHO GIẢM CÒN 300 THÙNG
-// ==============================================================================
-Scenario('[KCPM-116] [SCENARIO 4] Xuất kho hợp lệ 200 thùng mì tôm [POST /api/v1/distributions] -> Tồn kho giảm còn 300 thùng', async ({ I }) => {
-  const targetWarehouse = warehouseId || 'WH-HOA-VANG-01';
-  const targetItem = reliefItemId || 'ITEM-MI-TOM-01';
-
-  // Xuất kho hợp lệ 200 thùng với trạng thái PENDING
-  const validExportPayload = {
-    warehouseId: targetWarehouse,
-    requestId: 'REQ-KCPM116-VALID-200',
+Scenario('[KCPM-116] [E2E-05-04] [WORKFLOW] Xuất kho hợp lệ 200 thùng mì tôm -> Tồn kho giảm còn 300 thùng [POST /api/v1/distributions]', async ({ I }) => {
+  const res = await I.sendPostRequest('/api/v1/distributions', {
+    warehouseId,
     type: 'EXPORT',
-    status: 'PENDING',
-    items: [
-      {
-        itemId: targetItem,
-        quantity: 200
-      }
-    ]
-  };
-
-  const resExport = await I.sendPostRequest('/api/v1/distributions', validExportPayload);
+    status: 'PENDING', // Để PENDING thì mới hủy được ở SCENARIO 5 (đơn COMPLETED không cho hủy)
+    items: [{ itemId: reliefItemId, quantity: 200 }],
+  });
   I.seeResponseCodeIs(200);
-
-  if (resExport.data && resExport.data.id) {
-    distributionId = resExport.data.id;
-  } else if (resExport.data && resExport.data.data && resExport.data.data.id) {
-    distributionId = resExport.data.data.id;
-  }
-  I.say(`✓ Xuất kho 200 thùng thành công. Mã đợt phân phối: ${distributionId}`);
-
-  // Kiểm tra tồn kho sau khi xuất giảm còn 300 (500 - 200 = 300)
-  const resStockAfter = await I.sendGetRequest(`/api/v1/inventory/warehouse/${targetWarehouse}`);
-  I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code', 'data']);
-
-  if (resStockAfter.data && Array.isArray(resStockAfter.data.data)) {
-    const itemInStock = resStockAfter.data.data.find(item => item.itemId === targetItem) || resStockAfter.data.data[0];
-    if (itemInStock) {
-      I.say(`✓ Tồn kho cập nhật sau khi xuất: ${itemInStock.quantity} (Kỳ vọng: 300 thùng)`);
-    }
-  }
+  distributionId = res.data.id; // API này trả về Distribution trực tiếp, không bọc ApiResponse
+  assert.ok(distributionId, 'Phải trả về mã đợt phân phối');
+  assert.strictEqual(await stockOf(I), 300, 'Tồn kho sau khi xuất 200 phải còn 300');
 });
 
-// ==============================================================================
-// SCENARIO 5: HỦY PHIẾU XUẤT VÀ TỰ ĐỘNG HOÀN KHO -> KIỂM TRA TỒN KHO HOÀN LẠI 500 THÙNG
-// ==============================================================================
-Scenario('[KCPM-116] [SCENARIO 5] Hủy phiếu xuất [POST /api/v1/distributions/{id}/cancel] -> Tự động hoàn lại 500 thùng (Nghiệm thu bug KCPM-103)', async ({ I }) => {
-  const targetDistId = distributionId || 'DIST-DEMO-KCPM116';
-  const targetWarehouse = warehouseId || 'WH-HOA-VANG-01';
-  const targetItem = reliefItemId || 'ITEM-MI-TOM-01';
-
-  // 1. Gọi API Hủy phiếu xuất cứu trợ
-  const cancelPayload = {
-    reason: 'Phương tiện gặp sự cố thủy lực, hủy phiếu xuất và hoàn trả toàn bộ nhu yếu phẩm về kho dã chiến'
-  };
-
-  const resCancel = await I.sendPostRequest(`/api/v1/distributions/${targetDistId}/cancel`, cancelPayload);
+Scenario('[KCPM-116] [E2E-05-05] [WORKFLOW] Hủy phiếu xuất -> Tự động hoàn lại 500 thùng (Nghiệm thu bug KCPM-103) [POST /api/v1/distributions/{id}/cancel]', async ({ I }) => {
+  assert.ok(distributionId, 'Cần chạy SCENARIO 4 trước');
+  const { headers } = await admin(I); // API hủy yêu cầu quyền ADMIN hoặc WAREHOUSE_STAFF
+  const res = await I.sendPostRequest(`/api/v1/distributions/${distributionId}/cancel`, {
+    reason: 'Phương tiện gặp sự cố thủy lực, hủy phiếu xuất và hoàn trả toàn bộ nhu yếu phẩm về kho dã chiến',
+  }, headers);
   I.seeResponseCodeIs(200);
-  I.say(`✓ Đã gửi yêu cầu hủy phiếu xuất ${targetDistId} thành công`);
-
-  // 2. Kiểm tra thẻ kho xác nhận số lượng tự động hoàn lại thành 500 thùng (300 + 200 = 500)
-  const resStockRestored = await I.sendGetRequest(`/api/v1/inventory/warehouse/${targetWarehouse}`);
-  I.seeResponseCodeIs(200);
-  I.seeResponseContainsKeys(['code', 'data']);
-
-  if (resStockRestored.data && Array.isArray(resStockRestored.data.data)) {
-    const itemInStock = resStockRestored.data.data.find(item => item.itemId === targetItem) || resStockRestored.data.data[0];
-    if (itemInStock) {
-      I.say(`✓ Xác nhận Rollback hoàn kho tự động: Tồn kho đã phục hồi về ${itemInStock.quantity} (Kỳ vọng: 500 thùng)`);
-    }
-  }
+  assert.strictEqual(res.data.status, 'CANCELLED');
+  assert.strictEqual(await stockOf(I), 500, 'Tồn kho phải được hoàn về đúng 500 sau khi hủy phiếu xuất');
 });

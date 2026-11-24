@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-114: Điều Động Phối Hợp & Máy Trạng Thái Xe"
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit

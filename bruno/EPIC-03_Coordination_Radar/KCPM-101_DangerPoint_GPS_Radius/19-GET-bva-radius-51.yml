@@ -1,0 +1,25 @@
+info:
+  name: "[KCPM-101] TC_DP_101_19 - BVA radius Min+1 = 51 (200)"
+  type: http
+  seq: 19
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/danger-points?lat=16.05&lng=108.2&radius=51"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("BVA radius Min+1 = 51 -> HTTP 200, trả về danh sách", function () {
+            expect(res.getStatus()).to.equal(200);
+            expect(res.getBody().data).to.be.an('array');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

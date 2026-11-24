@@ -1,0 +1,40 @@
+info:
+  name: "[KCPM-107] TC_SYS_06 - Cập nhật cấu hình thiếu adminId (400)"
+  type: http
+  seq: 6
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/v1/admin/system/config?key=ALERT&value=ON&adminId="
+  params:
+    - name: key
+      value: ALERT
+      type: query
+    - name: value
+      value: ON
+      type: query
+    - name: adminId
+      value: ""
+      type: query
+  headers:
+    - name: Authorization
+      value: Bearer {{bearerToken}}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[KCPM-107] TC_SYS_06: Bắt lỗi thiếu adminId - HTTP 400 Bad Request", function () {
+            expect(res.getStatus()).to.equal(400);
+            const body = res.getBody();
+            expect(body.success).to.equal(false);
+            expect(body.message).to.include("Mã quản trị viên");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

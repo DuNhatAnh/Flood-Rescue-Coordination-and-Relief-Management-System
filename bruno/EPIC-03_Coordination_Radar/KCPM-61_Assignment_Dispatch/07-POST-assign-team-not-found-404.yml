@@ -1,0 +1,37 @@
+info:
+  name: "[KCPM-61] TC_ASSIGN_NEG_02 - Bắt lỗi khi phân công đội không tồn tại (404)"
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/assignments"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "requestId": "{{assignReqId}}",
+        "teamId": "999999999999999999999999",
+        "vehicleIds": ["{{assignVehicleId}}"],
+        "assignedBy": "{{adminId}}",
+        "note": "Gán đội không tồn tại"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Bắt lỗi đội không tồn tại - HTTP 404", function () {
+            expect(res.getStatus()).to.equal(404);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

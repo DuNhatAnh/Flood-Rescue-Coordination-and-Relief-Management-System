@@ -9,6 +9,7 @@ import vn.rescue.core.application.services.ReportService;
 import vn.rescue.core.domain.entities.SystemLog;
 import vn.rescue.core.domain.entities.SystemConfig;
 import vn.rescue.core.presentation.common.ApiResponse;
+import vn.rescue.core.presentation.exceptions.BadRequestException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 import java.util.Map;
@@ -35,11 +36,15 @@ public class AdminSystemController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DashboardStatsResponse>> getDashboardStats(
             @PathVariable String warehouseId) {
+        if (warehouseId == null || warehouseId.trim().isEmpty()) {
+            throw new BadRequestException("Mã kho (warehouseId) không được để trống");
+        }
         DashboardStatsResponse stats = systemManagementService.getDashboardStats(warehouseId);
         return ResponseEntity.ok(ApiResponse.success(stats, "Dashboard statistics retrieved"));
     }
 
     // --- CẤU HÌNH HỆ THỐNG ---
+    // Public có chủ đích: màn hình trang chủ người dân (home_screen) cần đọc cấu hình bản đồ khi chưa đăng nhập
     @GetMapping("/config")
     public ResponseEntity<ApiResponse<List<SystemConfig>>> getAllConfigs() {
         return ResponseEntity.ok(ApiResponse.success(systemManagementService.getAllConfigs(), "All system configurations retrieved"));
@@ -52,6 +57,13 @@ public class AdminSystemController {
             @RequestParam String value,
             @RequestParam String adminId) { // Thêm adminId để ghi log chính xác
 
+        if (key == null || key.trim().isEmpty()) {
+            throw new BadRequestException("Khóa cấu hình (key) không được để trống");
+        }
+        if (adminId == null || adminId.trim().isEmpty()) {
+            throw new BadRequestException("Mã quản trị viên (adminId) không được để trống");
+        }
+
         SystemConfig config = systemManagementService.updateConfig(key, value);
 
         // Ghi log hành động cập nhật cấu hình
@@ -63,6 +75,7 @@ public class AdminSystemController {
 
     // --- THỐNG KÊ BÁO CÁO CHI TIẾT (REPORT SERVICE) ---
     @GetMapping("/reports/general")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> getGeneralReports() {
         return ResponseEntity.ok(ApiResponse.success(reportService.getGeneralStats(), "General reports retrieved"));
     }

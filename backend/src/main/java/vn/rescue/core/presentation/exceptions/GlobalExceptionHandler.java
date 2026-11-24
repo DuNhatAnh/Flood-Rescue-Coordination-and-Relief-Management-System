@@ -173,6 +173,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex) {
         log.warn("Access denied: {}", ex.getMessage());
+        // Chưa xác thực (không gửi token / token hết hạn / token bị sửa) -> 401; đã đăng nhập nhưng thiếu quyền -> 403
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(401, "Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn"));
+        }
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(403, "Bạn không có quyền truy cập tài nguyên này"));
     }

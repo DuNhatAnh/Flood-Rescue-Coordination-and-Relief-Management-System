@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-06: Quản lý Kho Hàng & Giải Thể Kho"
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

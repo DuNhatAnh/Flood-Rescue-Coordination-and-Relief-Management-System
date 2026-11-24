@@ -1,0 +1,43 @@
+info:
+  name: "[KCPM-61] Chuẩn bị 4 - Tạo xe dự phòng thay thế"
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/vehicles?userId={{adminId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "vehicleType": "CANO",
+        "licensePlate": "{{assignPlate2}}",
+        "currentLocation": "Bến Lệ Thủy"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const plate2 = "BR-B" + Math.floor(100000 + Math.random() * 900000);
+        bru.setVar("assignPlate2", plate2);
+        bru.setCollectionVar("assignPlate2", plate2);
+        bru.setEnvVar("assignPlate2", plate2);
+    - type: after-response
+      code: |-
+        test("Tạo xe thay thế - HTTP 201", function () {
+            expect(res.getStatus()).to.equal(201);
+            expect(res.getBody().success).to.equal(true);
+        });
+        bru.setCollectionVar("assignVehicleId2", res.getBody().data.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

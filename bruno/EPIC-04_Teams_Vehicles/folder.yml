@@ -1,0 +1,7 @@
+info:
+  name: "Epic 04 - Đội Cơ Động & Phương Tiện Cứu Hộ"
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit

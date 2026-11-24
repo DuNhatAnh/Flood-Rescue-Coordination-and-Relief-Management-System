@@ -1,0 +1,37 @@
+info:
+  name: "[KCPM-61] TC_ASSIGN_NEG_01 - Chặn phân công đội đang bận nhiệm vụ khác (400)"
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/assignments"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "requestId": "{{assignReqId}}",
+        "teamId": "{{assignTeamId}}",
+        "vehicleIds": ["{{assignVehicleId}}"],
+        "assignedBy": "{{adminId}}",
+        "note": "Cố tình gán đội đang BUSY"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Chặn gán đội đang bận - HTTP 400", function () {
+            expect(res.getStatus()).to.equal(400);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

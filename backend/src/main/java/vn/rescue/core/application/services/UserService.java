@@ -152,9 +152,13 @@ public class UserService {
 
     public UserDto updateUserStatus(String userId, String status) {
         if (userId == null) throw new IllegalArgumentException("User ID cannot be null");
+        String normalizedStatus = status != null ? status.trim().toUpperCase() : "";
+        if (!java.util.Set.of("ACTIVE", "INACTIVE", "LOCKED").contains(normalizedStatus)) {
+            throw new BadRequestException("Trạng thái tài khoản không hợp lệ: " + status + ". Chỉ chấp nhận ACTIVE, INACTIVE, LOCKED");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với ID: " + userId));
-        user.setStatus(status);
+        user.setStatus(normalizedStatus);
         return mapToDto(userRepository.save(user));
     }
 
@@ -170,6 +174,9 @@ public class UserService {
         }
         if (request.getNewPassword().length() < 6) {
             throw new BadRequestException("Mật khẩu mới phải có tối thiểu 6 ký tự");
+        }
+        if (request.getNewPassword().length() > 32) {
+            throw new BadRequestException("Mật khẩu mới không được vượt quá 32 ký tự");
         }
         if (request.getOldPassword().equals(request.getNewPassword())) {
             throw new BadRequestException("Mật khẩu mới không được trùng với mật khẩu cũ");
