@@ -298,4 +298,63 @@ class RescueRequestFilterAndCancelTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Chỉ có thể xác nhận an toàn cho các yêu cầu đã báo cáo hoàn thành cứu hộ!");
     }
+
+    // =========================================================================
+    // 4. KIỂM THỬ HỘP TRẮNG BỔ SUNG: getById, getRequests, cancelRequest (AC 1, AC 2, AC 3)
+    // =========================================================================
+
+    @Test
+    @DisplayName("WB_RESCUE_REQUEST_GETBYID_01: getById với id null -> Ném IllegalArgumentException (Dòng 123)")
+    void WB_RESCUE_REQUEST_GETBYID_01_getById_WhenIdIsNull_ShouldThrowIllegalArgumentException() {
+        assertThatThrownBy(() -> rescueRequestService.getById(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ID cannot be null");
+    }
+
+    @Test
+    @DisplayName("WB_RESCUE_REQUEST_GETBYID_02: getById tìm bằng customId (RES-0001) khi findById không thấy (Dòng 127)")
+    void WB_RESCUE_REQUEST_GETBYID_02_getById_WhenFoundByCustomId_ShouldReturnEntity() {
+        RescueRequest found = rescueRequestService.getById("RES-0001");
+
+        assertThat(found).isNotNull();
+        assertThat(found.getId()).isEqualTo("req-01");
+        assertThat(found.getCustomId()).isEqualTo("RES-0001");
+        assertThat(found.getCitizenName()).isEqualTo("Nguyễn Văn A");
+    }
+
+    @Test
+    @DisplayName("WB_RESCUE_REQUEST_FILTER_01: getRequests với status và district là chuỗi khoảng trắng -> Bỏ qua lọc, trả về toàn bộ danh sách")
+    void WB_RESCUE_REQUEST_FILTER_01_getRequests_WithBlankStatusAndDistrict_ShouldReturnAll() {
+        List<RescueRequest> results = rescueRequestService.getRequests("   ", "   ");
+
+        assertThat(results).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("WB_RESCUE_REQUEST_FILTER_02: getRequests khi danh sách có bản ghi status null hoặc addressText null -> Lọc an toàn không ném NPE")
+    void WB_RESCUE_REQUEST_FILTER_02_getRequests_WithNullFieldsInEntity_ShouldFilterSafely() {
+        RescueRequest reqNullFields = new RescueRequest();
+        reqNullFields.setId("req-04-null");
+        reqNullFields.setCustomId("RES-0004");
+        reqNullFields.setStatus(null);
+        reqNullFields.setAddressText(null);
+        dbStore.put(reqNullFields.getId(), reqNullFields);
+
+        List<RescueRequest> filteredPending = rescueRequestService.getRequests("PENDING", "Hải Châu");
+        assertThat(filteredPending).hasSize(1);
+        assertThat(filteredPending.get(0).getId()).isEqualTo("req-01");
+    }
+
+    @Test
+    @DisplayName("WB_RESCUE_REQUEST_CANCEL_01: cancelRequest với lý do là khoảng trắng -> Dùng lý do mặc định")
+    void WB_RESCUE_REQUEST_CANCEL_01_cancelRequest_WithBlankReason_ShouldUseDefaultReason() {
+        CancelRescueRequestDto cancelDto = new CancelRescueRequestDto("   ");
+        ResponseEntity<ApiResponse<RescueRequest>> response = rescueRequestController.cancelRequest("req-01", cancelDto);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        RescueRequest cancelled = response.getBody().getData();
+        assertThat(cancelled.getStatus()).isEqualTo("CANCELLED");
+        assertThat(cancelled.getNote()).isEqualTo("Người dân tự hủy yêu cầu khi nước đã rút");
+    }
 }

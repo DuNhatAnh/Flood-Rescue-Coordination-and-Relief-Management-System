@@ -26,6 +26,7 @@ class ReportAndSafetyReportValidationTest {
     private SafetyReportController safetyReportController;
     private ReportController reportController;
     private List<SafetyReport> mockReports;
+    private vn.rescue.core.application.services.RescueRequestService rescueRequestService;
 
     static class StubReportService extends ReportService {
         public StubReportService() {
@@ -76,6 +77,11 @@ class ReportAndSafetyReportValidationTest {
         Field repoField = SafetyReportController.class.getDeclaredField("safetyReportRepository");
         repoField.setAccessible(true);
         repoField.set(safetyReportController, safetyReportRepo);
+
+        rescueRequestService = org.mockito.Mockito.mock(vn.rescue.core.application.services.RescueRequestService.class);
+        Field reqServiceField = SafetyReportController.class.getDeclaredField("rescueRequestService");
+        reqServiceField.setAccessible(true);
+        reqServiceField.set(safetyReportController, rescueRequestService);
 
         reportController = new ReportController(new StubReportService());
     }
@@ -354,5 +360,67 @@ class ReportAndSafetyReportValidationTest {
         assertThat(response.getBody().isSuccess()).isTrue();
         assertThat(response.getBody().getData().getRescuedPeopleCount()).isEqualTo(5);
         assertThat(response.getBody().getData().getActualDistributedItems()).hasSize(1);
+    }
+
+    // =========================================================================
+    // KIỂM THỬ HỘP TRẮNG: SafetyReportController.createReport (AC 1, AC 2, AC 3)
+    // =========================================================================
+
+    @Test
+    @DisplayName("WB_SAFETY_REPORT_01: report là null -> Ném BadRequestException")
+    void WB_SAFETY_REPORT_01_createReport_nullReport_shouldThrowBadRequestException() {
+        assertThatThrownBy(() -> safetyReportController.createReport(null))
+                .isInstanceOf(vn.rescue.core.presentation.exceptions.BadRequestException.class)
+                .hasMessageContaining("Số điện thoại người báo không được để trống");
+    }
+
+    @Test
+    @DisplayName("WB_SAFETY_REPORT_02: SĐT chỉ toàn khoảng trắng -> Ném BadRequestException")
+    void WB_SAFETY_REPORT_02_createReport_blankPhone_shouldThrowBadRequestException() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenPhone("   ");
+
+        assertThatThrownBy(() -> safetyReportController.createReport(report))
+                .isInstanceOf(vn.rescue.core.presentation.exceptions.BadRequestException.class)
+                .hasMessageContaining("Số điện thoại người báo không được để trống");
+    }
+
+    @Test
+    @DisplayName("WB_SAFETY_REPORT_03: Báo an toàn hợp lệ -> Gọi linkSafetyReportByPhone và trả về HTTP 200 OK")
+    void WB_SAFETY_REPORT_03_createReport_valid_shouldLinkSafetyReportAndReturnOk() {
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Nguyễn Văn An");
+        report.setCitizenPhone("0905123456");
+        report.setAddressText("Hải Châu, Đà Nẵng");
+
+        ResponseEntity<ApiResponse<SafetyReport>> response = safetyReportController.createReport(report);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData().getCitizenPhone()).isEqualTo("0905123456");
+        org.mockito.Mockito.verify(rescueRequestService, org.mockito.Mockito.times(1))
+                .linkSafetyReportByPhone("0905123456");
+    }
+
+    @Test
+    @DisplayName("WB_SAFETY_REPORT_04: linkSafetyReportByPhone ném Exception -> Catch ghi log, vẫn trả về HTTP 200 OK")
+    void WB_SAFETY_REPORT_04_createReport_whenLinkThrowsException_shouldCatchAndReturnOk() {
+        org.mockito.Mockito.doThrow(new RuntimeException("Simulated link error"))
+                .when(rescueRequestService).linkSafetyReportByPhone(org.mockito.ArgumentMatchers.anyString());
+
+        SafetyReport report = new SafetyReport();
+        report.setCitizenName("Trần Văn Bình");
+        report.setCitizenPhone("+84905123456");
+        report.setAddressText("Sơn Trà, Đà Nẵng");
+
+        ResponseEntity<ApiResponse<SafetyReport>> response = safetyReportController.createReport(report);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getData().getCitizenPhone()).isEqualTo("0905123456");
+        org.mockito.Mockito.verify(rescueRequestService, org.mockito.Mockito.times(1))
+                .linkSafetyReportByPhone("0905123456");
     }
 }
