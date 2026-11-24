@@ -1,0 +1,41 @@
+info:
+  name: TC_BVA_06 - Thiếu Số Lượng (Quantity = null)
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/inventory/import?userId=admin-01"
+  params:
+    - name: userId
+      value: "admin-01"
+      type: query
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "warehouseId": "6ac5fed5346e4a02fdcf9644",
+        "itemId": "6ac5fed5346e4a02fdcf9647",
+        "source": "Ủy ban Mặt trận Tổ quốc",
+        "referenceNumber": "BVA-IMP-006",
+        "condition": "NEW"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("[BVA-06] Chặn khi không truyền số lượng (Kỳ vọng 400 Bad Request)", function () {
+            expect(res.getStatus()).to.equal(400);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
