@@ -474,4 +474,195 @@ class RescueCoordinationServiceTest {
 
         assertTrue(ex.getMessage().contains("Không tìm thấy nhiệm vụ"));
     }
+
+    // =========================================================================
+    // KCPM-125: HỘP TRẮNG - QUẢN LÝ ĐỘI SẴN SÀNG & LUÂN CHUYỂN TRẠNG THÁI (EPIC 04)
+    // ==========================================
+
+    @Test
+    @DisplayName("WB_TEAM_01: getAvailableTeams() - Lấy danh sách đội cứu hộ sẵn sàng (AVAILABLE)")
+    void testGetAvailableTeams_Success() {
+        RescueTeam team1 = new RescueTeam();
+        team1.setId("TEAM-01");
+        team1.setTeamName("Đội Cứu hộ 1");
+        team1.setStatus("AVAILABLE");
+
+        RescueTeam team2 = new RescueTeam();
+        team2.setId("TEAM-02");
+        team2.setTeamName("Đội Cứu hộ 2");
+        team2.setStatus("AVAILABLE");
+
+        when(rescueTeamRepository.findByStatusIgnoreCase("AVAILABLE")).thenReturn(List.of(team1, team2));
+
+        List<RescueTeam> result = rescueCoordinationService.getAvailableTeams();
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("TEAM-01", result.get(0).getId());
+        assertEquals("AVAILABLE", result.get(0).getStatus());
+        verify(rescueTeamRepository, times(1)).findByStatusIgnoreCase("AVAILABLE");
+    }
+
+    @Test
+    @DisplayName("WB_TEAM_01_B: getAllTeams() - Lấy danh sách tất cả các đội cứu hộ")
+    void testGetAllTeams_Success() {
+        RescueTeam team1 = new RescueTeam();
+        team1.setId("TEAM-01");
+        when(rescueTeamRepository.findAll()).thenReturn(List.of(team1));
+
+        List<RescueTeam> result = rescueCoordinationService.getAllTeams();
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(rescueTeamRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("WB_TEAM_01_C: getTeamById() - Lấy thông tin đội cứu hộ theo ID")
+    void testGetTeamById_Success() {
+        String teamId = "TEAM-01";
+        RescueTeam team = new RescueTeam();
+        team.setId(teamId);
+        when(rescueTeamRepository.findById(teamId)).thenReturn(Optional.of(team));
+
+        Optional<RescueTeam> result = rescueCoordinationService.getTeamById(teamId);
+
+        assertTrue(result.isPresent());
+        assertEquals(teamId, result.get().getId());
+        verify(rescueTeamRepository, times(1)).findById(teamId);
+    }
+
+    @Test
+    @DisplayName("WB_TEAM_02: updateTeam() - Đổi tên đội cứu hộ thành công, lưu DB và gửi thông báo notify")
+    void testUpdateTeam_Success() {
+        String teamId = "TEAM-01";
+        RescueTeam team = new RescueTeam();
+        team.setId(teamId);
+        team.setTeamName("Tên Đội Cũ");
+        team.setStatus("AVAILABLE");
+
+        User member = new User();
+        member.setId("USER-01");
+        member.setFullName("Nguyễn Văn A");
+        member.setTeamId(teamId);
+
+        when(rescueTeamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(rescueTeamRepository.save(any(RescueTeam.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findByTeamId(teamId)).thenReturn(List.of(member));
+
+        RescueTeam updated = rescueCoordinationService.updateTeam(teamId, "Tên Đội Mới");
+
+        assertNotNull(updated);
+        assertEquals("Tên Đội Mới", updated.getTeamName());
+        verify(rescueTeamRepository, times(1)).findById(teamId);
+        verify(rescueTeamRepository, times(1)).save(team);
+        verify(userRepository, times(1)).findByTeamId(teamId);
+        verify(systemManagementService, times(1)).sendNotification(any());
+    }
+
+    @Test
+    @DisplayName("WB_STM_01: refreshTeamStatus() - Đội không còn nhiệm vụ nào đang chạy -> Chuyển về AVAILABLE")
+    void testRefreshTeamStatus_WhenNoActiveAssignments_ShouldSetAvailable() {
+        String teamId = "TEAM-01";
+        RescueTeam team = new RescueTeam();
+        team.setId(teamId);
+        team.setStatus("BUSY");
+
+        Assignment finishedAssignment = new Assignment();
+        finishedAssignment.setId("ASN-01");
+        finishedAssignment.setTeamId(teamId);
+        finishedAssignment.setStatus("COMPLETED");
+
+        when(rescueTeamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(assignmentRepository.findByTeamId(teamId)).thenReturn(List.of(finishedAssignment));
+        when(rescueTeamRepository.save(any(RescueTeam.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(rescueCoordinationService, "refreshTeamStatus", teamId);
+
+        assertEquals("AVAILABLE", team.getStatus());
+        verify(rescueTeamRepository, times(1)).save(team);
+    }
+
+    @Test
+    @DisplayName("WB_STM_02: refreshTeamStatus() - Đội còn nhiệm vụ đang chạy (IN_PROGRESS/MOVING/...) -> Giữ BUSY")
+    void testRefreshTeamStatus_WhenHasActiveAssignments_ShouldSetBusy() {
+        String teamId = "TEAM-01";
+        RescueTeam team = new RescueTeam();
+        team.setId(teamId);
+        team.setStatus("AVAILABLE");
+
+        Assignment activeAssignment = new Assignment();
+        activeAssignment.setId("ASN-02");
+        activeAssignment.setTeamId(teamId);
+        activeAssignment.setStatus("MOVING");
+
+        when(rescueTeamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(assignmentRepository.findByTeamId(teamId)).thenReturn(List.of(activeAssignment));
+        when(rescueTeamRepository.save(any(RescueTeam.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(rescueCoordinationService, "refreshTeamStatus", teamId);
+
+        assertEquals("BUSY", team.getStatus());
+        verify(rescueTeamRepository, times(1)).save(team);
+    }
+
+    @Test
+    @DisplayName("WB_STM_03: refreshTeamStatus() - Đội không tồn tại trong DB -> Bỏ qua không cập nhật")
+    void testRefreshTeamStatus_WhenTeamNotFound_ShouldDoNothing() {
+        String nonExistTeamId = "TEAM-999";
+        when(rescueTeamRepository.findById(nonExistTeamId)).thenReturn(Optional.empty());
+
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(rescueCoordinationService, "refreshTeamStatus", nonExistTeamId);
+
+        verify(rescueTeamRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("WB_STM_04: Luân chuyển trạng thái đội gián tiếp qua updateAssignmentStatus sang CANCELLED")
+    void testUpdateAssignmentStatus_Cancelled_ShouldTriggerRefreshTeamStatus() {
+        String assignmentId = "ASN-100";
+        String teamId = "TEAM-01";
+        String userId = "ADMIN-01";
+
+        Assignment assignment = new Assignment();
+        assignment.setId(assignmentId);
+        assignment.setTeamId(teamId);
+        assignment.setRequestId("REQ-100");
+        assignment.setStatus("IN_PROGRESS");
+        assignment.setVehicleIds(List.of("VEH-01"));
+
+        RescueRequest request = new RescueRequest();
+        request.setId("REQ-100");
+        request.setStatus("IN_PROGRESS");
+
+        User adminUser = new User();
+        adminUser.setId(userId);
+        adminUser.setRoleId("ROLE_ADMIN");
+
+        Vehicles vehicle = new Vehicles();
+        vehicle.setId("VEH-01");
+        vehicle.setStatus("BUSY");
+
+        RescueTeam team = new RescueTeam();
+        team.setId(teamId);
+        team.setStatus("BUSY");
+
+        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(adminUser));
+        when(rescueRequestRepository.findById("REQ-100")).thenReturn(Optional.of(request));
+        when(vehiclesRepository.findById("VEH-01")).thenReturn(Optional.of(vehicle));
+        when(rescueTeamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(assignmentRepository.findByTeamId(teamId)).thenReturn(List.of(assignment));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("userId", userId);
+        body.put("status", "CANCELLED");
+        body.put("note", "Hủy nhiệm vụ điều phối");
+
+        rescueCoordinationService.updateAssignmentStatus(assignmentId, body);
+
+        assertEquals("CANCELLED", assignment.getStatus());
+        assertEquals("AVAILABLE", vehicle.getStatus());
+        verify(rescueTeamRepository, atLeastOnce()).save(team);
+    }
 }
