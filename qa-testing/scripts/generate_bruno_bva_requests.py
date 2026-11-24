@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 Script tạo các file request kiểm thử BVA chuẩn Bruno (.yml)
-vào thư mục: Flood Rescue Coordination & Relief Management API/RescueRequest
+vào thư mục: bruno/EPIC-02_Citizen_SOS/KCPM-109_Rescue_Report_BVA
 """
 import os
 import yaml
 
-TARGET_DIR = os.path.abspath("Flood-Rescue-Coordination-and-Relief-Management-System/Flood Rescue Coordination & Relief Management API/RescueRequest")
+TARGET_DIR = os.path.abspath("Flood-Rescue-Coordination-and-Relief-Management-System/bruno/EPIC-02_Citizen_SOS/KCPM-109_Rescue_Report_BVA")
+if not os.path.exists(TARGET_DIR):
+    TARGET_DIR = os.path.abspath("bruno/EPIC-02_Citizen_SOS/KCPM-109_Rescue_Report_BVA")
 
 note_1000 = "CuuTroKhanCap_" + "A" * (1000 - 14)
 note_1001 = "CuuTroKhanCap_" + "A" * (1001 - 14)

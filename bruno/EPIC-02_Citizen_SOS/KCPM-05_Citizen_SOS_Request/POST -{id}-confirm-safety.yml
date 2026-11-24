@@ -1,0 +1,29 @@
+info:
+  name: "[KCPM-5] TC_REQ_10 - Xác nhận an toàn cho đơn SOS"
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/rescue-requests/:id/confirm-safety"
+  params:
+    - name: id
+      value: "{{completedRequestId}}"
+      type: path
+      description: ID of id
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Phản hồi thành công (200, 201, 204)", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

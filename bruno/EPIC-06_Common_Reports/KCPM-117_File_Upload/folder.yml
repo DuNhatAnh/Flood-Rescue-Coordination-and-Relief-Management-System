@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-117: Tải Lên Tập Tin Đa Dụng & Ảnh Hiện Trường"
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit

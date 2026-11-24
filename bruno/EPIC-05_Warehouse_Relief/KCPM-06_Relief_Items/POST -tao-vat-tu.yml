@@ -1,0 +1,39 @@
+info:
+  name: "[KCPM-6] TC_ITEM_01 - Tạo mặt hàng nhu yếu phẩm mới"
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/relief-items"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "itemName": "Mì tôm Hảo Hảo",
+        "unit": "Thùng",
+        "description": "Thùng 30 gói mì tôm cứu trợ",
+        "imageUrl": "https://example.com/mi-tom.jpg"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Phản hồi thành công (200, 201, 204)", function () {
+            expect(res.getStatus()).to.be.oneOf([200, 201, 204]);
+            if (res.getBody() && res.getBody().data && res.getBody().data.id) {
+                bru.setVar("itemId", res.getBody().data.id);
+            }
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

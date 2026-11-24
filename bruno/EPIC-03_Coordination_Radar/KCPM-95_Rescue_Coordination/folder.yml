@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-95: Thẩm Định, Gán Mức Khẩn Cấp & Tiếp Nhận"
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit

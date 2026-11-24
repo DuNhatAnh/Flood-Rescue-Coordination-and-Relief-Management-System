@@ -6,7 +6,9 @@ Endpoint: POST /api/v1/rescue-reports
 import os
 import json
 
-TARGET_DIR = os.path.abspath("Flood-Rescue-Coordination-and-Relief-Management-System/Flood Rescue Coordination & Relief Management API/RescueReport")
+TARGET_DIR = os.path.abspath("Flood-Rescue-Coordination-and-Relief-Management-System/bruno/EPIC-02_Citizen_SOS/KCPM-109_Rescue_Report_BVA")
+if not os.path.exists(TARGET_DIR):
+    TARGET_DIR = os.path.abspath("bruno/EPIC-02_Citizen_SOS/KCPM-109_Rescue_Report_BVA")
 
 reports_cases = [
     {

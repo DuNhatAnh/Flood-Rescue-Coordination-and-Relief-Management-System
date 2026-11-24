@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-06: Danh mục Nhu Yếu Phẩm & Vật Tư Cứu Trợ"
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit

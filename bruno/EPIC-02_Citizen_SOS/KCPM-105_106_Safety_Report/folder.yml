@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-105/106: Báo an toàn công dân & Chuẩn hóa SĐT"
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit

@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-60: Xác thực, Cấp Token & Phân quyền RBAC"
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

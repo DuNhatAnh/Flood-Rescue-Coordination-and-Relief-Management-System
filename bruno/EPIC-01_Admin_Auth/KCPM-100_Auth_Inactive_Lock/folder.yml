@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-100: Khóa tài khoản & Chặn truy cập người dùng Inactive"
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit

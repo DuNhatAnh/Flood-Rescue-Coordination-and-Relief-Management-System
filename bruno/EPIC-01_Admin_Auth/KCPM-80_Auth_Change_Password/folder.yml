@@ -1,0 +1,7 @@
+info:
+  name: "KCPM-80: Đổi mật khẩu & Kiểm thử biên BVA"
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit
