@@ -197,4 +197,74 @@ class AuthControllerTest {
 
         verify(jwtService, never()).generateToken(any());
     }
+
+    // =========================================================================
+    // KCPM-122: Bổ sung hộp trắng cho AuthController.login (nhánh status null, dòng 70–73)
+    // =========================================================================
+
+    private UserDetails stubSuccessfulLogin(User user) {
+        UserDetails details = new org.springframework.security.core.userdetails.User(
+                user.getEmail(), "password123", List.of(new SimpleGrantedAuthority("ROLE_RESCUE_STAFF")));
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(null);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(userDetailsService.loadUserByUsername(user.getEmail())).thenReturn(details);
+        when(jwtService.generateToken(details)).thenReturn("jwt-" + user.getId());
+        return details;
+    }
+
+    @Test
+    @DisplayName("WB_LOGIN_01: Tài khoản dữ liệu cũ có status = null -> Không bị chặn, vẫn cấp Token (nhánh status != null = false)")
+    void testLogin_WhenStatusNull_ShouldStillIssueToken() {
+        User legacy = new User();
+        legacy.setId("USR-NULL");
+        legacy.setEmail("legacy@rescue.vn");
+        legacy.setStatus(null);
+        stubSuccessfulLogin(legacy);
+
+        ResponseEntity<AuthResponse> response = authController.login(createAuthRequest("legacy@rescue.vn", "password123"));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("jwt-USR-NULL", response.getBody().getToken());
+        assertNull(response.getBody().getTeamName());
+        verifyNoInteractions(rescueTeamRepository);
+    }
+
+    @Test
+    @DisplayName("WB_LOGIN_02: Nhân viên cứu hộ thuộc đội (teamId có, đội tồn tại) -> Trả kèm teamId, teamName và role")
+    void testLogin_WhenUserHasTeam_ShouldReturnTeamName() {
+        User staff = new User();
+        staff.setId("USR-STAFF");
+        staff.setEmail("staff@rescue.vn");
+        staff.setStatus("ACTIVE");
+        staff.setTeamId("TEAM-01");
+        stubSuccessfulLogin(staff);
+        vn.rescue.core.domain.entities.RescueTeam team = new vn.rescue.core.domain.entities.RescueTeam();
+        team.setId("TEAM-01");
+        team.setTeamName("Đội cano Hòa Vang");
+        when(rescueTeamRepository.findById("TEAM-01")).thenReturn(Optional.of(team));
+
+        AuthResponse body = authController.login(createAuthRequest("staff@rescue.vn", "password123")).getBody();
+
+        assertEquals("TEAM-01", body.getTeamId());
+        assertEquals("Đội cano Hòa Vang", body.getTeamName());
+        assertEquals(List.of("ROLE_RESCUE_STAFF"), body.getRoles());
+    }
+
+    @Test
+    @DisplayName("WB_LOGIN_03: teamId trỏ tới đội đã bị xóa -> Vẫn đăng nhập được, teamName = null")
+    void testLogin_WhenTeamDeleted_ShouldReturnNullTeamName() {
+        User staff = new User();
+        staff.setId("USR-ORPHAN");
+        staff.setEmail("orphan@rescue.vn");
+        staff.setStatus("ACTIVE");
+        staff.setTeamId("TEAM-DELETED");
+        stubSuccessfulLogin(staff);
+        when(rescueTeamRepository.findById("TEAM-DELETED")).thenReturn(Optional.empty());
+
+        AuthResponse body = authController.login(createAuthRequest("orphan@rescue.vn", "password123")).getBody();
+
+        assertEquals("TEAM-DELETED", body.getTeamId());
+        assertNull(body.getTeamName());
+        assertEquals("jwt-USR-ORPHAN", body.getToken());
+    }
 }

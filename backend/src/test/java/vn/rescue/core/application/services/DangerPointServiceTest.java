@@ -238,4 +238,38 @@ class DangerPointServiceTest {
         });
         assertTrue(exNeg.getMessage().contains("Mực nước nguy hiểm (depth) phải lớn hơn 0"));
     }
+
+    // ===== Ca bổ sung tại biên phía hợp lệ của lat [-90; 90] và lng [-180; 180] =====
+
+    @Test
+    @DisplayName("WB_RADAR_08 (BVA): Vĩ độ lat = -90 (biên dưới hợp lệ) -> Không bị chặn")
+    void testGetDangerPointsNearby_WhenLatMinus90_ShouldPass() {
+        when(dangerPointRepository.findAll()).thenReturn(java.util.List.of());
+        assertTrue(dangerPointService.getDangerPointsNearby(-90.0, 108.223, 500.0).isEmpty());
+        verify(dangerPointRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("WB_RADAR_09 (BVA): Vĩ độ lat = 90 (biên trên hợp lệ) -> Không bị chặn")
+    void testGetDangerPointsNearby_WhenLat90_ShouldPass() {
+        when(dangerPointRepository.findAll()).thenReturn(java.util.List.of());
+        assertTrue(dangerPointService.getDangerPointsNearby(90.0, 108.223, 500.0).isEmpty());
+        verify(dangerPointRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("WB_RADAR_10 (BVA): Kinh độ lng = -180 (biên dưới hợp lệ) -> Không bị chặn")
+    void testGetDangerPointsNearby_WhenLngMinus180_ShouldPass() {
+        when(dangerPointRepository.findAll()).thenReturn(java.util.List.of());
+        assertTrue(dangerPointService.getDangerPointsNearby(16.061, -180.0, 500.0).isEmpty());
+        verify(dangerPointRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("WB_RADAR_11 (BVA): Kinh độ lng = 180 (biên trên hợp lệ) -> Không bị chặn")
+    void testGetDangerPointsNearby_WhenLng180_ShouldPass() {
+        when(dangerPointRepository.findAll()).thenReturn(java.util.List.of());
+        assertTrue(dangerPointService.getDangerPointsNearby(16.061, 180.0, 500.0).isEmpty());
+        verify(dangerPointRepository, times(1)).findAll();
+    }
 }

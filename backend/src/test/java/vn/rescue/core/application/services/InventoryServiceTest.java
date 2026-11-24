@@ -391,5 +391,36 @@ class InventoryServiceTest {
         verify(stockTransactionRepository, times(1)).save(any(StockTransaction.class));
         verify(systemService, times(1)).logAction(eq("staff-01"), eq("EXPORT_STOCK"), anyString(), eq("INVENTORY"));
     }
+
+    // =========================================================================
+    // Ca bổ sung hộp trắng: 2 nhánh chặn đầu tiên của importStock (dòng 38, 41)
+    // =========================================================================
+
+    @Test
+    @DisplayName("WB_IMP_01: Payload nhập kho null -> Ném 400 BadRequestException, không truy vấn kho")
+    void testImportStock_WhenRequestNull_ShouldThrowBadRequestException() {
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> inventoryService.importStock(null, "admin-01"));
+
+        assertEquals("Dữ liệu nhập kho không được để trống", exception.getMessage());
+        verifyNoInteractions(warehouseRepository, inventoryRepository, stockTransactionRepository);
+    }
+
+    @Test
+    @DisplayName("WB_IMP_02: Mã kho để trống (chỉ khoảng trắng) -> Ném 400 BadRequestException, không truy vấn kho")
+    void testImportStock_WhenWarehouseIdBlank_ShouldThrowBadRequestException() {
+        StockInRequest request = StockInRequest.builder()
+                .warehouseId("  ")
+                .itemId("ITEM-01")
+                .quantity(10)
+                .build();
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> inventoryService.importStock(request, "admin-01"));
+
+        assertEquals("Mã kho không được để trống", exception.getMessage());
+        verify(warehouseRepository, never()).existsById(any());
+        verify(inventoryRepository, never()).save(any());
+    }
 }
 

@@ -180,4 +180,84 @@ class UserAccountManagementTest {
         assertThrows(ResourceNotFoundException.class, () -> userService.updateUserRole("NOT_FOUND", "ADMIN"));
         verify(userRepository, never()).save(any());
     }
+
+    // =========================================================================
+    // KCPM-122: Bổ sung hộp trắng cho updateUserRole / updateUserStatus
+    // =========================================================================
+
+    @Test
+    @DisplayName("WB_ROLE_01: USER -> RESCUE_STAFF khi mọi kho đều đã có đội -> Vẫn tạo đội nhưng không gán kho")
+    void promoteToRescueStaff_WhenNoVacantWarehouse_ShouldCreateTeamWithoutWarehouse() {
+        User u = user("U6", "USER", "ACTIVE", null);
+        Warehouse occupied = new Warehouse();
+        occupied.setId("WH-1");
+        when(userRepository.findById("U6")).thenReturn(Optional.of(u));
+        when(warehouseRepository.findAll()).thenReturn(List.of(occupied));
+        when(rescueTeamRepository.findByWarehouseId("WH-1")).thenReturn(Optional.of(new RescueTeam()));
+        when(rescueTeamRepository.save(any(RescueTeam.class))).thenAnswer(inv -> {
+            RescueTeam t = inv.getArgument(0);
+            t.setId("TEAM-U6");
+            return t;
+        });
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserDto result = userService.updateUserRole("U6", "RESCUE_STAFF");
+
+        ArgumentCaptor<RescueTeam> teamCaptor = ArgumentCaptor.forClass(RescueTeam.class);
+        verify(rescueTeamRepository).save(teamCaptor.capture());
+        assertNull(teamCaptor.getValue().getWarehouseId(), "Không còn kho trống thì đội mới chưa được gán kho");
+        assertEquals("U6", teamCaptor.getValue().getLeaderId());
+        assertEquals("TEAM-U6", result.getTeamId());
+    }
+
+    @Test
+    @DisplayName("WB_ROLE_02: USER -> RESCUE_STAFF nhưng user đã có teamId -> Không tạo đội mới, giữ đội cũ")
+    void promoteToRescueStaff_WhenAlreadyHasTeam_ShouldKeepExistingTeam() {
+        User u = user("U7", "USER", "ACTIVE", "TEAM-OLD");
+        when(userRepository.findById("U7")).thenReturn(Optional.of(u));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserDto result = userService.updateUserRole("U7", "RESCUE_STAFF");
+
+        assertEquals("RESCUE_STAFF", result.getRoleId());
+        assertEquals("TEAM-OLD", result.getTeamId());
+        verify(rescueTeamRepository, never()).save(any());
+        verifyNoInteractions(warehouseRepository);
+    }
+
+    @Test
+    @DisplayName("WB_ROLE_03: RESCUE_STAFF -> RESCUE_STAFF (gán lại cùng vai trò) -> Không xóa đội, không tạo đội")
+    void reassignSameStaffRole_ShouldNotTouchTeams() {
+        User u = user("U8", "RESCUE_STAFF", "ACTIVE", "TEAM-8");
+        when(userRepository.findById("U8")).thenReturn(Optional.of(u));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserDto result = userService.updateUserRole("U8", "RESCUE_STAFF");
+
+        assertEquals("TEAM-8", result.getTeamId());
+        verifyNoInteractions(rescueTeamRepository, vehiclesRepository, warehouseRepository);
+    }
+
+    @Test
+    @DisplayName("WB_ROLE_04: RESCUE_STAFF -> USER nhưng user không làm trưởng đội nào -> Chỉ gỡ teamId, không xóa đội/xe")
+    void demoteFromRescueStaff_WhenNotLeadingAnyTeam_ShouldOnlyClearTeamId() {
+        User u = user("U9", "RESCUE_STAFF", "ACTIVE", "TEAM-OTHER");
+        when(userRepository.findById("U9")).thenReturn(Optional.of(u));
+        when(rescueTeamRepository.findByLeaderId("U9")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserDto result = userService.updateUserRole("U9", "USER");
+
+        assertNull(result.getTeamId());
+        assertEquals("USER", result.getRoleId());
+        verify(rescueTeamRepository, never()).delete(any());
+        verifyNoInteractions(vehiclesRepository);
+    }
+
+    @Test
+    @DisplayName("WB_LOCK_05: Khóa tài khoản với userId = null -> Ném IllegalArgumentException, không truy vấn DB")
+    void updateStatus_WhenUserIdNull_ShouldThrowIllegalArgument() {
+        assertThrows(IllegalArgumentException.class, () -> userService.updateUserStatus(null, "LOCKED"));
+        verifyNoInteractions(userRepository);
+    }
 }
