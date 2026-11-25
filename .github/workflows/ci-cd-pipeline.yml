@@ -43,13 +43,15 @@ jobs:
         run: cp -r .git backend/.git
 
       - name: Run Qodana Scan (Backend Java)
-        uses: JetBrains/qodana-action@v2024.1
+              - name: Run Qodana Scan (Backend Java)
+        uses: JetBrains/qodana-action@v2026.3
         continue-on-error: true
         with:
           args: --project-dir,backend
           pr-mode: false
         env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1518342455 }}
+          QODANA_ENDPOINT: 'https://qodana.cloud'
 
       - name: Cleanup .git copy in backend
         if: always()
